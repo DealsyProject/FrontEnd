@@ -1,5 +1,5 @@
-import Footer from '../../../Components/customer/Footer';
-import Navbar from '../../../Components/customer/Navbar';
+import Navbar from './Navbar';
+import Footer from './Footer';
 
 export default function Home() {
   const feedbacks = [
@@ -20,7 +20,7 @@ export default function Home() {
 
   return (
     <div className="bg-white min-h-screen">
-     <Navbar />
+     <Navbar/>
      <section className="relative bg-white flex flex-col items-center py-0 overflow-hidden min-h-[400px]">
       {/* Green backgrounds (left & right) */}
       <div className="absolute left-0 bottom-0 h-[270px] w-[46%] md:w-[40%] bg-[#88946B] rounded-tl-2xl rounded-bl-2xl z-0"></div>
