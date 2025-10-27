@@ -1,4 +1,4 @@
-import { FaRegHeart, FaRegUser, FaSearch, FaComment } from 'react-icons/fa';
+import { FaRegHeart, FaRegUser, FaSearch } from 'react-icons/fa';
 import { FiShoppingCart } from 'react-icons/fi';
 import { IoChatbubbleEllipsesOutline } from 'react-icons/io5';
 
@@ -27,15 +27,15 @@ export default function Navbar() {
       {/* Center: Navigation Links (even more round) */}
       <div className="bg-white/40 backdrop-blur-md rounded-full px-6 py-2  flex items-center space-x-4">
         <a href="/products" className="text-sm font-medium">Products</a>
-        <a href="/how-to" className="text-sm font-medium">How-to</a>
-        <a href="/contact" className="text-sm font-medium">Contact Us</a>
+        <a href="/how-to" className="text-sm font-medium">About Us</a>
+        <a href="/contact" className="text-sm font-medium">Contact</a>
       </div>
 
       {/* Right: Chat/Search and Auth Buttons in separate, strongly rounded glassy containers */}
       <div className="flex items-center space-x-4">
         <div className="bg-white/40 backdrop-blur-md rounded-full px-3 py-2 cursor-pointer flex items-center">
           <button className="bg-[#586330] text-white rounded-full px-3 py-2 flex items-center ">
-            <IoChatbubbleEllipsesOutline className="text-xl" />
+            <IoChatbubbleEllipsesOutline className="text-xl cursor-pointer" />
           </button>
         </div>
         
