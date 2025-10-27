@@ -1,16 +1,47 @@
-import './App.css'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Home from './Pages/customer/Home.jsx'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
+// Import components
+import Login from './Pages/Auth/Login';
+import Register from './Pages/Auth/Register';
+import VendorRegister from './Pages/Vendor/VendorRegister';
+import Subscription from './Pages/Vendor/Subscription';
+import Home from './Pages/Vendor/Home';
+import ProductDetail from './Components/Vendor/Home/ProductDetail';
+import Dashboard from './Pages/Vendor/Dashboard/Dashboard';
+import Products from './Pages/Vendor/Dashboard/Products';
+import CustomerReviews from './Components/Vendor/Home/CustomerReviews';
+import Customers from './Pages/Vendor/Dashboard/Customers';
+import Invoices from './Pages/Vendor/Dashboard/Invoices';
+import Payments from './Pages/Vendor/Dashboard/Payments';
 function App() {
-   return (
+  return (
     <Router>
-      <Routes>
-        <Route path='/' element={<Home />} />
-      </Routes>
-    </Router>
+      <div className="min-h-screen bg-gray-50">
+        <ToastContainer position="top-right" autoClose={3000} />
 
-  )
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/vendor-register" element={<VendorRegister />} />
+          <Route path="/reviews" element={<CustomerReviews/>}/>
+          <Route path="/subscription" element={<Subscription />} />
+          <Route path="/product/:id" element={<ProductDetail />} />
+          
+          {/* Vendor Routes - Accessible to all */}
+          <Route path="/vendor-dashboard" element={<Dashboard />} />
+          <Route path="/products" element={<Products />} />
+           <Route path="/customers" element={<Customers/>} />
+           <Route path="/invoices" element={<Invoices/>} />
+           <Route path="/payments" element={<Payments/>} />
+        </Routes>
+      </div>
+    </Router>
+  );
 }
 
-export default App
+export default App;
