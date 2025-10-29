@@ -5,6 +5,8 @@ import 'react-toastify/dist/ReactToastify.css';
 
 //customer imports
 import CustomerHome from './Pages/customer/CustomerHome';
+import CustomerRegistration from './Pages/customer/CustomerRegistration';
+import CustomerProducts from './Pages/customer/CustomerProducts';
 
 // Import components
 import Login from './Pages/Auth/Login';
@@ -27,7 +29,7 @@ function App() {
 
         <Routes>
           {/* Public Routes */}
-          <Route path="VendorHome" element={<Home />} />
+          <Route path="/VendorHome" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/vendor-register" element={<VendorRegister />} />
@@ -41,8 +43,11 @@ function App() {
            <Route path="/customers" element={<Customers/>} />
            <Route path="/invoices" element={<Invoices/>} />
            <Route path="/payments" element={<Payments/>} />
+
           {/* Customer Routes */}
           <Route path="/" element={<CustomerHome />} />
+          <Route path="/customerRegistration" element={<CustomerRegistration />} />
+          <Route path="customerproducts" element={<CustomerProducts />} />
         </Routes>
       </div>
     </Router>
