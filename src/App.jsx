@@ -47,7 +47,7 @@ function App() {
           {/* Customer Routes */}
           <Route path="/" element={<CustomerHome />} />
           <Route path="/customerRegistration" element={<CustomerRegistration />} />
-          <Route path="customerproducts" element={<CustomerProducts />} />
+          <Route path="/customerproducts" element={<CustomerProducts />} />
         </Routes>
       </div>
     </Router>
