@@ -260,7 +260,7 @@ const activeView = 'products';
           onClose={() => setShowAddModal(false)}
           handleImageUpload={handleImageUpload}
           handleRemoveImage={handleRemoveImage}
-          defaultImage={defaultProductImage}
+         
         />
       )}
 
