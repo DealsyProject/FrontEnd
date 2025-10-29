@@ -48,6 +48,14 @@ function App() {
           <Route path="/" element={<CustomerHome />} />
           <Route path="/customerRegistration" element={<CustomerRegistration />} />
           <Route path="/customerproducts" element={<CustomerProducts />} />
+
+
+
+                     {/* Support Team Routes */}
+          <Route path="/support-helpcenter" element={<Helpcenter/>} />
+          <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails/>} />
+
+          
         </Routes>
       </div>
     </Router>
