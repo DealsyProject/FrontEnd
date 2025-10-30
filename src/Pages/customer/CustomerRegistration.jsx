@@ -2,97 +2,70 @@ import React from "react";
 
 export default function CustomerRegistration() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="bg-white w-full max-w-md rounded-xl p-8 shadow-md border border-gray-200">
-        {/* Title */}
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
-          Sign Up
-        </h1>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background with overlay */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage:
+            'url(https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1920)',
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-indigo-400 to-indigo-100 opacity-90"></div>
+      </div>
 
-        {/* Form */}
-        <form className="space-y-5">
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              placeholder="John Doe"
-              className="w-full rounded-md border border-gray-300 p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-            />
+      {/* Content */}
+      <div className="relative z-10">
+        <div className="px-8 py-6">
+          <h1 className="text-4xl font-bold text-indigo-600">Dealsy</h1>
+        </div>
+
+        <div className="flex items-center justify-center min-h-[calc(100vh-100px)] p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+            <h2 className="text-2xl font-semibold text-indigo-400 mb-6 text-center">
+              Customer Registration
+            </h2>
+
+            <form className="space-y-6 text-gray-900">
+              <div>
+                <label
+                  htmlFor="address"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Address
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  placeholder="Street, City"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="pincode"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Pin Code
+                </label>
+                <input
+                  type="text"
+                  id="pincode"
+                  placeholder="600001"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-4 rounded-full font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400 transition duration-200 shadow-lg"
+              >
+                Submit
+              </button>
+            </form>
           </div>
-
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              placeholder="you@example.com"
-              className="w-full rounded-md border border-gray-300 p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="phone"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              placeholder="+91 9876543210"
-              className="w-full rounded-md border border-gray-300 p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="address"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Address
-            </label>
-            <input
-              type="text"
-              id="address"
-              placeholder="Street, City"
-              className="w-full rounded-md border border-gray-300 p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="pincode"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Pin Code
-            </label>
-            <input
-              type="text"
-              id="pincode"
-              placeholder="600001"
-              className="w-full rounded-md border border-gray-300 p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-md text-sm transition"
-          >
-            Submit
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );
