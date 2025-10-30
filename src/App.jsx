@@ -23,7 +23,11 @@ import CustomerHome from './Pages/customer/CustomerHome';
 import CustomerRegistration from './Pages/customer/CustomerRegistration';
 import CustomerProducts from './Pages/customer/CustomerProducts';
 
-//vendor
+// Import components
+import Helpcenter from './Pages/SupportTeam/Helpcenter';
+import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
+import Login from './Pages/Auth/Login';
+import Register from './Pages/Auth/Register';
 import VendorRegister from './Pages/Vendor/VendorRegister';
 import Subscription from './Pages/Vendor/Subscription';
 import Home from './Pages/Vendor/Home';
@@ -34,7 +38,7 @@ import CustomerReviews from './Components/Vendor/Home/CustomerReviews';
 import Customers from './Pages/Vendor/Dashboard/Customers';
 import Invoices from './Pages/Vendor/Dashboard/Invoices';
 import Payments from './Pages/Vendor/Dashboard/Payments';
-
+import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
 import Helpcenter from './Pages/SupportTeam/Helpcenter'
 import CustemerVenderDetails from './Pages/SupportTeam/CustemerVenderDetails';
 
@@ -81,6 +85,7 @@ function App() {
           {/* Support Team */}
           <Route path="/support-helpcenter" element={<Helpcenter/>} />
           <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails/>} />
+          <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker/>} />
 
           
         </Routes>
