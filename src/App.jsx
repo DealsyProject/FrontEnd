@@ -3,6 +3,21 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+//admin
+import AdminDashboard from './Pages/Admin/AdminDashboard.jsx';
+import ProductPage from './Pages/Admin/ProductPage.jsx';
+import OrdersPage from './Pages/Admin/OrdersPage.jsx'; 
+import TransactionsPage from './Pages/Admin/TransactionsPage.jsx'; 
+import UserManagement from './Pages/Admin/UserManagment.jsx';
+import ChatSupport from './Pages/Admin/ChatSupport.jsx';
+import PendingVendors from './Pages/Admin/PendingVendors.jsx';
+import ProductReturnPage from "./Pages/Admin/ProductReturnPage.jsx";
+import SupportTeamPage from "./Pages/Admin/SupportTeamPage.jsx";
+
+//common
+import Login from './Pages/Auth/Login';
+import Register from './Pages/Auth/Register';
+
 //customer imports
 import CustomerHome from './Pages/customer/CustomerHome';
 import CustomerRegistration from './Pages/customer/CustomerRegistration';
@@ -14,7 +29,10 @@ import CustomerWishList from './Pages/customer/CustomerWishList';
 import CustomerCheckout from './Pages/customer/CustomerCheckout';
 import CustomerChat from './Pages/customer/CustomerChat';
 
+
 // Vendor Imports 
+
+// Import components
 import Login from './Pages/Auth/Login';
 import Register from './Pages/Auth/Register';
 import VendorRegister from './Pages/Vendor/VendorRegister';
@@ -27,6 +45,8 @@ import CustomerReviews from './Components/Vendor/Home/CustomerReviews';
 import Customers from './Pages/Vendor/Dashboard/Customers';
 import Invoices from './Pages/Vendor/Dashboard/Invoices';
 import Payments from './Pages/Vendor/Dashboard/Payments';
+
+
 function App() {
   return (
     <Router>
@@ -34,7 +54,19 @@ function App() {
         <ToastContainer position="top-right" autoClose={3000} />
 
         <Routes>
-          {/* Public Routes */}
+          {/* admin */}
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/productPage" element={<ProductPage />} />
+
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/Transaction" element={<TransactionsPage />} />
+          <Route path="/user" element={<UserManagement />} />
+          <Route path="/ChatSupport" element={<ChatSupport />} />
+          <Route path="/Vendors" element={<PendingVendors />} />
+          <Route path="/product-returns" element={<ProductReturnPage />} />
+          <Route path="/support-team" element={<SupportTeamPage />} />
+
+          {/* Vendor */}
           <Route path="/VendorHome" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -44,13 +76,14 @@ function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
 
           {/* Vendor Routes - Accessible to all */}
+          <Route path="/product/:id" element={<ProductDetail />} />      
           <Route path="/vendor-dashboard" element={<Dashboard />} />
           <Route path="/products" element={<Products />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/payments" element={<Payments />} />
 
-          {/* Customer Routes */}
+          {/* Customer  */}
           <Route path="/" element={<CustomerHome />} />
           <Route path="/customer-register" element={<CustomerRegistration />} />
           <Route path="/customerproducts" element={<CustomerProducts />} />
@@ -61,6 +94,15 @@ function App() {
           <Route path="/customercheckout" element={<CustomerCheckout />} />
           <Route path="/customerchat" element={<CustomerChat />} />
 
+          
+
+
+          {/* Support Team */}
+          <Route path="/support-helpcenter" element={<Helpcenter/>} />
+          <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails/>} />
+          <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker/>} />
+
+          
         </Routes>
       </div>
     </Router>
