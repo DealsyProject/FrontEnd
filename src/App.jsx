@@ -7,8 +7,14 @@ import 'react-toastify/dist/ReactToastify.css';
 import CustomerHome from './Pages/customer/CustomerHome';
 import CustomerRegistration from './Pages/customer/CustomerRegistration';
 import CustomerProducts from './Pages/customer/CustomerProducts';
+import CustomerProductView from './Pages/customer/CustomerProductview';
+import CustomerProfile from './Pages/customer/CustomerProfile';
+import CustomerCart from './Pages/customer/CustomerCart';
+import CustomerWishList from './Pages/customer/CustomerWishList';
+import CustomerCheckout from './Pages/customer/CustomerCheckout';
+import CustomerChat from './Pages/customer/CustomerChat';
 
-// Import components
+// Vendor Imports 
 import Login from './Pages/Auth/Login';
 import Register from './Pages/Auth/Register';
 import VendorRegister from './Pages/Vendor/VendorRegister';
@@ -33,21 +39,28 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/vendor-register" element={<VendorRegister />} />
-          <Route path="/reviews" element={<CustomerReviews/>}/>
+          <Route path="/reviews" element={<CustomerReviews />} />
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/product/:id" element={<ProductDetail />} />
-          
+
           {/* Vendor Routes - Accessible to all */}
           <Route path="/vendor-dashboard" element={<Dashboard />} />
           <Route path="/products" element={<Products />} />
-           <Route path="/customers" element={<Customers/>} />
-           <Route path="/invoices" element={<Invoices/>} />
-           <Route path="/payments" element={<Payments/>} />
+          <Route path="/customers" element={<Customers />} />
+          <Route path="/invoices" element={<Invoices />} />
+          <Route path="/payments" element={<Payments />} />
 
           {/* Customer Routes */}
           <Route path="/" element={<CustomerHome />} />
-          <Route path="/customerRegistration" element={<CustomerRegistration />} />
+          <Route path="/customer-register" element={<CustomerRegistration />} />
           <Route path="/customerproducts" element={<CustomerProducts />} />
+          <Route path="/customerproductview/:id" element={<CustomerProductView />} />
+          <Route path="/customerprofile" element={<CustomerProfile />} />
+          <Route path="/customercart" element={<CustomerCart />} />
+          <Route path="/customerwishlist" element={<CustomerWishList />} />
+          <Route path="/customercheckout" element={<CustomerCheckout />} />
+          <Route path="/customerchat" element={<CustomerChat />} />
+
         </Routes>
       </div>
     </Router>
