@@ -8,9 +8,12 @@ import CustomerHome from './Pages/customer/CustomerHome';
 import CustomerRegistration from './Pages/customer/CustomerRegistration';
 import CustomerProducts from './Pages/customer/CustomerProducts';
 
-// Import components
+// Support Team Import components
 import Helpcenter from './Pages/SupportTeam/Helpcenter';
 import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
+import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
+
+//Veder imports
 import Login from './Pages/Auth/Login';
 import Register from './Pages/Auth/Register';
 import VendorRegister from './Pages/Vendor/VendorRegister';
@@ -23,7 +26,6 @@ import CustomerReviews from './Components/Vendor/Home/CustomerReviews';
 import Customers from './Pages/Vendor/Dashboard/Customers';
 import Invoices from './Pages/Vendor/Dashboard/Invoices';
 import Payments from './Pages/Vendor/Dashboard/Payments';
-import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
 function App() {
   return (
     <Router>
