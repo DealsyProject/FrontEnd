@@ -17,7 +17,7 @@ import SupportTeamPage from "./Pages/Admin/SupportTeamPage.jsx";
 
 //customer
 import CustomerHome from './Pages/customer/CustomerHome';
-import CustomerRegistration from './Pages/customer/CustomerRegistration';
+import CustomerRegistration from './Components/customer/Registration/CustomerExtraForm.jsx';
 import CustomerProducts from './Pages/customer/CustomerProducts';
 import CustomerProductView from './Pages/customer/CustomerProductview';
 import CustomerProfile from './Pages/customer/CustomerProfile';
@@ -44,7 +44,7 @@ import Register from './Pages/Auth/Register';
 
 
 //Vendor
-import VendorRegister from './Pages/Vendor/VendorRegister';
+import VendorRegister from './Components/Vendor/Registration/VendorExtraForm.jsx';
 import Subscription from './Pages/Vendor/Subscription';
 import Home from './Pages/Vendor/Home';
 import ProductDetail from './Components/Vendor/Home/ProductDetail';
