@@ -14,7 +14,8 @@ const Payments = () => {
     localStorage.removeItem('tempUserData');
     navigate('/');
   };
-const activeView = 'payments';
+
+  const activeView = 'payments';
   const [payments, setPayments] = useState([
     {
       id: 'PAY-001',
@@ -27,7 +28,7 @@ const activeView = 'payments';
       amount: 30500,
       date: '2024-03-16',
       method: 'credit_card', // credit_card, debit_card, upi, bank_transfer, cash
-      status: 'completed', // completed, pending, failed, refunded
+      status: 'completed', // completed, pending, failed, refunded, processing
       transactionId: 'TXN_789012345',
       items: [
         {
@@ -163,12 +164,13 @@ const activeView = 'payments';
     cash: { name: 'Cash', icon: '💵', color: 'bg-green-100 text-green-800' }
   };
 
-  // Status configuration
+  // Status configuration - Added processing status
   const statusConfig = {
     completed: { color: 'bg-green-100 text-green-800', label: 'Completed' },
     pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
     failed: { color: 'bg-red-100 text-red-800', label: 'Failed' },
-    refunded: { color: 'bg-gray-100 text-gray-800', label: 'Refunded' }
+    refunded: { color: 'bg-gray-100 text-gray-800', label: 'Refunded' },
+    processing: { color: 'bg-blue-100 text-blue-800', label: 'Processing' }
   };
 
   // Filter payments
@@ -227,8 +229,38 @@ const activeView = 'payments';
     
     const refundAmount = prompt(`Enter refund amount for ${payment.id}:`, payment.amount);
     if (refundAmount && !isNaN(refundAmount)) {
-      toast.success(`Refund of ₹${refundAmount} processed for ${payment.customer.name}`);
-      // In real app, this would update the payment status
+      // Update payment status to "processing"
+      setPayments(prevPayments => 
+        prevPayments.map(p => 
+          p.id === payment.id 
+            ? { 
+                ...p, 
+                status: 'processing',
+                refundAmount: parseFloat(refundAmount)
+              }
+            : p
+        )
+      );
+      
+      toast.success(`Refund of ₹${refundAmount} is being processed for ${payment.customer.name}`);
+      
+      // Simulate refund completion after 3 seconds
+      setTimeout(() => {
+        setPayments(prevPayments => 
+          prevPayments.map(p => 
+            p.id === payment.id 
+              ? { 
+                  ...p, 
+                  status: 'refunded',
+                  refundId: `REF_${Date.now()}`,
+                  refundDate: new Date().toISOString().split('T')[0],
+                  refundReason: 'Customer request'
+                }
+              : p
+          )
+        );
+        toast.success(`Refund of ₹${refundAmount} completed successfully for ${payment.customer.name}`);
+      }, 3000);
     }
   };
 
@@ -238,8 +270,28 @@ const activeView = 'payments';
       return;
     }
     
+    // Update payment status to "processing"
+    setPayments(prevPayments => 
+      prevPayments.map(p => 
+        p.id === payment.id 
+          ? { ...p, status: 'processing' }
+          : p
+      )
+    );
+    
     toast.info(`Retrying payment ${payment.id} for ${payment.customer.name}`);
-    // In real app, this would trigger payment retry logic
+    
+    // Simulate payment retry completion after 3 seconds
+    setTimeout(() => {
+      setPayments(prevPayments => 
+        prevPayments.map(p => 
+          p.id === payment.id 
+            ? { ...p, status: 'completed' }
+            : p
+        )
+      );
+      toast.success(`Payment ${payment.id} completed successfully`);
+    }, 3000);
   };
 
   const handleViewDetails = (payment) => {
@@ -337,6 +389,7 @@ const activeView = 'payments';
                     <option value="pending">Pending</option>
                     <option value="failed">Failed</option>
                     <option value="refunded">Refunded</option>
+                    <option value="processing">Processing</option>
                   </select>
                 </div>
                 <div className="w-full md:w-48">
@@ -518,6 +571,12 @@ const activeView = 'payments';
                       <div className="flex justify-between">
                         <span className="text-gray-600">Refund ID:</span>
                         <span className="font-mono font-medium">{selectedPayment.refundId}</span>
+                      </div>
+                    )}
+                    {selectedPayment.refundAmount && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Refund Amount:</span>
+                        <span className="font-medium text-orange-600">{formatCurrency(selectedPayment.refundAmount)}</span>
                       </div>
                     )}
                   </div>

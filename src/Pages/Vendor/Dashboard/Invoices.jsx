@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '../../../Components/Vendor/Dashboard/Sidebar';
@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 const Invoices = () => {
   const navigate = useNavigate();
+  const printRef = useRef();
   
   // Add logout function
   const handleLogout = () => {
@@ -173,10 +174,216 @@ const Invoices = () => {
     );
   };
 
-  // Print invoice
+  // Print invoice function
   const handlePrintInvoice = (invoice) => {
-    toast.info('Print functionality would be implemented here');
-    // In a real app, this would open print dialog or generate PDF
+    setSelectedInvoice(invoice);
+    setTimeout(() => {
+      const printContent = printRef.current;
+      const printWindow = window.open('', '_blank');
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Invoice ${invoice.id}</title>
+            <style>
+              body { 
+                font-family: Arial, sans-serif; 
+                margin: 0; 
+                padding: 20px; 
+                color: #333;
+              }
+              .invoice-header { 
+                display: flex; 
+                justify-content: space-between; 
+                margin-bottom: 30px;
+                border-bottom: 2px solid #333;
+                padding-bottom: 20px;
+              }
+              .company-info h1 { 
+                margin: 0; 
+                color: #1f2937;
+                font-size: 24px;
+              }
+              .invoice-info { 
+                text-align: right; 
+              }
+              .invoice-details { 
+                margin: 30px 0; 
+              }
+              .address-section { 
+                display: flex; 
+                justify-content: space-between; 
+                margin-bottom: 30px;
+              }
+              .address-box { 
+                background: #f9fafb; 
+                padding: 15px; 
+                border-radius: 8px;
+                border: 1px solid #e5e7eb;
+              }
+              table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin: 20px 0;
+              }
+              th { 
+                background: #f9fafb; 
+                padding: 12px; 
+                text-align: left; 
+                border-bottom: 2px solid #e5e7eb;
+                font-weight: 600;
+              }
+              td { 
+                padding: 12px; 
+                border-bottom: 1px solid #e5e7eb; 
+              }
+              .totals { 
+                margin-top: 30px; 
+                text-align: right; 
+              }
+              .total-row { 
+                display: flex; 
+                justify-content: space-between; 
+                margin: 8px 0;
+                max-width: 300px;
+                margin-left: auto;
+              }
+              .grand-total { 
+                font-size: 18px; 
+                font-weight: bold; 
+                border-top: 2px solid #333;
+                padding-top: 10px;
+                margin-top: 10px;
+              }
+              .notes { 
+                margin-top: 30px; 
+                padding: 15px;
+                background: #f9fafb;
+                border-radius: 8px;
+                border: 1px solid #e5e7eb;
+              }
+              .status-badge {
+                display: inline-block;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+              }
+              .status-paid { background: #dcfce7; color: #166534; }
+              .status-pending { background: #fef9c3; color: #854d0e; }
+              .status-overdue { background: #fee2e2; color: #991b1b; }
+              @media print {
+                body { margin: 0; padding: 15px; }
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="invoice-header">
+              <div class="company-info">
+                <h1>Dealsy Furniture Store</h1>
+                <p>123 Business Avenue, Mumbai, MH 400001</p>
+                <p>contact@dealsy.com | +91 98765 43210</p>
+              </div>
+              <div class="invoice-info">
+                <h2>INVOICE</h2>
+                <p><strong>Invoice No:</strong> ${invoice.id}</p>
+                <p><strong>Date:</strong> ${new Date(invoice.date).toLocaleDateString()}</p>
+                <p><strong>Due Date:</strong> ${new Date(invoice.dueDate).toLocaleDateString()}</p>
+                <span class="status-badge status-${invoice.status}">${invoice.status.toUpperCase()}</span>
+              </div>
+            </div>
+
+            <div class="address-section">
+              <div class="address-box">
+                <strong>From:</strong><br/>
+                Dealsy Furniture Store<br/>
+                123 Business Avenue<br/>
+                Mumbai, MH 400001<br/>
+                India<br/>
+                contact@dealsy.com<br/>
+                +91 98765 43210
+              </div>
+              <div class="address-box">
+                <strong>Bill To:</strong><br/>
+                ${invoice.customer.name}<br/>
+                ${invoice.customer.email}<br/>
+                ${invoice.customer.phone}<br/>
+                ${invoice.customer.address.street}<br/>
+                ${invoice.customer.address.city}, ${invoice.customer.address.state} ${invoice.customer.address.zipCode}<br/>
+                ${invoice.customer.address.country}
+              </div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Description</th>
+                  <th>Quantity</th>
+                  <th>Unit Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${invoice.items.map(item => `
+                  <tr>
+                    <td>${item.productName}</td>
+                    <td>${item.description}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.unitPrice.toLocaleString()}</td>
+                    <td>₹${(item.quantity * item.unitPrice).toLocaleString()}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+
+            <div class="totals">
+              <div class="total-row">
+                <span>Subtotal:</span>
+                <span>₹${calculateInvoiceTotals(invoice).subtotal.toLocaleString()}</span>
+              </div>
+              <div class="total-row">
+                <span>Tax (${invoice.taxRate}%):</span>
+                <span>₹${calculateInvoiceTotals(invoice).taxAmount.toLocaleString()}</span>
+              </div>
+              <div class="total-row">
+                <span>Shipping:</span>
+                <span>₹${invoice.shipping.toLocaleString()}</span>
+              </div>
+              <div class="total-row grand-total">
+                <span>Total Amount:</span>
+                <span>₹${calculateInvoiceTotals(invoice).total.toLocaleString()}</span>
+              </div>
+            </div>
+
+            ${invoice.notes ? `
+              <div class="notes">
+                <strong>Notes:</strong><br/>
+                ${invoice.notes}
+              </div>
+            ` : ''}
+
+            <div style="margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px;">
+              <p>Thank you for your business!</p>
+              <p>This is a computer-generated invoice and does not require a signature.</p>
+            </div>
+
+            <script>
+              window.onload = function() {
+                window.print();
+                setTimeout(() => {
+                  window.close();
+                }, 100);
+              }
+            </script>
+          </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+    }, 100);
   };
 
   // Send invoice
@@ -199,7 +406,7 @@ const Invoices = () => {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-       <Sidebar handleLogout={handleLogout} activeView={activeView} />
+      <Sidebar handleLogout={handleLogout} activeView={activeView} />
 
       {/* Main Content */}
       <div className="flex-1 p-6 text-black">
@@ -339,163 +546,171 @@ const Invoices = () => {
         ) : (
           // Invoice Detail View
           selectedInvoice && (
-            <div className="bg-white rounded-xl shadow-md p-8">
-              {/* Header */}
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <button
-                    onClick={handleBackToList}
-                    className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
-                  >
-                    ← Back to Invoices
-                  </button>
-                  <h1 className="text-3xl font-bold text-gray-800">Invoice {selectedInvoice.id}</h1>
-                  <StatusBadge status={selectedInvoice.status} />
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-gray-800 mb-2">
-                    ₹{calculateInvoiceTotals(selectedInvoice).total.toLocaleString()}
-                  </div>
-                  <div className="flex space-x-2">
+            <div>
+              {/* Hidden printable content */}
+              <div ref={printRef} style={{ display: 'none' }}>
+                {/* This div will be used for printing */}
+              </div>
+
+              {/* Visible detail view */}
+              <div className="bg-white rounded-xl shadow-md p-8">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-8">
+                  <div>
                     <button
-                      onClick={() => handlePrintInvoice(selectedInvoice)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      onClick={handleBackToList}
+                      className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
                     >
-                      Print
+                      ← Back to Invoices
                     </button>
-                    <button
-                      onClick={() => handleSendInvoice(selectedInvoice)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                      Send to Customer
-                    </button>
+                    <h1 className="text-3xl font-bold text-gray-800">Invoice {selectedInvoice.id}</h1>
+                    <StatusBadge status={selectedInvoice.status} />
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-gray-800 mb-2">
+                      ₹{calculateInvoiceTotals(selectedInvoice).total.toLocaleString()}
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handlePrintInvoice(selectedInvoice)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      >
+                        Print Invoice
+                      </button>
+                      <button
+                        onClick={() => handleSendInvoice(selectedInvoice)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Send to Customer
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                {/* From Address */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">From:</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="font-semibold">Dealsy Furniture Store</p>
-                    <p>123 Business Avenue</p>
-                    <p>Mumbai, MH 400001</p>
-                    <p>India</p>
-                    <p>contact@dealsy.com</p>
-                    <p>+91 98765 43210</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                  {/* From Address */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">From:</h3>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="font-semibold">Dealsy Furniture Store</p>
+                      <p>123 Business Avenue</p>
+                      <p>Mumbai, MH 400001</p>
+                      <p>India</p>
+                      <p>contact@dealsy.com</p>
+                      <p>+91 98765 43210</p>
+                    </div>
+                  </div>
+
+                  {/* To Address */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Bill To:</h3>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="font-semibold">{selectedInvoice.customer.name}</p>
+                      <p>{selectedInvoice.customer.email}</p>
+                      <p>{selectedInvoice.customer.phone}</p>
+                      <p>{selectedInvoice.customer.address.street}</p>
+                      <p>
+                        {selectedInvoice.customer.address.city}, {selectedInvoice.customer.address.state} {selectedInvoice.customer.address.zipCode}
+                      </p>
+                      <p>{selectedInvoice.customer.address.country}</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* To Address */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Bill To:</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="font-semibold">{selectedInvoice.customer.name}</p>
-                    <p>{selectedInvoice.customer.email}</p>
-                    <p>{selectedInvoice.customer.phone}</p>
-                    <p>{selectedInvoice.customer.address.street}</p>
-                    <p>
-                      {selectedInvoice.customer.address.city}, {selectedInvoice.customer.address.state} {selectedInvoice.customer.address.zipCode}
-                    </p>
-                    <p>{selectedInvoice.customer.address.country}</p>
+                {/* Invoice Details */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-sm">
+                  <div>
+                    <p className="text-gray-600">Invoice Date</p>
+                    <p className="font-semibold">{new Date(selectedInvoice.date).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Due Date</p>
+                    <p className="font-semibold">{new Date(selectedInvoice.dueDate).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Tax Rate</p>
+                    <p className="font-semibold">{selectedInvoice.taxRate}%</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Shipping</p>
+                    <p className="font-semibold">₹{selectedInvoice.shipping.toLocaleString()}</p>
                   </div>
                 </div>
-              </div>
 
-              {/* Invoice Details */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-sm">
-                <div>
-                  <p className="text-gray-600">Invoice Date</p>
-                  <p className="font-semibold">{new Date(selectedInvoice.date).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Due Date</p>
-                  <p className="font-semibold">{new Date(selectedInvoice.dueDate).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Tax Rate</p>
-                  <p className="font-semibold">{selectedInvoice.taxRate}%</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Shipping</p>
-                  <p className="font-semibold">₹{selectedInvoice.shipping.toLocaleString()}</p>
-                </div>
-              </div>
-
-              {/* Items Table */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Items</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Product</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Description</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Quantity</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Unit Price</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {selectedInvoice.items.map((item, index) => (
-                        <tr key={index}>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center">
-                              <img
-                                src={item.productImage}
-                                alt={item.productName}
-                                className="w-12 h-12 object-cover rounded mr-3"
-                              />
-                              <span className="font-medium">{item.productName}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{item.description}</td>
-                          <td className="px-4 py-3">{item.quantity}</td>
-                          <td className="px-4 py-3">₹{item.unitPrice.toLocaleString()}</td>
-                          <td className="px-4 py-3 font-semibold">
-                            ₹{(item.quantity * item.unitPrice).toLocaleString()}
-                          </td>
+                {/* Items Table */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Items</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Product</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Description</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Quantity</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Unit Price</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {selectedInvoice.items.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center">
+                                <img
+                                  src={item.productImage}
+                                  alt={item.productName}
+                                  className="w-12 h-12 object-cover rounded mr-3"
+                                />
+                                <span className="font-medium">{item.productName}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{item.description}</td>
+                            <td className="px-4 py-3">{item.quantity}</td>
+                            <td className="px-4 py-3">₹{item.unitPrice.toLocaleString()}</td>
+                            <td className="px-4 py-3 font-semibold">
+                              ₹{(item.quantity * item.unitPrice).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
 
-              {/* Totals */}
-              <div className="flex justify-end">
-                <div className="w-full md:w-1/3">
-                  <div className="bg-gray-50 rounded-lg p-6">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>Subtotal:</span>
-                        <span>₹{calculateInvoiceTotals(selectedInvoice).subtotal.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Tax ({selectedInvoice.taxRate}%):</span>
-                        <span>₹{calculateInvoiceTotals(selectedInvoice).taxAmount.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Shipping:</span>
-                        <span>₹{selectedInvoice.shipping.toLocaleString()}</span>
-                      </div>
-                      <div className="border-t pt-2 flex justify-between text-lg font-bold">
-                        <span>Total:</span>
-                        <span>₹{calculateInvoiceTotals(selectedInvoice).total.toLocaleString()}</span>
+                {/* Totals */}
+                <div className="flex justify-end">
+                  <div className="w-full md:w-1/3">
+                    <div className="bg-gray-50 rounded-lg p-6">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Subtotal:</span>
+                          <span>₹{calculateInvoiceTotals(selectedInvoice).subtotal.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Tax ({selectedInvoice.taxRate}%):</span>
+                          <span>₹{calculateInvoiceTotals(selectedInvoice).taxAmount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Shipping:</span>
+                          <span>₹{selectedInvoice.shipping.toLocaleString()}</span>
+                        </div>
+                        <div className="border-t pt-2 flex justify-between text-lg font-bold">
+                          <span>Total:</span>
+                          <span>₹{calculateInvoiceTotals(selectedInvoice).total.toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Notes */}
-              {selectedInvoice.notes && (
-                <div className="mt-8">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Notes</h3>
-                  <p className="text-gray-600 bg-gray-50 p-4 rounded-lg">{selectedInvoice.notes}</p>
-                </div>
-              )}
+                {/* Notes */}
+                {selectedInvoice.notes && (
+                  <div className="mt-8">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Notes</h3>
+                    <p className="text-gray-600 bg-gray-50 p-4 rounded-lg">{selectedInvoice.notes}</p>
+                  </div>
+                )}
+              </div>
             </div>
           )
         )}

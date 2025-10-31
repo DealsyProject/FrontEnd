@@ -21,7 +21,7 @@ export const useProfile = (vendorData, userData, setShowProfile) => {
   const idCardInputRef = useRef(null);
   const profileInputRef = useRef(null);
 
-  // Initialize profile form with user data if available
+  
   useEffect(() => {
     if (userData) {
       setProfileForm(prev => ({
@@ -99,15 +99,15 @@ export const useProfile = (vendorData, userData, setShowProfile) => {
     }
 
     try {
-      // Simulate API call delay
+      
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Mock successful profile save
+      
       setIsProfileCreated(true);
       toast.success('Profile saved successfully!');
       setShowProfile(false);
       
-      // Update localStorage with profile data
+      
       const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
       localStorage.setItem('currentUser', JSON.stringify({
         ...user,

@@ -1,28 +1,290 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { 
+  FaUser, 
+  FaPlus, 
+  FaTimes, 
+  FaSearch, 
+  FaEdit,
+  FaTrash,
+  FaCheck,
+  FaTimesCircle,
+  FaImage,
+  FaFile,
+  FaVideo,
+  FaPaperPlane
+} from 'react-icons/fa';
+import { 
+  IoMdCheckmark, 
+  IoMdCheckmarkCircle,
+  IoIosSend,
+  IoIosAttach
+} from 'react-icons/io';
+import { 
+  BsThreeDotsVertical,
+  BsCameraVideo,
+  BsTelephone
+} from 'react-icons/bs';
+import { 
+  RiChatSmileLine,
+  RiMessage2Fill
+} from 'react-icons/ri';
+import { 
+  MdEmojiEmotions
+} from 'react-icons/md';
 
 const MessagesModal = ({ 
   setShowMessages, 
   messageThreads: initialThreads 
 }) => {
   const [newMessage, setNewMessage] = useState('');
-  const [sentMessages, setSentMessages] = useState([]);
-  const [messageThreads, setMessageThreads] = useState(initialThreads || []);
+  const [messageThreads, setMessageThreads] = useState(() => {
+    
+    const threadsWithHistory = initialThreads?.map(thread => ({
+      ...thread,
+      messages: thread.messages || [], 
+      unread: thread.unread || false
+    })) || [];
+    return threadsWithHistory;
+  });
+  
   const [activeThread, setActiveThread] = useState(initialThreads?.[0]?.id || null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredThreads, setFilteredThreads] = useState(initialThreads || []);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editMessageText, setEditMessageText] = useState('');
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const messageOptionsRef = useRef(null);
+  const attachmentMenuRef = useRef(null);
+  const emojiPickerRef = useRef(null);
 
-  // Auto-scroll to bottom when new messages are added
+  
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (messageOptionsRef.current && !messageOptionsRef.current.contains(event.target)) {
+        setSelectedMessageId(null);
+      }
+      if (attachmentMenuRef.current && !attachmentMenuRef.current.contains(event.target)) {
+        setShowAttachmentMenu(false);
+      }
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  
+  const getActiveThreadMessages = () => {
+    if (!activeThread) return [];
+    const thread = messageThreads.find(t => t.id === activeThread);
+    return thread?.messages || [];
+  };
+
+  
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredThreads(messageThreads);
+    } else {
+      const filtered = messageThreads.filter(thread =>
+        thread.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        thread.preview.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredThreads(filtered);
+    }
+  }, [searchQuery, messageThreads]);
+
+  
   useEffect(() => {
     scrollToBottom();
-  }, [sentMessages]);
+  }, [getActiveThreadMessages()]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  
+  const getAutoResponseMessage = (threadTitle) => {
+    const responses = {
+      'John Doe': 'Hey! Thanks for your message. I\'ll get back to you soon!',
+      'Sarah Smith': 'Hi there! I\'m currently away from my desk but will respond shortly.',
+      'Mike Johnson': 'Got your message! I\'ll review it and get back to you.',
+      'Support Team': 'Thank you for contacting support. We will assist you shortly.',
+      'Emily Davis': 'Thanks for reaching out! I\'ll respond as soon as possible.',
+      'Alex Wilson': 'Message received! I\'ll get back to you in a bit.'
+    };
+    
+    return responses[threadTitle] || 'Thank you for your message. We will get back to you shortly.';
+  };
+
+  
+  const handleAttachmentClick = () => {
+    setShowAttachmentMenu(!showAttachmentMenu);
+    setShowEmojiPicker(false);
+  };
+
+  const handleImageUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+
+        const imageMessage = {
+          id: Date.now(),
+          sender: 'You',
+          message: `📷 Image: ${file.name}`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isSupport: false,
+          status: 'sent',
+          type: 'image'
+        };
+        sendMessageToThread(imageMessage);
+      }
+    };
+    input.click();
+    setShowAttachmentMenu(false);
+  };
+
+  const handleFileUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        
+        const fileMessage = {
+          id: Date.now(),
+          sender: 'You',
+          message: `📎 File: ${file.name}`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isSupport: false,
+          status: 'sent',
+          type: 'file'
+        };
+        sendMessageToThread(fileMessage);
+      }
+    };
+    input.click();
+    setShowAttachmentMenu(false);
+  };
+
+  const handleVideoUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/*';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        
+        const videoMessage = {
+          id: Date.now(),
+          sender: 'You',
+          message: `🎥 Video: ${file.name}`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isSupport: false,
+          status: 'sent',
+          type: 'video'
+        };
+        sendMessageToThread(videoMessage);
+      }
+    };
+    input.click();
+    setShowAttachmentMenu(false);
+  };
+
+  
+  const handleEmojiClick = () => {
+    setShowEmojiPicker(!showEmojiPicker);
+    setShowAttachmentMenu(false);
+  };
+
+  const addEmoji = (emoji) => {
+    setNewMessage(prev => prev + emoji);
+    setShowEmojiPicker(false);
+  };
+
+  
+  const sendMessageToThread = (messageObj) => {
+    if (activeThread) {
+      const activeThreadData = messageThreads.find(thread => thread.id === activeThread);
+
+      
+      setMessageThreads(prev => prev.map(thread => 
+        thread.id === activeThread 
+          ? {
+              ...thread,
+              messages: [...thread.messages, messageObj],
+              preview: messageObj.message,
+              time: 'Just now',
+              unread: false
+            }
+          : thread
+      ));
+
+      
+      setTimeout(() => {
+        setMessageThreads(prev => prev.map(thread => 
+          thread.id === activeThread 
+            ? {
+                ...thread,
+                messages: thread.messages.map(msg => 
+                  msg.id === messageObj.id ? { ...msg, status: 'delivered' } : msg
+                )
+              }
+            : thread
+        ));
+      }, 1000);
+
+      setTimeout(() => {
+        setMessageThreads(prev => prev.map(thread => 
+          thread.id === activeThread 
+            ? {
+                ...thread,
+                messages: thread.messages.map(msg => 
+                  msg.id === messageObj.id ? { ...msg, status: 'read' } : msg
+                )
+              }
+            : thread
+        ));
+      }, 2000);
+
+      
+      setTimeout(() => {
+        const autoResponse = {
+          id: Date.now() + 1,
+          sender: activeThreadData?.title || 'Support Team',
+          message: getAutoResponseMessage(activeThreadData?.title),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isSupport: true
+        };
+
+        setMessageThreads(prev => prev.map(thread => 
+          thread.id === activeThread 
+            ? {
+                ...thread,
+                messages: [...thread.messages, autoResponse],
+                preview: `${autoResponse.sender}: ${autoResponse.message.substring(0, 30)}...`,
+                time: 'Just now',
+                unread: true
+              }
+            : thread
+        ));
+      }, 3000);
+    }
+  };
+
   const handleSendMessageWithUpdate = () => {
-    if (newMessage.trim()) {
-      // Create new message object
+    if (newMessage.trim() && activeThread) {
+      
       const newMessageObj = {
         id: Date.now(),
         sender: 'You',
@@ -32,70 +294,18 @@ const MessagesModal = ({
         status: 'sent'
       };
 
-      // Add to sent messages
-      setSentMessages(prev => [...prev, newMessageObj]);
-      
-      // Update the active thread's preview and time
-      if (activeThread) {
-        setMessageThreads(prev => prev.map(thread => 
-          thread.id === activeThread 
-            ? {
-                ...thread,
-                preview: newMessage,
-                time: 'Just now',
-                unread: false
-              }
-            : thread
-        ));
-      }
-      
-      // Clear input
+      sendMessageToThread(newMessageObj);
       setNewMessage('');
-      
-      // Simulate message delivery and read status
-      setTimeout(() => {
-        setSentMessages(prev => prev.map(msg => 
-          msg.id === newMessageObj.id ? { ...msg, status: 'delivered' } : msg
-        ));
-      }, 1000);
-
-      setTimeout(() => {
-        setSentMessages(prev => prev.map(msg => 
-          msg.id === newMessageObj.id ? { ...msg, status: 'read' } : msg
-        ));
-      }, 2000);
-
-      // Simulate response after sending a message
-      setTimeout(() => {
-        const autoResponse = {
-          id: Date.now() + 1,
-          sender: 'Support Team',
-          message: 'Thank you for your message. We will get back to you shortly.',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isSupport: true
-        };
-        setSentMessages(prev => [...prev, autoResponse]);
-        
-        // Update thread preview for support response
-        if (activeThread) {
-          setMessageThreads(prev => prev.map(thread => 
-            thread.id === activeThread 
-              ? {
-                  ...thread,
-                  preview: 'Support Team: Thank you for your message...',
-                  time: 'Just now',
-                  unread: true
-                }
-              : thread
-          ));
-        }
-      }, 3000);
     }
   };
 
   const handleThreadClick = (threadId) => {
     setActiveThread(threadId);
-    // Mark thread as read when clicked
+    setSelectedMessageId(null); 
+    setEditingMessageId(null); 
+    setShowAttachmentMenu(false); 
+    setShowEmojiPicker(false); 
+    
     setMessageThreads(prev => prev.map(thread => 
       thread.id === threadId 
         ? { ...thread, unread: false }
@@ -103,124 +313,183 @@ const MessagesModal = ({
     ));
   };
 
-  // Combine original messages and sent messages
-  const allMessages = [...sentMessages].sort((a, b) => a.id - b.id);
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
 
-  // Get active thread data
+  
+  const handleMessageClick = (messageId) => {
+    setSelectedMessageId(selectedMessageId === messageId ? null : messageId);
+  };
+
+  const handleEditMessage = (message) => {
+    setEditingMessageId(message.id);
+    setEditMessageText(message.message);
+    setSelectedMessageId(null);
+  };
+
+  const handleSaveEdit = () => {
+    if (editMessageText.trim() && activeThread) {
+      setMessageThreads(prev => prev.map(thread => 
+        thread.id === activeThread 
+          ? {
+              ...thread,
+              messages: thread.messages.map(msg => 
+                msg.id === editingMessageId 
+                  ? { 
+                      ...msg, 
+                      message: editMessageText,
+                      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      edited: true 
+                    }
+                  : msg
+              ),
+              preview: editMessageText,
+              time: 'Just now'
+            }
+          : thread
+      ));
+      setEditingMessageId(null);
+      setEditMessageText('');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditMessageText('');
+  };
+
+  const handleDeleteMessage = (messageId) => {
+    if (activeThread) {
+      setMessageThreads(prev => prev.map(thread => 
+        thread.id === activeThread 
+          ? {
+              ...thread,
+              messages: thread.messages.filter(msg => msg.id !== messageId),
+              preview: thread.messages.length > 1 ? thread.messages[thread.messages.length - 2]?.message : 'No messages',
+              time: 'Just now'
+            }
+          : thread
+      ));
+      setSelectedMessageId(null);
+    }
+  };
+
+  
   const activeThreadData = messageThreads.find(thread => thread.id === activeThread);
+  const threadMessages = getActiveThreadMessages();
 
-  // WhatsApp message status icon
+  
   const renderMessageStatus = (status) => {
     switch (status) {
       case 'sent':
-        return (
-          <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
-          </svg>
-        );
+        return <IoMdCheckmark className="w-4 h-4 text-gray-400" />;
       case 'delivered':
-        return (
-          <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
-          </svg>
-        );
+        return <IoMdCheckmark className="w-4 h-4 text-gray-400" />;
       case 'read':
-        return (
-          <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
-          </svg>
-        );
+        return <IoMdCheckmarkCircle className="w-4 h-4 text-blue-500" />;
       default:
         return null;
     }
   };
 
+  
+  const commonEmojis = ['😀', '😂', '🥰', '😎', '👍', '❤️', '🔥', '🎉', '🙏', '💯'];
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl w-full max-w-6xl h-[90vh] flex overflow-hidden">
-        {/* WhatsApp-style Sidebar */}
+        
         <div className="w-96 bg-[#f0f2f5] border-r border-gray-300 flex flex-col">
-          {/* Sidebar Header */}
+          
           <div className="p-4 bg-[#f0f2f5] border-b border-gray-300 flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                </svg>
+                <FaUser className="w-5 h-5 text-gray-600" />
               </div>
               <span className="text-lg font-semibold text-gray-800">Chats</span>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-200 transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
-                </svg>
-              </button>
+              
               <button 
                 onClick={() => setShowMessages(false)}
                 className="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-200 transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <FaTimes className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* Search Bar */}
+          
           <div className="p-3 bg-[#f0f2f5]">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <FaSearch className="w-4 h-4 text-gray-500" />
               </div>
               <input
                 type="text"
                 placeholder="Search or start new chat"
                 className="w-full pl-10 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                value={searchQuery}
+                onChange={handleSearchChange}
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <FaTimes className="w-3 h-3 text-gray-500 hover:text-gray-700" />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Chats List */}
+          
           <div className="flex-1 overflow-y-auto bg-white">
-            {messageThreads.map((thread) => (
-              <div 
-                key={thread.id}
-                onClick={() => handleThreadClick(thread.id)}
-                className={`flex items-center p-3 border-b border-gray-100 cursor-pointer transition-colors ${
-                  activeThread === thread.id ? 'bg-[#f0f2f5]' : 'hover:bg-gray-50'
-                }`}
-              >
-                {/* Avatar */}
-                <div className="flex-shrink-0 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                  {thread.title.charAt(0)}
-                </div>
-                
-                {/* Chat Info */}
-                <div className="ml-3 flex-1 min-w-0">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-gray-800 text-sm truncate">{thread.title}</h3>
-                    <span className="text-xs text-gray-500 whitespace-nowrap ml-2">{thread.time}</span>
+            {filteredThreads.length > 0 ? (
+              filteredThreads.map((thread) => (
+                <div 
+                  key={thread.id}
+                  onClick={() => handleThreadClick(thread.id)}
+                  className={`flex items-center p-3 border-b border-gray-100 cursor-pointer transition-colors ${
+                    activeThread === thread.id ? 'bg-[#f0f2f5]' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  
+                  <div className="flex-shrink-0 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                    {thread.title.charAt(0)}
                   </div>
-                  <div className="flex justify-between items-center mt-1">
-                    <p className="text-sm text-gray-600 truncate flex-1">{thread.preview}</p>
-                    {thread.unread && (
-                      <span className="ml-2 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
-                        1
-                      </span>
-                    )}
+                  
+                  
+                  <div className="ml-3 flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold text-gray-800 text-sm truncate">{thread.title}</h3>
+                      <span className="text-xs text-gray-500 whitespace-nowrap ml-2">{thread.time}</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-sm text-gray-600 truncate flex-1">{thread.preview}</p>
+                      {thread.unread && (
+                        <span className="ml-2 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
+                          {thread.unreadCount || 1}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                <FaSearch className="w-6 h-6 mb-2" />
+                <p className="text-sm">No chats found</p>
+                <p className="text-xs text-gray-400 mt-1">Try a different search term</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
-        {/* WhatsApp-style Chat Area */}
+        
         <div className="flex-1 flex flex-col bg-[#efeae2]">
-          {/* Chat Header */}
+         
           {activeThreadData ? (
             <div className="p-3 bg-[#f0f2f5] border-b border-gray-300 flex justify-between items-center">
               <div className="flex items-center space-x-3">
@@ -232,72 +501,118 @@ const MessagesModal = ({
                   <p className="text-xs text-gray-600">online</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
-                <button className="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-200 transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
-                  </svg>
-                </button>
-                <button className="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-200 transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                  </svg>
-                </button>
-                <button className="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-200 transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-                  </svg>
-                </button>
-              </div>
             </div>
           ) : (
             <div className="p-3 bg-[#f0f2f5] border-b border-gray-300 flex justify-between items-center">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>
+                  <RiMessage2Fill className="w-5 h-5 text-gray-600" />
                 </div>
                 <span className="font-semibold text-gray-800">Select a chat</span>
               </div>
             </div>
           )}
 
-          {/* Messages Container */}
+         
           <div className="flex-1 overflow-y-auto p-4 bg-[#efeae2]">
             {activeThread ? (
               <div className="space-y-2">
-                {allMessages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.isSupport ? 'justify-start' : 'justify-end'}`}>
-                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                      msg.isSupport 
-                        ? 'bg-white rounded-tl-none' 
-                        : 'bg-[#d9fdd3] rounded-tr-none'
-                    } shadow-sm`}>
-                      <p className="text-gray-800 text-sm">{msg.message}</p>
-                      <div className={`flex justify-end items-center space-x-1 mt-1 ${
-                        msg.isSupport ? 'justify-start' : 'justify-end'
-                      }`}>
-                        <span className="text-xs text-gray-500">{msg.time}</span>
-                        {!msg.isSupport && msg.status && (
-                          <span className="ml-1">
-                            {renderMessageStatus(msg.status)}
+                {threadMessages.map((msg) => (
+                  <div 
+                    key={msg.id} 
+                    className={`flex ${msg.isSupport ? 'justify-start' : 'justify-end'} relative`}
+                  >
+                    {editingMessageId === msg.id ? (
+                      
+                      <div className="max-w-xs lg:max-w-md w-full">
+                        <div className="bg-white rounded-2xl p-2 shadow-sm border border-green-300">
+                          <input
+                            type="text"
+                            value={editMessageText}
+                            onChange={(e) => setEditMessageText(e.target.value)}
+                            className="w-full px-3 py-2 text-gray-800 text-sm focus:outline-none"
+                            autoFocus
+                            onKeyPress={(e) => e.key === 'Enter' && handleSaveEdit()}
+                          />
+                          <div className="flex justify-end space-x-2 mt-2">
+                            <button
+                              onClick={handleCancelEdit}
+                              className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                              <FaTimesCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={handleSaveEdit}
+                              className="p-1 text-green-500 hover:text-green-700 transition-colors"
+                            >
+                              <FaCheck className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      
+                      <div 
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl relative cursor-pointer ${
+                          msg.isSupport 
+                            ? 'bg-white rounded-tl-none' 
+                            : 'bg-[#d9fdd3] rounded-tr-none'
+                        } shadow-sm hover:opacity-95 transition-opacity ${
+                          selectedMessageId === msg.id ? 'ring-2 ring-green-400' : ''
+                        }`}
+                        onClick={() => !msg.isSupport && handleMessageClick(msg.id)}
+                      >
+                        <p className="text-gray-800 text-sm">{msg.message}</p>
+                        <div className={`flex justify-end items-center space-x-1 mt-1 ${
+                          msg.isSupport ? 'justify-start' : 'justify-end'
+                        }`}>
+                          <span className="text-xs text-gray-500 flex items-center">
+                            {msg.time}
+                            {msg.edited && (
+                              <span className="ml-1 text-xs text-gray-400">(edited)</span>
+                            )}
                           </span>
+                          {!msg.isSupport && msg.status && (
+                            <span className="ml-1">
+                              {renderMessageStatus(msg.status)}
+                            </span>
+                          )}
+                        </div>
+
+                        
+                        {!msg.isSupport && selectedMessageId === msg.id && (
+                          <div 
+                            ref={messageOptionsRef}
+                            className="absolute top-0 right-0 mt-8 bg-white rounded-lg shadow-lg border border-gray-200 z-10 min-w-32"
+                          >
+                            <button
+                              onClick={() => handleEditMessage(msg)}
+                              className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
+                            >
+                              <FaEdit className="w-3 h-3" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMessage(msg.id)}
+                              className="w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
+                            >
+                              <FaTrash className="w-3 h-3" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
                         )}
                       </div>
-                    </div>
+                    )}
                   </div>
                 ))}
-                {/* Empty element for auto-scroll */}
+               
                 <div ref={messagesEndRef} />
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
-                    </svg>
+                    <RiChatSmileLine className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-600 mb-2">WhatsApp Web</h3>
                   <p className="text-gray-500 max-w-sm">
@@ -309,15 +624,48 @@ const MessagesModal = ({
             )}
           </div>
 
-          {/* Message Input - WhatsApp Style */}
+          
           {activeThread && (
             <div className="p-3 bg-[#f0f2f5]">
               <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-200 transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
-                  </svg>
-                </button>
+                
+                <div className="relative" ref={attachmentMenuRef}>
+                  <button 
+                    onClick={handleAttachmentClick}
+                    className="p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-200 transition-colors"
+                  >
+                    <IoIosAttach className="w-5 h-5" />
+                  </button>
+                  
+                 
+                  {showAttachmentMenu && (
+                    <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-20 min-w-48">
+                      <button
+                        onClick={handleImageUpload}
+                        className="w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 transition-colors border-b border-gray-100"
+                      >
+                        <FaImage className="w-4 h-4 text-green-500" />
+                        <span>Photo & Video</span>
+                      </button>
+                      <button
+                        onClick={handleFileUpload}
+                        className="w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 transition-colors border-b border-gray-100"
+                      >
+                        <FaFile className="w-4 h-4 text-blue-500" />
+                        <span>Document</span>
+                      </button>
+                      <button
+                        onClick={handleVideoUpload}
+                        className="w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 transition-colors"
+                      >
+                        <FaVideo className="w-4 h-4 text-purple-500" />
+                        <span>Camera</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                
                 <div className="flex-1 bg-white rounded-full border border-gray-300">
                   <input
                     type="text"
@@ -328,22 +676,46 @@ const MessagesModal = ({
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessageWithUpdate()}
                   />
                 </div>
-                {newMessage.trim() ? (
-                  <button
-                    onClick={handleSendMessageWithUpdate}
-                    className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
+
+                
+                <div className="relative" ref={emojiPickerRef}>
+                  <button 
+                    onClick={handleEmojiClick}
+                    className="p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-200 transition-colors"
                   >
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                    </svg>
+                    <MdEmojiEmotions className="w-5 h-5" />
                   </button>
-                ) : (
-                  <button className="p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-200 transition-colors">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-                    </svg>
-                  </button>
-                )}
+                  
+                  
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-xl border border-gray-300 z-20 p-4 w-64">
+                      <div className="grid grid-cols-8 gap-1">
+                        {commonEmojis.map((emoji, index) => (
+                          <button
+                            key={index}
+                            onClick={() => addEmoji(emoji)}
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-all duration-200 text-lg hover:scale-110"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+               
+                <button
+                  onClick={handleSendMessageWithUpdate}
+                  disabled={!newMessage.trim()}
+                  className={`p-2 rounded-full transition-colors ${
+                    newMessage.trim() 
+                      ? 'bg-green-500 text-white hover:bg-green-600' 
+                      : 'text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  <IoIosSend className="w-5 h-5" />
+                </button>
               </div>
             </div>
           )}

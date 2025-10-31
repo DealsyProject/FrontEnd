@@ -64,9 +64,9 @@ const Sidebar = ({ handleLogout, activeView }) => {
   };
 
   return (
-    <div className="w-64 bg-indigo-100 flex flex-col">
+    <div className="w-64 bg-green-100 flex flex-col">
       <div className="p-4 border-b border-pink-200">
-        <h1 className="text-xl font-bold text-indigo-800">Dealsy</h1>
+        <h1 className="text-xl font-bold text-green-800">Dealsy</h1>
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
@@ -78,13 +78,13 @@ const Sidebar = ({ handleLogout, activeView }) => {
               onClick={() => handleNavigation(item.path)}
               className={`flex items-center space-x-3 px-3 py-2 rounded-lg w-full text-left transition-colors ${
                 active 
-                  ? 'bg-indigo-200 text-indigo-800' 
+                  ? 'bg-green-200 text-green-800' 
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               <span 
                 className={`w-5 h-5 rounded transition-colors ${
-                  active ? 'bg-indigo-600' : item.iconColor
+                  active ? 'bg-green-600' : item.iconColor
                 }`}
               ></span>
               <span className={active ? 'font-semibold' : ''}>{item.name}</span>

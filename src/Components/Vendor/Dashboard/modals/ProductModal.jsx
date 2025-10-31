@@ -9,7 +9,7 @@ const ProductModal = ({
   handleImageUpload,
   handleRemoveImage
 }) => (
-  <div className="fixed inset-0 text-black bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
+  <div className="fixed inset-0 text-black bg-green-200 bg-opacity-40 flex justify-center items-center z-50 p-4">
     <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
       <h2 className="text-2xl font-bold text-gray-800 mb-4">{title}</h2>
 
