@@ -18,10 +18,11 @@ export default function OrdersPage() {
 
   const getStatusColor = (status) => {
     switch(status.toLowerCase()) {
-      case 'shipped': return 'bg-blue-600/20 text-blue-400';
-      case 'delivered': return 'bg-green-600/20 text-green-400';
-      case 'processing': return 'bg-yellow-600/20 text-yellow-400';
-      default: return 'bg-slate-600/20 text-slate-400';
+      // Changed dark theme status colors to light theme equivalents
+      case 'shipped': return 'bg-blue-100 text-blue-700 border border-blue-200';
+      case 'delivered': return 'bg-green-100 text-green-700 border border-green-200';
+      case 'processing': return 'bg-yellow-100 text-yellow-700 border border-yellow-200';
+      default: return 'bg-gray-200 text-gray-700 border border-gray-300';
     }
   };
 
@@ -41,31 +42,35 @@ export default function OrdersPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans w-full">
+    // Changed bg-slate-950 to bg-white and text-white to text-gray-900
+    <div className="min-h-screen bg-white text-gray-900 font-sans w-full">
       <Navbar />
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-slate-950/95 backdrop-blur-sm border-b border-slate-800 px-6 sm:px-12 py-4">
-        <h1 className="text-xl font-bold text-blue-400">Marketplace Dashboard</h1>
+      {/* Header - Changed background, border, and primary text color */}
+      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-6 sm:px-12 py-4">
+        <h1 className="text-xl font-bold text-green-600">Marketplace Dashboard</h1>
       </div>
 
       <main className="pb-16 pt-8 px-6 sm:px-12 lg:px-20">
         <div className="mb-2">
           <h2 className="text-3xl sm:text-4xl font-semibold">Orders</h2>
-          <p className="text-slate-400 text-sm mt-1">Manage and track all marketplace orders</p>
+          {/* Secondary text color change */}
+          <p className="text-gray-500 text-sm mt-1">Manage and track all marketplace orders</p>
         </div>
 
-        {/* Filters */}
-        <div className="bg-slate-900 rounded-lg border border-slate-800 p-4 mb-8 mt-6">
+        {/* Filters - Changed background and border to light theme */}
+        <div className="bg-white rounded-lg border border-gray-300 p-4 mb-8 mt-6 shadow-md">
           <div className="flex items-center gap-4 flex-wrap">
             {/* Search */}
             <div className="flex-1 relative min-w-full sm:min-w-0">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+              {/* Icon color change */}
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search orders by ID, customer, or vendor"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                // Input styling changed to light background, gray border, and green focus
+                className="w-full bg-white border border-gray-300 rounded-lg pl-11 pr-4 py-3 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/10 transition-colors shadow-sm"
               />
             </div>
 
@@ -74,7 +79,8 @@ export default function OrdersPage() {
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
-                className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                // Select styling changed
+                className="px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-green-500 shadow-sm"
               >
                 <option value="All">All Status</option>
                 <option value="shipped">Shipped</option>
@@ -86,20 +92,23 @@ export default function OrdersPage() {
                 type="date"
                 value={fromDate}
                 onChange={e => setFromDate(e.target.value)}
-                className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                // Date input styling changed
+                className="px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-green-500 shadow-sm"
                 placeholder="From Date"
               />
               <input
                 type="date"
                 value={toDate}
                 onChange={e => setToDate(e.target.value)}
-                className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                // Date input styling changed
+                className="px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-green-500 shadow-sm"
                 placeholder="To Date"
               />
 
               <button
                 onClick={() => { setSearch(''); setStatusFilter('All'); setFromDate(''); setToDate(''); }}
-                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-white transition-colors"
+                // Reset button styling changed
+                className="px-4 py-3 bg-gray-300 hover:bg-gray-400 rounded-lg text-sm text-gray-800 transition-colors shadow-sm"
               >
                 Reset
               </button>
@@ -107,44 +116,50 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        {/* Orders Table */}
-        <div className="bg-slate-900 rounded-lg border border-slate-800 shadow-xl overflow-x-auto">
+        {/* Orders Table - Changed background, border, and shadow */}
+        <div className="bg-white rounded-lg border border-gray-300 shadow-xl overflow-x-auto">
           <table className="w-full min-w-[700px]">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-900/50">
-                <th className="text-left px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">Order ID</th>
-                <th className="text-center px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">Date</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">Customer</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">Vendor</th>
-                <th className="text-center px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">Total</th>
-                <th className="text-center px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">Status</th>
-                <th className="text-center px-6 py-4 text-xs font-semibold text-slate-300 uppercase tracking-wider">Actions</th>
+              {/* Header row styling changed */}
+              <tr className="border-b border-gray-200 bg-gray-100">
+                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Order ID</th>
+                <th className="text-center px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
+                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Vendor</th>
+                <th className="text-center px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Total</th>
+                <th className="text-center px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                <th className="text-center px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredOrders.length > 0 ? (
                 filteredOrders.map((order, index) => (
-                  <tr key={order.id} className={`${index !== filteredOrders.length - 1 ? 'border-b border-slate-800' : ''} hover:bg-slate-800/50 transition-colors`}>
-                    <td className="px-6 py-4 font-medium text-blue-400">{order.id}</td>
-                    <td className="text-center px-6 py-4 text-slate-400">{order.date}</td>
-                    <td className="px-6 py-4 text-slate-300">{order.customer}</td>
-                    <td className="px-6 py-4 text-slate-400">{order.vendor}</td>
-                    <td className="text-center px-6 py-4 text-white font-medium">{order.total}</td>
+                  <tr key={order.id} className={`${index !== filteredOrders.length - 1 ? 'border-b border-gray-200' : ''} hover:bg-green-50 transition-colors`}>
+                    {/* Primary text color for ID */}
+                    <td className="px-6 py-4 font-medium text-green-600">{order.id}</td>
+                    {/* Secondary text color */}
+                    <td className="text-center px-6 py-4 text-gray-600">{order.date}</td>
+                    <td className="px-6 py-4 text-gray-800">{order.customer}</td>
+                    <td className="px-6 py-4 text-gray-600">{order.vendor}</td>
+                    {/* Important text color for Total */}
+                    <td className="text-center px-6 py-4 text-gray-900 font-medium">{order.total}</td>
                     <td className="text-center px-6 py-4">
+                      {/* Status color is handled by getStatusColor, but added border radius */}
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(order.status)}`}>
                         {order.status}
                       </span>
                     </td>
                     <td className="text-center px-6 py-4">
-                      <button title="View Details" className="p-2 bg-slate-800 hover:bg-slate-700 rounded-full transition-colors group">
-                        <Eye className="w-4 h-4 text-slate-400 group-hover:text-blue-400" />
+                      <button title="View Details" className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors group">
+                        {/* Icon color changed */}
+                        <Eye className="w-4 h-4 text-gray-500 group-hover:text-green-600" />
                       </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="text-center py-12 text-slate-500 text-lg">
+                  <td colSpan="7" className="text-center py-12 text-gray-500 text-lg">
                     No orders found.
                   </td>
                 </tr>
