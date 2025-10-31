@@ -16,7 +16,7 @@ const About = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-16">
-      <div className="relative bg-gradient-to-b from-indigo-600 to-indigo-00 rounded-3xl overflow-hidden">
+      <div className="relative bg-gradient-to-b from-[#586330]  rounded-3xl overflow-hidden">
         <img
           src="https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1200"
           alt="Interior background"

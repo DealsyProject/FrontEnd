@@ -73,15 +73,15 @@ const Subscription = () => {
     <div className="min-h-screen bg-[#FAF7F0] py-12 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-[#6B4E4E] mb-4">Subscription</h1>
+          <h1 className="text-4xl font-bold text-green-600 mb-4">Subscription</h1>
           <p className="text-lg text-gray-600 mb-8">Choose your plan to access the platform</p>
           <div className="flex justify-center items-center space-x-4 mb-8">
             <button
               onClick={() => setBillingCycle('daily')}
               className={`px-6 py-2 rounded-full font-semibold transition ${
                 billingCycle === 'daily'
-                  ? 'bg-[#6B4E4E] text-white'
-                  : 'bg-white text-gray-700 border border-gray-300'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white text-green-700 border border-gray-300'
               }`}
             >
               Daily
@@ -90,8 +90,8 @@ const Subscription = () => {
               onClick={() => setBillingCycle('yearly')}
               className={`px-6 py-2 rounded-full font-semibold transition ${
                 billingCycle === 'yearly'
-                  ? 'bg-[#6B4E4E] text-white'
-                  : 'bg-white text-gray-700 border border-gray-300'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white text-green-700 border border-gray-300'
               }`}
             >
               Yearly
@@ -105,14 +105,14 @@ const Subscription = () => {
               key={index} 
               className={`rounded-3xl shadow-lg p-8 text-center border transition duration-300 hover:scale-105 ${
                 selectedPlan === plan.name 
-                  ? 'bg-[#F5F1E8] border-[#6B4E4E] hover:bg-[#EDE8DC]' 
+                  ? 'bg-green-600 border-green-600 hover:bg-[#EDE8DC]' 
                   : 'bg-white border border-gray-200 hover:bg-gray-900'
               }`}
             >
-              <h2 className="text-2xl font-bold text-[#6B4E4E] mb-2">{plan.name}</h2>
+              <h2 className="text-2xl font-bold text-green-600 mb-2">{plan.name}</h2>
               <p className="text-gray-600 mb-6">{plan.subtitle}</p>
               <div className="mb-8">
-                <p className="text-4xl font-bold text-[#6B4E4E]">{plan.price}</p>
+                <p className="text-4xl font-bold text-green-600">{plan.price}</p>
                 <p className="text-gray-500">{plan.period}</p>
               </div>
               <ul className="mb-8 space-y-4 text-left">
@@ -129,8 +129,8 @@ const Subscription = () => {
                 onClick={() => handleSelectPlan(plan.name)}
                 className={`w-full py-3 px-6 rounded-full font-semibold transition shadow-lg ${
                   selectedPlan === plan.name
-                    ? 'bg-white text-[#6B4E4E] border border-[#6B4E4E]'
-                    : 'bg-[#6B4E4E] text-white hover:bg-[#5A3E3E]'
+                    ? 'bg-white text-green-600 border border-green-600'
+                    : 'bg-green-600 text-white hover:bg-green-700'
                 }`}
               >
                 {selectedPlan === plan.name ? 'Subscribed' : 'Subscribe Now'}

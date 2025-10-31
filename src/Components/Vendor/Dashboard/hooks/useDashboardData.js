@@ -8,22 +8,22 @@ export const useDashboardData = (navigate) => {
   const [recentActivities, setRecentActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data for messages
+  
   const [messageThreads] = useState([
     { id: 1, title: 'Support Team for Vendor', preview: 'Welcome to Dealsy! How can we help you?', time: '2 hours ago', unread: true },
     { id: 2, title: 'Support Team from Customer', preview: 'Interested in your products...', time: '1 day ago', unread: false }
   ]);
 
-  // Mock data for notifications
+  
   const [notifications] = useState([
-    { id: 1, customer: 'New Customer', product: 'Product Inquiry', date: new Date().toLocaleDateString(), status: 'New', action: 'Pending' },
-    { id: 2, customer: 'System', product: 'Welcome Notification', date: new Date().toLocaleDateString(), status: 'Info', action: 'Read' }
+    { id: 1, customer: 'john', product: 'Product Inquiry', date: new Date().toLocaleDateString(), status: 'New', action: 'Pending' },
+    { id: 2, customer: 'Sarah', product: 'Welcome Notification', date: new Date().toLocaleDateString(), status: 'Info', action: 'Read' }
   ]);
 
-  // Mock vendor data
+  
   const fetchVendorData = useCallback(async () => {
     try {
-      // Simulate API call delay
+      
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const mockVendorData = {
@@ -41,10 +41,10 @@ export const useDashboardData = (navigate) => {
     }
   }, []);
 
-  // Mock financial data
+  
   const fetchFinancialData = useCallback(async () => {
     try {
-      // Simulate API call delay
+      
       await new Promise(resolve => setTimeout(resolve, 300));
       
       const mockFinancialData = [
@@ -61,10 +61,9 @@ export const useDashboardData = (navigate) => {
     }
   }, []);
 
-  // Mock recent activities
   const fetchRecentActivities = useCallback(async () => {
     try {
-      // Simulate API call delay
+      
       await new Promise(resolve => setTimeout(resolve, 400));
       
       const mockActivities = [
@@ -93,7 +92,7 @@ export const useDashboardData = (navigate) => {
       const userObj = JSON.parse(user);
       setUserData(userObj);
 
-      // Load all mock data
+      
       await Promise.all([
         fetchVendorData(),
         fetchFinancialData(),
@@ -120,7 +119,7 @@ export const useDashboardData = (navigate) => {
   };
 };
 
-// Helper functions
+
 const getDefaultFinancialData = (subtitle = 'No data available') => [
   { title: 'Total Revenue', value: '₹0.00', subtitle, bgColor: 'bg-blue-500' },
   { title: 'Receivables', value: '₹0.00', subtitle, bgColor: 'bg-green-500' },

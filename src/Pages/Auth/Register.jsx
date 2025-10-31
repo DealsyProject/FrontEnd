@@ -113,19 +113,19 @@ const Register = () => {
             'url(https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1920)',
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-indigo-400 to-indigo-00"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#586330]/80"></div>
       </div>
 
       {/* Content */}
       <div className="relative z-10">
         <div className="px-8 py-6">
-          <h1 className="text-4xl font-bold text-indigo-600">Dealsy</h1>
+          <h1 className="text-4xl font-bold text-[#586330]">Dealsy</h1>
         </div>
 
         <div className="flex items-center justify-center min-h-[calc(100vh-100px)] p-4">
           <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-indigo-400 mb-2">Who Are You?</h2>
+              <h2 className="text-2xl font-semibold text-[#586330] mb-2">Who Are You?</h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6 text-gray-900">
@@ -135,7 +135,7 @@ const Register = () => {
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent"
                   placeholder="Full Name"
                   required
                   disabled={isLoading}
@@ -148,7 +148,7 @@ const Register = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent"
                   placeholder="Email"
                   required
                   disabled={isLoading}
@@ -161,7 +161,7 @@ const Register = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent"
                   placeholder="Password"
                   required
                   disabled={isLoading}
@@ -174,7 +174,7 @@ const Register = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent"
                   placeholder="Confirm Password"
                   required
                   disabled={isLoading}
@@ -187,7 +187,7 @@ const Register = () => {
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent"
                   placeholder="Phone Number"
                   required
                   disabled={isLoading}
@@ -203,7 +203,7 @@ const Register = () => {
                       name="role"
                       value="2"
                       onChange={handleChange}
-                      className="mr-2 text-indigo-500 focus:ring-indigo-500"
+                      className="mr-2 text-[#586330]0 focus:ring-[#586330]"
                       required
                       disabled={isLoading}
                     />
@@ -215,7 +215,7 @@ const Register = () => {
                       name="role"
                       value="3"
                       onChange={handleChange}
-                      className="mr-2 text-indigo-500 focus:ring-indigo-500"
+                      className="mr-2 text-[#586330]0 focus:ring-[#586330]"
                       required
                       disabled={isLoading}
                     />
@@ -234,7 +234,7 @@ const Register = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-4 rounded-lg transition duration-200 font-medium disabled:opacity-50 shadow-lg"
+                  className="flex-1 bg-[#586330]/70 hover:bg-[#586330] text-white py-3 px-4 rounded-lg transition duration-200 font-medium disabled:opacity-50 shadow-lg"
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center">
@@ -254,7 +254,7 @@ const Register = () => {
             <div className="text-center mt-6">
               <p className="text-gray-600">
                 Already have an account?{' '}
-                <Link to="/login" className="text-indigo-600 hover:text-indigo-700 font-medium">
+                <Link to="/login" className="text-[#586330]/70 hover:text-[#586330]/90 font-medium">
                   Login here
                 </Link>
               </p>

@@ -8,9 +8,9 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerReviews, setCustomerReviews] = useState([]);
 
-  // Dynamic customer data that works with any customer name
+  
   const generateCustomerData = (customerName) => {
-    // Create a consistent ID from the customer name
+    
     const customerId = customerName.toLowerCase().replace(/\s+/g, '-');
     
     return {
@@ -20,35 +20,35 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
       joinDate: new Date(Date.now() - Math.floor(Math.random() * 365) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       totalOrders: Math.floor(Math.random() * 50) + 1,
       totalSpent: Math.floor(Math.random() * 10000) + 1000,
-      averageRating: (Math.random() * 2 + 3).toFixed(1), // Random rating between 3.0 and 5.0
+      averageRating: (Math.random() * 2 + 3).toFixed(1), 
       location: ['New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX', 'Phoenix, AZ'][Math.floor(Math.random() * 5)],
       phone: `+1 (555) ${Math.floor(100 + Math.random() * 900)}-${Math.floor(1000 + Math.random() * 9000)}`,
       avatar: '👤'
     };
   };
 
-  // Generate reviews for any customer
+  
   const generateReviews = (customerId, customerName) => {
     const products = ['Wireless Headphones', 'Smart Watch', 'Bluetooth Speaker', 'Laptop Backpack', 'Desk Lamp', 'Fitness Tracker', 'Phone Case', 'Water Bottle'];
     const vendors = ['Tech Gadgets Inc.', 'Audio Solutions', 'Office Supplies Co.', 'Home Essentials', 'Fitness Gear Pro'];
     
-    const reviewCount = Math.floor(Math.random() * 5) + 1; // 1-5 reviews
+    const reviewCount = Math.floor(Math.random() * 5) + 1; 
     
     return Array.from({ length: reviewCount }, (_, index) => ({
       id: index + 1,
       product: products[Math.floor(Math.random() * products.length)],
-      rating: Math.floor(Math.random() * 2) + 4, // 4-5 stars
+      rating: Math.floor(Math.random() * 2) + 4, 
       comment: `Great product! ${customerName} was very satisfied with the quality and service.`,
       date: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       vendor: vendors[Math.floor(Math.random() * vendors.length)]
     }));
   };
 
-  // Handle "Profile View" click - FIXED VERSION
+  
   const handleProfileView = (customerName) => {
-    console.log('Opening profile for:', customerName); // Debug log
+    console.log('Opening profile for:', customerName); 
     
-    // Generate customer data dynamically for any customer name
+    
     const customer = generateCustomerData(customerName);
     const reviews = generateReviews(customer.id, customerName);
     
@@ -58,7 +58,7 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
     toast.info(`Opening profile for ${customerName}`, { position: 'top-right' });
   };
 
-  // Handle "Delivered" click
+  
   const handleDelivered = (id) => {
     setUpdatedNotifications((prev) =>
       prev.map((n) =>
@@ -73,14 +73,14 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
     toast.success('Product status updated successfully!', { position: 'bottom-right' });
   };
 
-  // Close profile and return to notifications
+  
   const handleCloseProfile = () => {
     setShowCustomerProfile(false);
     setSelectedCustomer(null);
     setCustomerReviews([]);
   };
 
-  // Render star rating
+  
   const renderStars = (rating) => {
     return (
       <div className="flex items-center">
@@ -99,14 +99,14 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
     );
   };
 
-  // Customer Profile Component
+  
   const CustomerProfile = () => {
     if (!selectedCustomer) return null;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl w-full max-w-4xl h-[90vh] flex flex-col">
-          {/* Header */}
+          
           <div className="p-6 border-b border-gray-200 flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">Customer Profile</h2>
@@ -120,10 +120,10 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
             </button>
           </div>
 
-          {/* Profile Content */}
+          
           <div className="flex-1 overflow-y-auto p-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Customer Info Card */}
+             
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
                   <div className="text-center mb-6">
@@ -165,7 +165,7 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
                 </div>
               </div>
 
-              {/* Reviews Section */}
+             
               <div className="lg:col-span-2">
                 <div className="bg-white rounded-xl shadow border border-gray-200">
                   <div className="p-6 border-b border-gray-200">
@@ -206,7 +206,7 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
                   </div>
                 </div>
 
-                {/* Statistics Card */}
+                
                 <div className="bg-white rounded-xl shadow border border-gray-200 p-6 mt-6">
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Order Statistics</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -234,7 +234,7 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
             </div>
           </div>
 
-          {/* Footer */}
+          
           <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
             <button
               onClick={handleCloseProfile}
@@ -249,7 +249,7 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
     );
   };
 
-  // Debug: Check what customer names are in notifications
+  
   console.log('All customers in notifications:', updatedNotifications.map(n => n.customer));
 
   return (
@@ -259,7 +259,7 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
       ) : (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-4xl h-[80vh] flex flex-col">
-            {/* Header */}
+            
             <div className="p-6 border-b border-gray-200 flex justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-800">Notifications</h2>
               <button
@@ -270,7 +270,7 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
               </button>
             </div>
 
-            {/* Notifications List */}
+            
             <div className="flex-1 overflow-y-auto p-6">
               <div className="bg-white rounded-xl shadow">
                 {updatedNotifications.map((notification) => (
@@ -290,7 +290,7 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
                       </div>
 
                       <div className="flex items-center space-x-3 ml-4">
-                        {/* Profile View Button */}
+                        
                         <button
                           onClick={() => handleProfileView(notification.customer)}
                           className="px-4 py-2 bg-green-100 text-green-800 text-sm font-medium rounded-lg hover:bg-green-200 transition flex items-center"
@@ -298,7 +298,7 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
                           👤 Profile View
                         </button>
 
-                        {/* Delivered Button */}
+                        
                         <button
                           onClick={() => handleDelivered(notification.id)}
                           className={`px-4 py-2 text-sm font-medium rounded-lg transition flex items-center ${
@@ -310,7 +310,7 @@ const NotificationsModal = ({ setShowNotifications, notifications }) => {
                           {notification.status === 'Delivered' ? '✅ Delivered' : '📦 Mark Delivered'}
                         </button>
 
-                        {/* Action Badge */}
+                        
                         <span
                           className={`px-3 py-1 text-xs font-medium rounded-full ${
                             notification.action === 'Accepted'

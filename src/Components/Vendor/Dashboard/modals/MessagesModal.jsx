@@ -38,10 +38,10 @@ const MessagesModal = ({
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const [messageThreads, setMessageThreads] = useState(() => {
-    // Initialize threads with their own message histories
+    
     const threadsWithHistory = initialThreads?.map(thread => ({
       ...thread,
-      messages: thread.messages || [], // Each thread has its own messages array
+      messages: thread.messages || [], 
       unread: thread.unread || false
     })) || [];
     return threadsWithHistory;
@@ -61,7 +61,7 @@ const MessagesModal = ({
   const attachmentMenuRef = useRef(null);
   const emojiPickerRef = useRef(null);
 
-  // Close menus when clicking outside
+  
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (messageOptionsRef.current && !messageOptionsRef.current.contains(event.target)) {
@@ -81,14 +81,14 @@ const MessagesModal = ({
     };
   }, []);
 
-  // Get messages for active thread
+  
   const getActiveThreadMessages = () => {
     if (!activeThread) return [];
     const thread = messageThreads.find(t => t.id === activeThread);
     return thread?.messages || [];
   };
 
-  // Filter threads based on search query
+  
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredThreads(messageThreads);
@@ -101,7 +101,7 @@ const MessagesModal = ({
     }
   }, [searchQuery, messageThreads]);
 
-  // Auto-scroll to bottom when messages are added
+  
   useEffect(() => {
     scrollToBottom();
   }, [getActiveThreadMessages()]);
@@ -110,7 +110,7 @@ const MessagesModal = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Get different auto-response messages based on the thread
+  
   const getAutoResponseMessage = (threadTitle) => {
     const responses = {
       'John Doe': 'Hey! Thanks for your message. I\'ll get back to you soon!',
@@ -124,7 +124,7 @@ const MessagesModal = ({
     return responses[threadTitle] || 'Thank you for your message. We will get back to you shortly.';
   };
 
-  // Attachment functions
+  
   const handleAttachmentClick = () => {
     setShowAttachmentMenu(!showAttachmentMenu);
     setShowEmojiPicker(false);
@@ -137,7 +137,7 @@ const MessagesModal = ({
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
-        // Simulate image message
+
         const imageMessage = {
           id: Date.now(),
           sender: 'You',
@@ -160,7 +160,7 @@ const MessagesModal = ({
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
-        // Simulate file message
+        
         const fileMessage = {
           id: Date.now(),
           sender: 'You',
@@ -184,7 +184,7 @@ const MessagesModal = ({
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
-        // Simulate video message
+        
         const videoMessage = {
           id: Date.now(),
           sender: 'You',
@@ -201,7 +201,7 @@ const MessagesModal = ({
     setShowAttachmentMenu(false);
   };
 
-  // Emoji functions
+  
   const handleEmojiClick = () => {
     setShowEmojiPicker(!showEmojiPicker);
     setShowAttachmentMenu(false);
@@ -212,12 +212,12 @@ const MessagesModal = ({
     setShowEmojiPicker(false);
   };
 
-  // Common function to send messages to thread
+  
   const sendMessageToThread = (messageObj) => {
     if (activeThread) {
       const activeThreadData = messageThreads.find(thread => thread.id === activeThread);
 
-      // Update the thread with new message
+      
       setMessageThreads(prev => prev.map(thread => 
         thread.id === activeThread 
           ? {
@@ -230,7 +230,7 @@ const MessagesModal = ({
           : thread
       ));
 
-      // Simulate message delivery and read status
+      
       setTimeout(() => {
         setMessageThreads(prev => prev.map(thread => 
           thread.id === activeThread 
@@ -257,7 +257,7 @@ const MessagesModal = ({
         ));
       }, 2000);
 
-      // Simulate response after sending a message
+      
       setTimeout(() => {
         const autoResponse = {
           id: Date.now() + 1,
@@ -284,7 +284,7 @@ const MessagesModal = ({
 
   const handleSendMessageWithUpdate = () => {
     if (newMessage.trim() && activeThread) {
-      // Create new message object
+      
       const newMessageObj = {
         id: Date.now(),
         sender: 'You',
@@ -301,11 +301,11 @@ const MessagesModal = ({
 
   const handleThreadClick = (threadId) => {
     setActiveThread(threadId);
-    setSelectedMessageId(null); // Close any open message options
-    setEditingMessageId(null); // Cancel any editing
-    setShowAttachmentMenu(false); // Close attachment menu
-    setShowEmojiPicker(false); // Close emoji picker
-    // Mark thread as read when clicked
+    setSelectedMessageId(null); 
+    setEditingMessageId(null); 
+    setShowAttachmentMenu(false); 
+    setShowEmojiPicker(false); 
+    
     setMessageThreads(prev => prev.map(thread => 
       thread.id === threadId 
         ? { ...thread, unread: false }
@@ -317,7 +317,7 @@ const MessagesModal = ({
     setSearchQuery(e.target.value);
   };
 
-  // Message actions
+  
   const handleMessageClick = (messageId) => {
     setSelectedMessageId(selectedMessageId === messageId ? null : messageId);
   };
@@ -375,11 +375,11 @@ const MessagesModal = ({
     }
   };
 
-  // Get active thread data
+  
   const activeThreadData = messageThreads.find(thread => thread.id === activeThread);
   const threadMessages = getActiveThreadMessages();
 
-  // WhatsApp message status icon
+  
   const renderMessageStatus = (status) => {
     switch (status) {
       case 'sent':
@@ -393,15 +393,15 @@ const MessagesModal = ({
     }
   };
 
-  // Common emojis for quick selection
+  
   const commonEmojis = ['😀', '😂', '🥰', '😎', '👍', '❤️', '🔥', '🎉', '🙏', '💯'];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl w-full max-w-6xl h-[90vh] flex overflow-hidden">
-        {/* WhatsApp-style Sidebar */}
+        
         <div className="w-96 bg-[#f0f2f5] border-r border-gray-300 flex flex-col">
-          {/* Sidebar Header */}
+          
           <div className="p-4 bg-[#f0f2f5] border-b border-gray-300 flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
@@ -420,7 +420,7 @@ const MessagesModal = ({
             </div>
           </div>
 
-          {/* Search Bar */}
+          
           <div className="p-3 bg-[#f0f2f5]">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -444,7 +444,7 @@ const MessagesModal = ({
             </div>
           </div>
 
-          {/* Chats List */}
+          
           <div className="flex-1 overflow-y-auto bg-white">
             {filteredThreads.length > 0 ? (
               filteredThreads.map((thread) => (
@@ -455,12 +455,12 @@ const MessagesModal = ({
                     activeThread === thread.id ? 'bg-[#f0f2f5]' : 'hover:bg-gray-50'
                   }`}
                 >
-                  {/* Avatar */}
+                  
                   <div className="flex-shrink-0 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
                     {thread.title.charAt(0)}
                   </div>
                   
-                  {/* Chat Info */}
+                  
                   <div className="ml-3 flex-1 min-w-0">
                     <div className="flex justify-between items-start">
                       <h3 className="font-semibold text-gray-800 text-sm truncate">{thread.title}</h3>
@@ -487,9 +487,9 @@ const MessagesModal = ({
           </div>
         </div>
 
-        {/* WhatsApp-style Chat Area */}
+        
         <div className="flex-1 flex flex-col bg-[#efeae2]">
-          {/* Chat Header */}
+         
           {activeThreadData ? (
             <div className="p-3 bg-[#f0f2f5] border-b border-gray-300 flex justify-between items-center">
               <div className="flex items-center space-x-3">
@@ -513,7 +513,7 @@ const MessagesModal = ({
             </div>
           )}
 
-          {/* Messages Container */}
+         
           <div className="flex-1 overflow-y-auto p-4 bg-[#efeae2]">
             {activeThread ? (
               <div className="space-y-2">
@@ -523,7 +523,7 @@ const MessagesModal = ({
                     className={`flex ${msg.isSupport ? 'justify-start' : 'justify-end'} relative`}
                   >
                     {editingMessageId === msg.id ? (
-                      // Edit mode
+                      
                       <div className="max-w-xs lg:max-w-md w-full">
                         <div className="bg-white rounded-2xl p-2 shadow-sm border border-green-300">
                           <input
@@ -551,7 +551,7 @@ const MessagesModal = ({
                         </div>
                       </div>
                     ) : (
-                      // Normal message
+                      
                       <div 
                         className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl relative cursor-pointer ${
                           msg.isSupport 
@@ -579,7 +579,7 @@ const MessagesModal = ({
                           )}
                         </div>
 
-                        {/* Message Options Menu */}
+                        
                         {!msg.isSupport && selectedMessageId === msg.id && (
                           <div 
                             ref={messageOptionsRef}
@@ -605,7 +605,7 @@ const MessagesModal = ({
                     )}
                   </div>
                 ))}
-                {/* Empty element for auto-scroll */}
+               
                 <div ref={messagesEndRef} />
               </div>
             ) : (
@@ -624,11 +624,11 @@ const MessagesModal = ({
             )}
           </div>
 
-          {/* Message Input - WhatsApp Style */}
+          
           {activeThread && (
             <div className="p-3 bg-[#f0f2f5]">
               <div className="flex items-center space-x-2">
-                {/* Attachment Button with Menu */}
+                
                 <div className="relative" ref={attachmentMenuRef}>
                   <button 
                     onClick={handleAttachmentClick}
@@ -637,7 +637,7 @@ const MessagesModal = ({
                     <IoIosAttach className="w-5 h-5" />
                   </button>
                   
-                  {/* Attachment Menu */}
+                 
                   {showAttachmentMenu && (
                     <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-20 min-w-48">
                       <button
@@ -665,7 +665,7 @@ const MessagesModal = ({
                   )}
                 </div>
 
-                {/* Message Input */}
+                
                 <div className="flex-1 bg-white rounded-full border border-gray-300">
                   <input
                     type="text"
@@ -677,7 +677,7 @@ const MessagesModal = ({
                   />
                 </div>
 
-                {/* Emoji Button with Picker */}
+                
                 <div className="relative" ref={emojiPickerRef}>
                   <button 
                     onClick={handleEmojiClick}
@@ -686,7 +686,7 @@ const MessagesModal = ({
                     <MdEmojiEmotions className="w-5 h-5" />
                   </button>
                   
-                  {/* Emoji Picker */}
+                  
                   {showEmojiPicker && (
                     <div className="absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-xl border border-gray-300 z-20 p-4 w-64">
                       <div className="grid grid-cols-8 gap-1">
@@ -704,7 +704,7 @@ const MessagesModal = ({
                   )}
                 </div>
 
-                {/* Send Button */}
+               
                 <button
                   onClick={handleSendMessageWithUpdate}
                   disabled={!newMessage.trim()}
