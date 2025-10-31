@@ -66,24 +66,24 @@ const PriorityIndicator = ({ priority, darkMode = false }) => {
 function ReturnCard({ item, onClick, viewMode = "grid", darkMode = false }) {
   const statusConfig = {
     Completed: { 
-      bg: darkMode ? "bg-emerald-900/30" : "bg-emerald-50", 
-      text: darkMode ? "text-emerald-300" : "text-emerald-700", 
+      bg: darkMode ? "bg-[#586330]/30" : "bg-[#586330]/10", 
+      text: darkMode ? "text-[#a3b152]" : "text-[#586330]", 
       icon: CheckCircle, 
-      stroke: "#059669",
+      stroke: "#586330",
       progress: 100
     },
     Processing: { 
-      bg: darkMode ? "bg-blue-900/30" : "bg-blue-50", 
-      text: darkMode ? "text-blue-300" : "text-blue-700", 
+      bg: darkMode ? "bg-[#586330]/20" : "bg-[#586330]/5", 
+      text: darkMode ? "text-[#8a9844]" : "text-[#586330]", 
       icon: Clock, 
-      stroke: "#2563eb",
+      stroke: "#586330",
       progress: 60
     },
     Pending: { 
-      bg: darkMode ? "bg-purple-900/30" : "bg-purple-50", 
-      text: darkMode ? "text-purple-300" : "text-purple-700", 
+      bg: darkMode ? "bg-[#586330]/10" : "bg-[#586330]/5", 
+      text: darkMode ? "text-[#a3b152]" : "text-[#586330]", 
       icon: AlertCircle, 
-      stroke: "#7c3aed",
+      stroke: "#586330",
       progress: 30
     },
   };
@@ -182,15 +182,15 @@ function ReturnCard({ item, onClick, viewMode = "grid", darkMode = false }) {
             alt={item.productName}
             className={`w-12 h-12 rounded-lg object-cover ring-2 transition-all ${
               darkMode 
-                ? 'ring-gray-700 group-hover:ring-blue-900' 
-                : 'ring-gray-100 group-hover:ring-blue-100'
+                ? 'ring-gray-700 group-hover:ring-[#586330]/50' 
+                : 'ring-gray-100 group-hover:ring-[#586330]/20'
             }`}
           />
           <div>
             <p className={`font-semibold line-clamp-1 transition-colors ${
               darkMode 
-                ? 'text-white group-hover:text-blue-300' 
-                : 'text-gray-900 group-hover:text-blue-700'
+                ? 'text-white group-hover:text-[#a3b152]' 
+                : 'text-gray-900 group-hover:text-[#586330]'
             }`}>
               {item.productName}
             </p>
@@ -233,11 +233,7 @@ function ReturnCard({ item, onClick, viewMode = "grid", darkMode = false }) {
           darkMode ? 'bg-gray-700' : 'bg-gray-100'
         }`}>
           <div 
-            className={`h-1.5 rounded-full transition-all duration-1000 ${
-              cfg.bg.includes('emerald') ? 'bg-emerald-500' :
-              cfg.bg.includes('blue') ? 'bg-blue-500' :
-              'bg-purple-500'
-            }`}
+            className={`h-1.5 rounded-full transition-all duration-1000 bg-[#586330]`}
             style={{ width: `${cfg.progress}%` }}
           />
         </div>
@@ -253,7 +249,7 @@ function ReturnCard({ item, onClick, viewMode = "grid", darkMode = false }) {
           </p>
         </div>
         <div className="w-20">
-          <Sparkline data={trend} color={cfg.stroke} />
+          <Sparkline data={trend} color="#586330" />
         </div>
       </div>
 
@@ -303,8 +299,8 @@ const AnalyticsChart = ({ data, type = "line", darkMode = false }) => {
             }}
           />
           <Legend wrapperStyle={{ color: textColor }} />
-          <Bar dataKey="returns" fill="#2563eb" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="refunds" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="returns" fill="#586330" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="refunds" fill="#8a9844" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     );
@@ -324,8 +320,8 @@ const AnalyticsChart = ({ data, type = "line", darkMode = false }) => {
           }}
         />
         <Legend wrapperStyle={{ color: textColor }} />
-        <Line type="monotone" dataKey="returns" stroke="#2563eb" strokeWidth={2} />
-        <Line type="monotone" dataKey="refunds" stroke="#7c3aed" strokeWidth={2} />
+        <Line type="monotone" dataKey="returns" stroke="#586330" strokeWidth={2} />
+        <Line type="monotone" dataKey="refunds" stroke="#8a9844" strokeWidth={2} />
       </LineChart>
     </ResponsiveContainer>
   );
@@ -340,7 +336,7 @@ const QuickStats = ({ stats, darkMode }) => {
       change: "+12%",
       trend: "up",
       icon: ShoppingBag,
-      color: "text-blue-600"
+      color: "text-[#586330]"
     },
     {
       label: "Completed",
@@ -348,7 +344,7 @@ const QuickStats = ({ stats, darkMode }) => {
       change: "+8%",
       trend: "up",
       icon: CheckCircle,
-      color: "text-emerald-600",
+      color: "text-[#586330]",
       sub: `${Math.round((stats.completed / stats.total) * 100)}% success rate`
     },
     {
@@ -357,7 +353,7 @@ const QuickStats = ({ stats, darkMode }) => {
       change: "-3%",
       trend: "down",
       icon: Clock,
-      color: "text-purple-600"
+      color: "text-[#586330]"
     },
     {
       label: "Total Refunded",
@@ -365,7 +361,7 @@ const QuickStats = ({ stats, darkMode }) => {
       change: "+15%",
       trend: "up",
       icon: DollarSign,
-      color: "text-indigo-600",
+      color: "text-[#586330]",
       sub: `Avg ₹${stats.avgRefund} per return`
     }
   ];
@@ -391,7 +387,7 @@ const QuickStats = ({ stats, darkMode }) => {
             <div className="flex items-center gap-1">
               <stat.icon size={20} className={stat.color} />
               <span className={`text-xs font-medium ${
-                stat.trend === 'up' ? 'text-emerald-600' : 'text-red-600'
+                stat.trend === 'up' ? 'text-[#586330]' : 'text-red-600'
               }`}>
                 {stat.change}
               </span>
@@ -414,7 +410,6 @@ const QuickStats = ({ stats, darkMode }) => {
 // Main Dashboard Component
 export default function ReturnRefundTracker() {
   const [returns] = useState([
-    // ... your existing returns data
     {
       id: "RR-2024-001", customerName: "Anitha Suresh", email: "anitha.suresh@email.com",
       phone: "+91 9876543210", productName: "Wireless Bluetooth Headphones Pro",
@@ -536,13 +531,13 @@ export default function ReturnRefundTracker() {
 
   const theme = darkMode
     ? "bg-gray-900 text-gray-100"
-    : "bg-gradient-to-br from-blue-50 to-purple-50 text-gray-900";
+    : "bg-gradient-to-br from-[#586330]/5 to-[#586330]/10 text-gray-900";
 
   // Quick actions
   const quickActions = [
-    { icon: Filter, label: "Advanced Filter", color: "bg-blue-500" },
-    { icon: Download, label: "Export Data", color: "bg-purple-500" },
-    { icon: BarChart3, label: "View Reports", color: "bg-indigo-500" },
+    { icon: Filter, label: "Advanced Filter", color: "bg-[#586330]" },
+    { icon: Download, label: "Export Data", color: "bg-[#586330]" },
+    { icon: BarChart3, label: "View Reports", color: "bg-[#586330]" },
   ];
 
   return (
@@ -557,12 +552,12 @@ export default function ReturnRefundTracker() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-500 rounded-xl">
+                <div className="p-2 bg-[#586330] rounded-xl">
                   <Package size={24} className="text-white" />
                 </div>
                 <div>
                   <h1 className={`text-2xl font-bold ${
-                    darkMode ? 'text-blue-300' : 'text-blue-700'
+                    darkMode ? 'text-[#a3b152]' : 'text-[#586330]'
                   }`}>
                     ReturnFlow Pro
                   </h1>
@@ -585,21 +580,8 @@ export default function ReturnRefundTracker() {
               >
                 {darkMode ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} />}
               </button>
-{/* 
-              <button className={`p-2 rounded-lg transition-colors relative ${
-                darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
-              }`}>
-                <Bell size={20} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button> */}
-{/* 
-              <button className={`p-2 rounded-lg transition-colors ${
-                darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
-              }`}>
-                <Settings size={20} />
-              </button> */}
 
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-400 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-[#586330] rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-bold">A</span>
               </div>
             </div>
@@ -617,7 +599,7 @@ export default function ReturnRefundTracker() {
                   placeholder="Search returns, customers, products..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className={`pl-10 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full transition-colors ${
+                  className={`pl-10 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#586330] w-full transition-colors ${
                     darkMode 
                       ? 'bg-gray-800 text-white placeholder-gray-400' 
                       : 'bg-gray-100 text-gray-900 placeholder-gray-500'
@@ -642,7 +624,7 @@ export default function ReturnRefundTracker() {
                 <select 
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className={`px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                  className={`px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#586330] transition-colors ${
                     darkMode
                       ? 'bg-gray-800 border-gray-600 text-gray-300'
                       : 'bg-white border-gray-300 text-gray-700'
@@ -661,8 +643,8 @@ export default function ReturnRefundTracker() {
                 className={`p-2 rounded-lg transition-colors ${
                   viewMode === "grid" 
                     ? darkMode 
-                      ? "bg-blue-900/50 text-blue-300" 
-                      : "bg-blue-100 text-blue-700"
+                      ? "bg-[#586330]/50 text-[#a3b152]" 
+                      : "bg-[#586330]/10 text-[#586330]"
                     : darkMode
                       ? "hover:bg-gray-800 text-gray-400"
                       : "hover:bg-gray-100 text-gray-600"
@@ -680,8 +662,8 @@ export default function ReturnRefundTracker() {
                 className={`p-2 rounded-lg transition-colors ${
                   viewMode === "list" 
                     ? darkMode 
-                      ? "bg-blue-900/50 text-blue-300" 
-                      : "bg-blue-100 text-blue-700"
+                      ? "bg-[#586330]/50 text-[#a3b152]" 
+                      : "bg-[#586330]/10 text-[#586330]"
                     : darkMode
                       ? "hover:bg-gray-800 text-gray-400"
                       : "hover:bg-gray-100 text-gray-600"
@@ -715,7 +697,7 @@ export default function ReturnRefundTracker() {
                     <select 
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className={`px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      className={`px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#586330] transition-colors ${
                         darkMode
                           ? 'bg-gray-800 border-gray-600 text-gray-300'
                           : 'bg-white border-gray-300 text-gray-700'
@@ -737,7 +719,7 @@ export default function ReturnRefundTracker() {
                     <select 
                       value={priorityFilter}
                       onChange={(e) => setPriorityFilter(e.target.value)}
-                      className={`px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      className={`px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#586330] transition-colors ${
                         darkMode
                           ? 'bg-gray-800 border-gray-600 text-gray-300'
                           : 'bg-white border-gray-300 text-gray-700'
@@ -759,7 +741,7 @@ export default function ReturnRefundTracker() {
                     <select 
                       value={timeRange}
                       onChange={(e) => setTimeRange(e.target.value)}
-                      className={`px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      className={`px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#586330] transition-colors ${
                         darkMode
                           ? 'bg-gray-800 border-gray-600 text-gray-300'
                           : 'bg-white border-gray-300 text-gray-700'
@@ -810,8 +792,8 @@ export default function ReturnRefundTracker() {
               <div className="flex gap-2">
                 <button className={`px-3 py-1 text-sm rounded-lg ${
                   darkMode
-                    ? 'bg-blue-900/50 text-blue-300'
-                    : 'bg-blue-100 text-blue-700'
+                    ? 'bg-[#586330]/50 text-[#a3b152]'
+                    : 'bg-[#586330]/10 text-[#586330]'
                 }`}>
                   Monthly
                 </button>
@@ -848,7 +830,7 @@ export default function ReturnRefundTracker() {
                 }`}
               >
                 <div className={`p-2 rounded-lg ${action.color} bg-opacity-10`}>
-                  <action.icon size={20} className={action.color.replace('bg-', 'text-')} />
+                  <action.icon size={20} className="text-[#586330]" />
                 </div>
                 <span className={`text-sm font-medium ${
                   darkMode ? 'text-gray-300' : 'text-gray-700'
@@ -979,7 +961,7 @@ export default function ReturnRefundTracker() {
       <motion.button 
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all z-30"
+        className="fixed bottom-8 right-8 w-14 h-14 bg-[#586330] text-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all z-30"
       >
         <Plus size={24} />
       </motion.button>
@@ -1016,7 +998,7 @@ export default function ReturnRefundTracker() {
                     <ChevronLeft size={24} />
                   </button>
                   <h2 className={`text-2xl font-bold ${
-                    darkMode ? 'text-blue-300' : 'text-blue-700'
+                    darkMode ? 'text-[#a3b152]' : 'text-[#586330]'
                   }`}>
                     Return Details
                   </h2>
@@ -1048,7 +1030,7 @@ export default function ReturnRefundTracker() {
                     src={selected.productImage} 
                     alt={selected.productName} 
                     className={`w-24 h-24 rounded-xl object-cover ring-2 ${
-                      darkMode ? 'ring-blue-800' : 'ring-blue-200'
+                      darkMode ? 'ring-[#586330]/50' : 'ring-[#586330]/20'
                     }`} 
                   />
                   <div className="flex-1">
@@ -1087,23 +1069,23 @@ export default function ReturnRefundTracker() {
                 {/* Status Card */}
                 <div className={`bg-gradient-to-r rounded-2xl p-5 mb-6 ${
                   darkMode 
-                    ? 'from-blue-900/30 to-purple-900/30' 
-                    : 'from-blue-50 to-purple-50'
+                    ? 'from-[#586330]/30 to-[#586330]/10' 
+                    : 'from-[#586330]/10 to-[#586330]/5'
                 }`}>
                   <div className="flex justify-between items-start">
                     <div>
                       {(() => {
                         const cfg = {
                           Completed: { 
-                            bg: darkMode ? "bg-emerald-900/50 text-emerald-300" : "bg-emerald-100 text-emerald-700", 
+                            bg: darkMode ? "bg-[#586330]/30 text-[#a3b152]" : "bg-[#586330]/10 text-[#586330]", 
                             icon: CheckCircle 
                           },
                           Processing: { 
-                            bg: darkMode ? "bg-blue-900/50 text-blue-300" : "bg-blue-100 text-blue-700", 
+                            bg: darkMode ? "bg-[#586330]/20 text-[#8a9844]" : "bg-[#586330]/5 text-[#586330]", 
                             icon: Clock 
                           },
                           Pending: { 
-                            bg: darkMode ? "bg-purple-900/50 text-purple-300" : "bg-purple-100 text-purple-700", 
+                            bg: darkMode ? "bg-[#586330]/10 text-[#a3b152]" : "bg-[#586330]/5 text-[#586330]", 
                             icon: AlertCircle 
                           },
                         }[selected.refundStatus];
@@ -1114,7 +1096,7 @@ export default function ReturnRefundTracker() {
                         );
                       })()}
                       <p className={`text-3xl font-bold mt-2 ${
-                        darkMode ? 'text-blue-300' : 'text-blue-700'
+                        darkMode ? 'text-[#a3b152]' : 'text-[#586330]'
                       }`}>
                         ₹{selected.refundAmount.toLocaleString()}
                       </p>
@@ -1159,7 +1141,7 @@ export default function ReturnRefundTracker() {
                   {/* Timeline */}
                   <div>
                     <h4 className={`font-semibold mb-4 ${
-                      darkMode ? 'text-blue-300' : 'text-blue-700'
+                      darkMode ? 'text-[#a3b152]' : 'text-[#586330]'
                     }`}>
                       Timeline
                     </h4>
@@ -1187,7 +1169,7 @@ export default function ReturnRefundTracker() {
                               </span>
                               <span className={`font-medium ${
                                 t.highlight 
-                                  ? "text-emerald-600" 
+                                  ? "text-[#586330]" 
                                   : darkMode ? "text-gray-300" : "text-gray-900"
                               }`}>
                                 {t.value}
@@ -1202,7 +1184,7 @@ export default function ReturnRefundTracker() {
                   {/* Quick Details */}
                   <div>
                     <h4 className={`font-semibold mb-4 ${
-                      darkMode ? 'text-blue-300' : 'text-blue-700'
+                      darkMode ? 'text-[#a3b152]' : 'text-[#586330]'
                     }`}>
                       Details
                     </h4>
@@ -1232,7 +1214,7 @@ export default function ReturnRefundTracker() {
                       <div className="col-span-2">
                         <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Quality Check</p>
                         <p className={`font-medium ${
-                          selected.qualityCheck === 'Passed' ? 'text-green-600' : 
+                          selected.qualityCheck === 'Passed' ? 'text-[#586330]' : 
                           selected.qualityCheck === 'Failed' ? 'text-red-600' : 'text-yellow-600'
                         }`}>
                           {selected.qualityCheck}
@@ -1246,7 +1228,7 @@ export default function ReturnRefundTracker() {
                 <div className="space-y-4 mb-6">
                   <div>
                     <h4 className={`font-semibold mb-3 ${
-                      darkMode ? 'text-blue-300' : 'text-blue-700'
+                      darkMode ? 'text-[#a3b152]' : 'text-[#586330]'
                     }`}>
                       Return Reason
                     </h4>
@@ -1264,17 +1246,17 @@ export default function ReturnRefundTracker() {
                   {selected.notes && (
                     <div>
                       <h4 className={`font-semibold mb-3 ${
-                        darkMode ? 'text-blue-300' : 'text-blue-700'
+                        darkMode ? 'text-[#a3b152]' : 'text-[#586330]'
                       }`}>
                         Notes
                       </h4>
                       <div className={`rounded-xl p-4 border ${
                         darkMode 
-                          ? 'bg-purple-900/30 border-purple-700' 
-                          : 'bg-purple-50 border-purple-200'
+                          ? 'bg-[#586330]/30 border-[#586330]' 
+                          : 'bg-[#586330]/10 border-[#586330]/20'
                       }`}>
                         <p className={`text-sm ${
-                          darkMode ? 'text-purple-200' : 'text-purple-800'
+                          darkMode ? 'text-[#a3b152]' : 'text-[#586330]'
                         }`}>
                           {selected.notes}
                         </p>
@@ -1287,13 +1269,13 @@ export default function ReturnRefundTracker() {
                 <div className={`flex gap-3 mt-8 pt-6 border-t ${
                   darkMode ? 'border-gray-700' : 'border-gray-200'
                 }`}>
-                  <button className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition-all flex items-center justify-center gap-2">
+                  <button className="flex-1 bg-[#586330] text-white py-3 rounded-xl font-medium hover:bg-[#4a5428] transition-all flex items-center justify-center gap-2">
                     <ShieldCheck size={18} /> Process Refund
                   </button>
                   <button className={`flex items-center justify-center gap-2 flex-1 border py-3 rounded-xl font-medium transition-colors ${
                     darkMode
-                      ? 'border-blue-600 hover:bg-blue-900/50'
-                      : 'border-blue-300 hover:bg-blue-50'
+                      ? 'border-[#586330] hover:bg-[#586330]/50'
+                      : 'border-[#586330] hover:bg-[#586330]/10'
                   }`}>
                     <MessageCircle size={18} /> Contact
                   </button>
