@@ -35,12 +35,11 @@ const ProfileModal = ({
           </button>
         </div>
 
-        {/* Profile Form */}
         <div className="p-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column */}
+            
             <div className="space-y-6">
-              {/* Vendor General Details */}
+             
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Vendor General Details</h3>
                 <div className="space-y-4">
@@ -103,7 +102,7 @@ const ProfileModal = ({
                 </div>
               </div>
 
-              {/* Vendor Category & About */}
+              
               <div>
                 <div className="mb-4">
                   <label className="block text-sm  font-medium text-gray-700 mb-2">
@@ -139,7 +138,7 @@ const ProfileModal = ({
                 </div>
               </div>
 
-              {/* Contact Information */}
+              
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h3>
                 <div className="space-y-4">

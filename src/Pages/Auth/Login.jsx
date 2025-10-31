@@ -107,19 +107,19 @@ const Login = () => {
             'url(https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1920)',
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-indigo-400 to-indigo-00"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#586330]/80 "></div>
       </div>
 
       {/* Content */}
       <div className="relative z-10">
         <div className="px-8 py-6">
-          <h1 className="text-4xl font-bold text-indigo-600">Dealsy</h1>
+          <h1 className="text-4xl font-bold text-[#586330]">Dealsy</h1>
         </div>
 
         <div className="flex items-center justify-center min-h-[calc(100vh-100px)] p-4">
           <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-indigo-400 mb-2">Login Here</h2>
+              <h2 className="text-2xl font-semibold text-[#586330]/70 mb-2">Login Here</h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6 text-gray-900">
@@ -158,7 +158,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-4 rounded-full font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[#586330]/70 hover:bg-[#586330]/80 text-white py-3 px-4 rounded-full font-semibold focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Logging in...' : 'Submit'}
               </button>
@@ -167,7 +167,7 @@ const Login = () => {
             <div className="text-center mt-6">
               <p className="text-gray-600">
                 Not Yet Registered?{' '}
-                <Link to="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">
+                <Link to="/register" className="text-[#586330]/70 hover:text-[#586330]/90 font-medium">
                   Register Now
                 </Link>
               </p>

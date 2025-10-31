@@ -1,49 +1,39 @@
-import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'react-toastify';
+import { useNavigate, useLocation } from 'react-router-dom';
+import Footer from './Footer';
 
-const colors = [
-  { name: 'Green', value: '#7B9B7B' },
-  { name: 'Pink', value: '#C9A5A5' },
-  { name: 'Orange', value: '#D17B4A' },
-  { name: 'Camel', value: '#B8997E' }
-];
-
-const productImages = [
-  'https://images.pexels.com/photos/2062426/pexels-photo-2062426.jpeg?auto=compress&cs=tinysrgb&w=1200',
-  'https://images.pexels.com/photos/1090638/pexels-photo-1090638.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/2062426/pexels-photo-2062426.jpeg?auto=compress&cs=tinysrgb&w=1200',
-  'https://images.pexels.com/photos/1090638/pexels-photo-1090638.jpeg?auto=compress&cs=tinysrgb&w=600'
-];
-
-export default function ProductDetail({ onBack }) {
-  const [selectedColor, setSelectedColor] = useState(colors[0]);
-  const [quantity, setQuantity] = useState(1);
+export default function ProductDetail() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { product } = location.state || {};
+  
+  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || { name: 'Default', value: '#7B9B7B' });
   const [selectedImage, setSelectedImage] = useState(0);
 
+  // If no product data is passed, redirect back
+  if (!product) {
+    navigate('/products');
+    return null;
+  }
+
   const handleBackToList = () => {
-    onBack();
+    navigate('/');
   };
 
   const handlePreviousImage = () => {
-    setSelectedImage((prev) => (prev === 0 ? productImages.length - 1 : prev - 1));
+    setSelectedImage((prev) => (prev === 0 ? product.detailImages.length - 1 : prev - 1));
   };
 
   const handleNextImage = () => {
-    setSelectedImage((prev) => (prev === productImages.length - 1 ? 0 : prev + 1));
-  };
-
-  const handleAddToCart = () => {
-    toast.success(`Added ${quantity} item(s) of "${selectedColor.name}" color to your cart!`, {
-      position: 'top-right',
-    });
+    setSelectedImage((prev) => (prev === product.detailImages.length - 1 ? 0 : prev + 1));
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8]">
+    <div className="min-h-screen ">
       {/* Navbar */}
       <nav className="px-8 py-4">
-        <div className="text-2xl font-bold text-[#6B4E4E]">Dealsy</div>
+        <div className="text-2xl font-bold text-green-600">Dealsy</div>
       </nav>
 
       <div className="max-w-7xl mx-auto px-8 py-8">
@@ -52,7 +42,7 @@ export default function ProductDetail({ onBack }) {
           className="flex items-center gap-2 text-gray-700 hover:text-gray-900 mb-8 transition"
         >
           <ArrowLeft className="w-5 h-5" />
-          <span className="font-medium">Back to List</span>
+          <span className="font-medium">Back to Products</span>
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -60,169 +50,118 @@ export default function ProductDetail({ onBack }) {
           <div className="space-y-4">
             <div className="relative bg-white rounded-lg overflow-hidden shadow-lg">
               <img
-                src={productImages[selectedImage]}
-                alt="Product"
+                src={product.detailImages[selectedImage]}
+                alt={product.name}
                 className="w-full h-[500px] object-cover"
               />
               <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full text-sm font-semibold">
                 100% Recycled
               </div>
 
-              <button
-                onClick={handlePreviousImage}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition"
-              >
-                <ChevronLeft className="w-6 h-6 text-gray-700" />
-              </button>
-              <button
-                onClick={handleNextImage}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition"
-              >
-                <ChevronRight className="w-6 h-6 text-gray-700" />
-              </button>
+              {product.detailImages.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePreviousImage}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-gray-700" />
+                  </button>
+                  <button
+                    onClick={handleNextImage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition"
+                  >
+                    <ChevronRight className="w-6 h-6 text-gray-700" />
+                  </button>
+                </>
+              )}
             </div>
 
-            <div className="flex gap-4">
-              {productImages.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`w-24 h-24 rounded-lg overflow-hidden border-2 transition ${
-                    selectedImage === index
-                      ? 'border-[#6B4E4E]'
-                      : 'border-transparent hover:border-gray-300'
-                  }`}
-                >
-                  <img src={image} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
+            {product.detailImages.length > 1 && (
+              <div className="flex gap-4">
+                {product.detailImages.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`w-24 h-24 rounded-lg overflow-hidden border-2 transition ${
+                      selectedImage === index
+                        ? 'border-[#6B4E4E]'
+                        : 'border-transparent hover:border-gray-300'
+                    }`}
+                  >
+                    <img src={image} alt={`${product.name} view ${index + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
           <div className="space-y-6">
-            <h1 className="text-4xl font-bold text-gray-900">The Segall Chair</h1>
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900">{product.name}</h1>
+              <p className="text-2xl font-semibold text-green-600 mt-2">{product.price}</p>
+              <p className="text-sm text-gray-500 mt-1">Vendor: {product.vendor}</p>
+            </div>
 
             <p className="text-gray-600 leading-relaxed">
-              The Segall Chair combines comfort, craftsmanship, and timeless style. Made from premium wood and eco-friendly
-              materials, it’s perfect for modern homes or offices.
+              {product.description}
             </p>
 
             {/* Color Selection */}
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-700">Color:</label>
-              <div className="flex gap-3 flex-wrap">
-                {colors.map((color) => (
-                  <button
-                    key={color.name}
-                    onClick={() => setSelectedColor(color)}
-                    className={`px-6 py-2 rounded-full transition ${
-                      selectedColor.name === color.name
-                        ? 'ring-2 ring-gray-800 ring-offset-2'
-                        : 'hover:ring-2 hover:ring-gray-400 hover:ring-offset-2'
-                    }`}
-                    style={{ backgroundColor: color.value }}
-                  >
-                    <span className="text-white text-sm font-medium">{color.name}</span>
-                  </button>
-                ))}
+            {product.colors && product.colors.length > 1 && (
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-700">Color:</label>
+                <div className="flex gap-3 flex-wrap">
+                  {product.colors.map((color) => (
+                    <button
+                      key={color.name}
+                      onClick={() => setSelectedColor(color)}
+                      className={`px-6 py-2 rounded-full transition ${
+                        selectedColor.name === color.name
+                          ? 'ring-2 ring-gray-800 ring-offset-2'
+                          : 'hover:ring-2 hover:ring-gray-400 hover:ring-offset-2'
+                      }`}
+                      style={{ backgroundColor: color.value }}
+                    >
+                      <span className={`text-sm font-medium ${
+                        color.value === '#000000' ? 'text-white' : 
+                        color.value === '#FFFFFF' ? 'text-black' : 'text-white'
+                      }`}>
+                        {color.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
+            )}
+
+            {/* Product Features */}
+            <div className="bg-white rounded-lg p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Product Features</h3>
+              <ul className="space-y-2 text-gray-600">
+                <li>• Premium quality materials</li>
+                <li>• Eco-friendly and sustainable</li>
+                <li>• Direct from trusted vendors</li>
+                <li>• Fast and reliable delivery</li>
+              </ul>
             </div>
 
-            {/* Quantity Selector */}
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-semibold text-gray-700">Quantity:</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="p-2 bg-white border rounded-full hover:bg-gray-100"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <span className="text-lg font-semibold">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="p-2 bg-white border rounded-full hover:bg-gray-100"
-                >
-                  <Plus className="w-4 h-4" />
+            {/* Contact Vendor */}
+            <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+              <h3 className="text-lg font-semibold text-green-900 mb-2">Interested in this product?</h3>
+              <p className="text-green-800 mb-4">Contact the vendor directly for purchases and inquiries.</p>
+              <div className="flex items-center justify-between">
+                <span className="text-green-700 font-medium">Vendor: {product.vendor}</span>
+                <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                  Contact Vendor
                 </button>
               </div>
             </div>
-
-            {/* Add to Cart */}
-            <button
-              onClick={handleAddToCart}
-              className="flex items-center gap-2 bg-[#6B4E4E] text-white px-6 py-3 rounded-full hover:bg-[#5A3D3D] transition"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              Add to Cart
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-[#6B4E4E] text-white py-12 mt-16">
-        <div className="max-w-6xl mx-auto px-8">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-8">
-            <div>
-              <h3 className="text-2xl font-bold mb-4">Dealsy</h3>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">More</h4>
-              <ul className="space-y-2">
-                {['Lorem Ipsum', 'Lorem Ipsum', 'Lorem Ipsum'].map((link, index) => (
-                  <li key={index}>
-                    <a href="#" className="text-sm text-white/80 hover:text-white transition">
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Collections</h4>
-              <ul className="space-y-2">
-                {['Lorem Ipsum', 'Lorem Ipsum', 'Lorem Ipsum'].map((link, index) => (
-                  <li key={index}>
-                    <a href="#" className="text-sm text-white/80 hover:text-white transition">
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">About</h4>
-              <ul className="space-y-2">
-                {['Lorem Ipsum', 'Lorem Ipsum'].map((link, index) => (
-                  <li key={index}>
-                    <a href="#" className="text-sm text-white/80 hover:text-white transition">
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Links</h4>
-              <ul className="space-y-2">
-                {['Lorem Ipsum', 'Lorem Ipsum', 'Lorem Ipsum'].map((link, index) => (
-                  <li key={index}>
-                    <a href="#" className="text-sm text-white/80 hover:text-white transition">
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-white/20 pt-6 text-center">
-            <p className="text-sm text-white/60">© 2025 Dealsy LLC. All Rights Reserved.</p>
-          </div>
-        </div>
-      </footer>
+     <Footer/>
     </div>
   );
 }
