@@ -60,17 +60,19 @@ function Helpcenter() {
   const supportAgents = [
     { 
       id: 1, 
-      name: 'Abin prashanth', 
+      name: 'Abin Prashanth', 
       status: 'online', 
-      department: 'Custemer support',
-      description: 'Specialized in account and Custemer issues',
+      department: 'Customer Support',
+      description: 'Specialized in account and customer issues',
+      responseTime: 'Usually responds in 5 minutes'
     },
     {
       id: 2, 
       name: 'Majdha', 
       status: 'online', 
-      department: 'Vender support',
+      department: 'Vendor Support',
       description: 'Expert in billing and payment related queries',
+      responseTime: 'Usually responds in 3 minutes'
     },
     { 
       id: 3, 
@@ -78,6 +80,7 @@ function Helpcenter() {
       status: 'away', 
       department: 'General Support',
       description: 'Helps with general product questions',
+      responseTime: 'Usually responds in 15 minutes'
     }
   ];
 
@@ -136,7 +139,7 @@ function Helpcenter() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <ChatBubbleLeftRightIcon className="h-8 w-8 text-blue-600" />
+              <ChatBubbleLeftRightIcon className="h-8 w-8 text-[#586330]" />
               <h1 className="ml-2 text-2xl font-bold text-gray-900">Help Center</h1>
             </div>
             <div className="relative">
@@ -146,7 +149,7 @@ function Helpcenter() {
               <input
                 type="text"
                 placeholder="Search help articles..."
-                className="block w-64 pl-10 pr-3 py-2 border border-gray-600 rounded-lg bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="block w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#586330] focus:border-[#586330]"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -165,14 +168,14 @@ function Helpcenter() {
                   onClick={() => setActiveTab('notifications')}
                   className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                     activeTab === 'notifications'
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      ? 'bg-[#586330] text-white border border-[#586330]'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <BellIcon className="h-5 w-5 mr-3" />
                   Notifications
                   {unreadCount > 0 && (
-                    <span className="ml-auto bg-blue-600 text-white text-xs rounded-full px-2 py-1">
+                    <span className="ml-auto bg-white text-[#586330] text-xs rounded-full px-2 py-1 min-w-6 flex items-center justify-center">
                       {unreadCount}
                     </span>
                   )}
@@ -182,7 +185,7 @@ function Helpcenter() {
                   onClick={() => setActiveTab('team')}
                   className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                     activeTab === 'team'
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      ? 'bg-[#586330] text-white border border-[#586330]'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -218,7 +221,7 @@ function Helpcenter() {
                         disabled={agent.status !== 'online'}
                         className={`ml-2 px-3 py-1 text-xs rounded-lg transition-colors ${
                           agent.status === 'online'
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            ? 'bg-[#586330] text-white hover:bg-[#4a5428]'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
@@ -267,7 +270,7 @@ function Helpcenter() {
                           </div>
                         </div>
                         {!notification.read && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#586330] text-white">
                             New
                           </span>
                         )}
@@ -319,7 +322,7 @@ function Helpcenter() {
                               disabled={agent.status !== 'online'}
                               className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 ${
                                 agent.status === 'online'
-                                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                  ? 'bg-[#586330] text-white hover:bg-[#4a5428]'
                                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                               }`}
                             >
@@ -341,7 +344,7 @@ function Helpcenter() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <div className="relative">
-                            <UserCircleIcon className="h-12 w-12 text-blue-600" />
+                            <UserCircleIcon className="h-12 w-12 text-[#586330]" />
                             <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white" />
                           </div>
                           <div>
@@ -350,15 +353,15 @@ function Helpcenter() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+                          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                             <PhoneIcon className="h-5 w-5" />
                           </button>
-                          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+                          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                             <VideoCameraIcon className="h-5 w-5" />
                           </button>
                           <button 
                             onClick={closeChat}
-                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                           >
                             <XMarkIcon className="h-5 w-5" />
                           </button>
@@ -377,13 +380,13 @@ function Helpcenter() {
                             <div
                               className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
                                 message.sender === 'user'
-                                  ? 'bg-blue-600 text-white rounded-br-none'
+                                  ? 'bg-[#586330] text-white rounded-br-none'
                                   : 'bg-white text-gray-900 border rounded-bl-none shadow-sm'
                               }`}
                             >
                               <p className="text-sm">{message.text}</p>
                               <p className={`text-xs mt-1 ${
-                                message.sender === 'user' ? 'text-blue-200' : 'text-gray-500'
+                                message.sender === 'user' ? 'text-[#e8eed0]' : 'text-gray-500'
                               }`}>
                                 {message.time}
                               </p>
@@ -394,19 +397,20 @@ function Helpcenter() {
                     </div>
 
                     {/* Message Input */}
-                    <div className="p-4 border-t bg-gray-500 rounded-2xl">
+                    <div className="p-4 border-t bg-white">
                       <div className="flex space-x-4">
                         <input
                           type="text"
                           placeholder="Type your message..."
-                          className="flex-1 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#586330] focus:border-[#586330]"
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
                           onKeyPress={handleKeyPress}
                         />
                         <button
                           onClick={sendMessage}
-                          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center space-x-2"
+                          disabled={!newMessage.trim()}
+                          className="bg-[#586330] text-white px-6 py-3 rounded-lg hover:bg-[#4a5428] focus:outline-none focus:ring-2 focus:ring-[#586330] focus:ring-offset-2 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <PaperAirplaneIcon className="h-5 w-5" />
                           <span>Send</span>
