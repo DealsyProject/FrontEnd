@@ -5,7 +5,7 @@ export default function CustomerExtraForm({ extraData, handleExtraChange, isLoad
   return (
     <div className="space-y-3">
       <h3 className="text-lg font-medium text-[#586330] text-center">
-        Customer Details
+        Fill
       </h3>
 
       <input
