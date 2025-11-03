@@ -198,7 +198,7 @@ export default function ProductsPage() {
                   </tr>
                 ))
               ) : (
-                <tr>
+                <tr> 
                   <td colSpan="7" className="text-center text-gray-500 py-10">No products found.</td>
                 </tr>
               )}

@@ -46,7 +46,7 @@ export default function UserManagement() {
     // LIGHT THEME: Main background is light gray, main text is dark gray
     <div className="min-h-screen w-full bg-gray-100 text-gray-900 font-sans">
       <Navbar />
-      <main className="pt-24 px-4 sm:px-6 lg:px-12 pb-8">
+      <main className="pt-24 px-4 sm:px-6 lg:px-12 pb-8"> 
         <div className="mb-6 sm:mb-8">
           <h2 className="text-3xl sm:text-4xl font-bold mb-2 text-gray-800">User Management</h2>
           {/* Secondary text color */}

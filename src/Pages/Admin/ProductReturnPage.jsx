@@ -71,7 +71,7 @@ export default function ProductReturnPage() {
   // New primary color: indigo-600
   const primaryColor = "indigo-600";
   const hoverColor = "indigo-700";
-  const accentColor = "indigo-50";
+  const accentColor = "indigo-50"; 
   const focusRing = "indigo-500";
 
   return (

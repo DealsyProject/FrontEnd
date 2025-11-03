@@ -299,7 +299,7 @@ export default function TransactionsPage() {
                   </tr>
                 )}
               </tbody>
-            </table>
+            </table> 
           </div>
 
         </div>

@@ -523,7 +523,7 @@ export default function VendorManagement() {
                   Cancel
                 </button>
               </div>
-            </form>
+            </form> 
           </div>
         </div>
       )}

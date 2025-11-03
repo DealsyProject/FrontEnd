@@ -25,7 +25,7 @@ export default function OrdersPage() {
       default: return 'bg-gray-200 text-gray-700 border border-gray-300';
     }
   };
-
+ 
   // Filtered orders based on search, status, and date range
   const filteredOrders = orders.filter(order => {
     const matchesSearch =
