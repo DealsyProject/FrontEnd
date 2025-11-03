@@ -49,7 +49,7 @@ export default function Register() {
     try {
       setIsLoading(true);
       const response = await axios.post(
-        "https://localhost:7002/api/Auth/register",
+        "https://localhost:7001/api/Auth/register",
         payload
       );
       setSuccessMsg("Registration successful! Please log in.");
