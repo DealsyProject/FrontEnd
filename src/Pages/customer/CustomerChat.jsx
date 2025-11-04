@@ -1,11 +1,14 @@
-// src/pages/customer/CustomerSupport.jsx
 import React, { useState, useRef, useEffect } from "react";
 import Navbar from "../../Components/customer/Common/Navbar";
 import { FaPaperPlane } from "react-icons/fa";
 
-export default function CustomerChat() {
+export default function CustomerSupport() {
   const [messages, setMessages] = useState([
-    { id: 1, from: "bot", text: "Seek customer support with Complaint / Suggestions / Experience." },
+    {
+      id: 1,
+      from: "bot",
+      text: "Seek customer support with Complaint / Suggestions / Experience.",
+    },
     { id: 2, from: "bot", text: "Please select what help you need about:" },
   ]);
 
@@ -13,7 +16,7 @@ export default function CustomerChat() {
   const [input, setInput] = useState("");
   const scrollerRef = useRef(null);
 
-  // Auto-scroll to latest message
+  // Auto-scroll to bottom
   useEffect(() => {
     scrollerRef.current?.scrollTo({
       top: scrollerRef.current.scrollHeight,
@@ -24,12 +27,11 @@ export default function CustomerChat() {
   const pushBot = (text) => {
     setTimeout(() => {
       setMessages((m) => [...m, { id: Date.now(), from: "bot", text }]);
-    }, 350);
+    }, 400);
   };
 
   const handleOption = (option) => {
     setMessages((m) => [...m, { id: Date.now(), from: "user", text: option }]);
-
     if (stage === 0) {
       setStage(1);
       pushBot(`"Customer Complaint about ${option} / delivery / experience" →`);
@@ -38,7 +40,7 @@ export default function CustomerChat() {
       setStage(2);
       pushBot(`Thanks — you chose: ${option}. Please type details below.`);
     } else {
-      pushBot(`Received: ${option}. Our team will review and contact you.`);
+      pushBot(`Received: ${option}. Our team will review and contact you soon.`);
     }
   };
 
@@ -47,56 +49,66 @@ export default function CustomerChat() {
     if (!trimmed) return;
     setMessages((m) => [...m, { id: Date.now(), from: "user", text: trimmed }]);
     setInput("");
-    pushBot("Thanks for your message — our support team will review and get back soon.");
+    pushBot(
+      "Thanks for your message — our support team will review and get back soon."
+    );
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-400">
+    <div className="min-h-screen w-full bg-gray-50 text-gray-900">
       <Navbar />
-
-      <main className="flex-grow flex justify-center items-stretch">
-        <div className="w-full max-w-7xl flex h-[calc(100vh-89px)]  overflow-hidden shadow-md">
-          {/* Sidebar */}
-          <aside className="w-64 bg-[#1f1f21] text-white flex flex-col justify-between">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold mb-8">Customer Support</h2>
-
-              <nav className="flex flex-col gap-3 text-sm">
-                {["Light mode", "Dealsy Discord", "Updates & FAQ", "Call support"].map((item) => (
-                  <button
-                    key={item}
-                    className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-white/5 transition"
-                  >
-                    <span className="w-2 h-2 bg-white rounded-full" />
-                    {item}
-                  </button>
-                ))}
-              </nav>
-            </div>
-          </aside>
-
-          {/* Chat Section */}
-          <section className="flex-1 bg-[#34323a] text-white flex flex-col">
-            {/* Chat Header */}
-            <div className="p-4 border-b border-gray-700 text-xl font-semibold">
-              Customer Support
+      <main className="pt-6 pb-4">
+        <div className="h-[calc(100vh-8rem)] flex rounded-lg overflow-hidden shadow-sm border border-gray-200 bg-white max-w-7xl mx-auto">
+          {/* Left Sidebar */}
+          <div className="w-80 bg-gray-100 border-r border-gray-200 flex flex-col">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-emerald-700 mb-4">
+                Customer Support
+              </h2>
+              <div className="text-sm text-gray-600 space-y-3">
+                <p>• Light / Dark mode</p>
+                <p>• Dealsy Discord</p>
+                <p>• Updates & FAQ</p>
+                <p>• Call Support</p>
+              </div>
             </div>
 
-            {/* Scrollable Chat Area */}
+            <div className="flex-1 flex flex-col justify-end p-6 text-xs text-gray-500">
+              <p>Need immediate help?</p>
+              <p className="text-emerald-600 font-medium">support@dealsy.com</p>
+            </div>
+          </div>
+
+          {/* Right Chat Panel */}
+          <div className="flex-1 flex flex-col bg-white">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+              <div>
+                <h2 className="text-lg font-semibold text-emerald-700">
+                 Support team
+                </h2>
+                <p className="text-sm text-gray-500">with Automated assistant</p>
+              </div>
+             
+            </div>
+
+            {/* Chat messages */}
             <div
               ref={scrollerRef}
-              className="flex-1 overflow-y-auto px-6 py-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800"
+              className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
             >
               {messages.map((m) => (
                 <div
                   key={m.id}
-                  className={`flex ${m.from === "bot" ? "justify-start" : "justify-end"}`}
+                  className={`flex ${
+                    m.from === "bot" ? "justify-start" : "justify-end"
+                  }`}
                 >
                   <div
-                    className={`px-4 py-2 rounded-xl max-w-[70%] text-sm ${
+                    className={`max-w-md px-4 py-3 rounded-2xl text-sm ${
                       m.from === "bot"
-                        ? "bg-gray-700 text-white rounded-tl-none"
-                        : "bg-gray-500/40 text-white rounded-tr-none"
+                        ? "bg-emerald-100 text-gray-800 rounded-tl-none"
+                        : "bg-white border border-gray-200 text-gray-800 rounded-tr-none"
                     }`}
                   >
                     {m.text}
@@ -106,63 +118,65 @@ export default function CustomerChat() {
             </div>
 
             {/* Options */}
-            <div className="p-4 border-t border-gray-700 flex flex-wrap justify-center gap-3">
-              {stage === 0 &&
-                ["product", "delivery", "experience"].map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => handleOption(opt)}
-                    className="px-4 py-2 rounded-md bg-gray-500/40 text-white text-sm hover:bg-gray-600 transition"
-                  >
-                    {opt}
-                  </button>
-                ))}
+            {stage < 2 && (
+              <div className="p-4 border-t border-gray-200 flex flex-wrap justify-center gap-3 bg-white">
+                {stage === 0 &&
+                  ["Product", "Delivery", "Experience"].map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => handleOption(opt)}
+                      className="px-4 py-2 rounded-md bg-emerald-100 text-emerald-800 text-sm font-medium hover:bg-emerald-200 transition"
+                    >
+                      {opt}
+                    </button>
+                  ))}
 
-              {stage === 1 && (
-                <>
-                  <button
-                    onClick={() =>
-                      handleOption("Customer Complaint about product/delivery/experience")
-                    }
-                    className="px-4 py-2 rounded-md bg-gray-500/40 text-white text-sm hover:bg-gray-600 transition"
-                  >
-                    Complaint →
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleOption("Suggestions about product/delivery/experience")
-                    }
-                    className="px-4 py-2 rounded-md bg-gray-500/40 text-white text-sm hover:bg-gray-600 transition"
-                  >
-                    Suggestion →
-                  </button>
-                  <button
-                    onClick={() => handleOption("Tell experience about our platform")}
-                    className="px-4 py-2 rounded-md bg-gray-500/40 text-white text-sm hover:bg-gray-600 transition"
-                  >
-                    Experience →
-                  </button>
-                </>
-              )}
-            </div>
+                {stage === 1 && (
+                  <>
+                    <button
+                      onClick={() =>
+                        handleOption("Customer Complaint about product")
+                      }
+                      className="px-4 py-2 rounded-md bg-emerald-100 text-emerald-800 text-sm font-medium hover:bg-emerald-200 transition"
+                    >
+                      Complaint →
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleOption("Suggestions about product")
+                      }
+                      className="px-4 py-2 rounded-md bg-emerald-100 text-emerald-800 text-sm font-medium hover:bg-emerald-200 transition"
+                    >
+                      Suggestion →
+                    </button>
+                    <button
+                      onClick={() => handleOption("Share experience")}
+                      className="px-4 py-2 rounded-md bg-emerald-100 text-emerald-800 text-sm font-medium hover:bg-emerald-200 transition"
+                    >
+                      Experience →
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
 
-            {/* Input Field (Always Visible at Bottom) */}
-            <div className="p-4 border-t border-gray-700 flex items-center gap-3 bg-[#34323a]">
+            {/* Input Field */}
+            <div className="p-6 border-t border-gray-200 bg-white flex items-center gap-3">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Type your message..."
-                className="flex-1 bg-transparent border border-gray-600 px-4 py-3 rounded-full text-white placeholder-gray-300 outline-none"
+                className="flex-1 bg-gray-50 border border-gray-300 rounded-full px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-emerald-400"
               />
               <button
                 onClick={handleSend}
-                className="bg-[#3b450d] px-4 py-2 rounded-full flex items-center justify-center hover:bg-[#2e350b] transition"
+                className="p-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full transition"
               >
-                <FaPaperPlane className="text-white" />
+                <FaPaperPlane className="w-4 h-4" />
               </button>
             </div>
-          </section>
+          </div>
         </div>
       </main>
     </div>

@@ -14,7 +14,7 @@ export default function Register() {
     role: 3,
   });
 
-  const [extraData, setExtraData] = useState({});
+  const [extraData, setExtraData] = useState({}); 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
