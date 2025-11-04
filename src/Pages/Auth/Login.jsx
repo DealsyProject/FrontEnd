@@ -21,7 +21,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.email.trim()) {
       toast.error('Please enter your email');
       return;
@@ -44,25 +44,31 @@ const Login = () => {
 
       if (response.status === 200) {
         console.log('Login response data:', data);
-        
+
         // Store authentication data
         localStorage.setItem('authToken', data.token);
-        localStorage.setItem('currentUser', JSON.stringify({
-          userId: data.userId,
-          fullName: data.fullName,
-          email: data.email,
-          role: data.role,
-          isRegistrationComplete: data.isRegistrationComplete
-        }));
+        localStorage.setItem(
+          'currentUser',
+          JSON.stringify({
+            userId: data.userId,
+            fullName: data.fullName,
+            email: data.email,
+            role: data.role,
+            isRegistrationComplete: data.isRegistrationComplete
+          })
+        );
 
         toast.success('Login successful!');
-        
+
         console.log('Role:', data.role);
         console.log('isRegistrationComplete:', data.isRegistrationComplete);
-        
-        // Use window.location to force redirect - this will definitely work
+
+        // Redirect based on role
         setTimeout(() => {
-          if (data.role && data.role.toString().toLowerCase() === 'vendor') {
+          const role = data.role?.toString().toLowerCase();
+
+          // ✅ VENDOR
+          if (role === 'vendor') {
             if (data.isRegistrationComplete) {
               console.log('FORCE REDIRECT: vendor-dashboard');
               window.location.href = '/vendor-dashboard';
@@ -70,7 +76,10 @@ const Login = () => {
               console.log('FORCE REDIRECT: vendor-register');
               window.location.href = '/vendor-register';
             }
-          } else {
+          }
+
+          // ✅ CUSTOMER
+          else if (role === 'customer') {
             if (data.isRegistrationComplete) {
               console.log('FORCE REDIRECT: home');
               window.location.href = '/';
@@ -79,11 +88,29 @@ const Login = () => {
               window.location.href = '/customer-register';
             }
           }
+
+          // ✅ SUPPORT TEAM
+          else if (role === 'supportteam') {
+            console.log('FORCE REDIRECT: support-dashboard');
+            window.location.href = '/support-dashboard';
+          }
+
+          // ✅ ADMIN (optional future case)
+          else if (role === 'admin') {
+            console.log('FORCE REDIRECT: admin-dashboard');
+            window.location.href = '/admin-dashboard';
+          }
+
+          // ✅ DEFAULT fallback
+          else {
+            console.log('FORCE REDIRECT: home');
+            window.location.href = '/';
+          }
         }, 1000);
       }
     } catch (error) {
       console.error('Login error:', error);
-      
+
       if (error.response) {
         const errorMessage = error.response.data?.message || 'Login failed';
         toast.error(errorMessage);
@@ -99,7 +126,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background with overlay - same as VendorRegister */}
+      {/* Background */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -107,7 +134,7 @@ const Login = () => {
             'url(https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1920)',
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-[#586330]/80 "></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#586330]/80"></div>
       </div>
 
       {/* Content */}
@@ -119,7 +146,9 @@ const Login = () => {
         <div className="flex items-center justify-center min-h-[calc(100vh-100px)] p-4">
           <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-[#586330]/70 mb-2">Login Here</h2>
+              <h2 className="text-2xl font-semibold text-[#586330]/70 mb-2">
+                Login Here
+              </h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6 text-gray-900">
@@ -167,7 +196,10 @@ const Login = () => {
             <div className="text-center mt-6">
               <p className="text-gray-600">
                 Not Yet Registered?{' '}
-                <Link to="/register" className="text-[#586330]/70 hover:text-[#586330]/90 font-medium">
+                <Link
+                  to="/register"
+                  className="text-[#586330]/70 hover:text-[#586330]/90 font-medium"
+                >
                   Register Now
                 </Link>
               </p>
@@ -181,3 +213,4 @@ const Login = () => {
 };
 
 export default Login;
+  //azaru pushed

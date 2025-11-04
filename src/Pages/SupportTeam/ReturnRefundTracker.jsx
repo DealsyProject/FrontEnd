@@ -1067,7 +1067,7 @@ export default function ReturnRefundTracker() {
                 </div>
 
                 {/* Status Card */}
-                <div className={`bg-gradient-to-r rounded-2xl p-5 mb-6 ${
+                <div className={`bg-linear-to-r rounded-2xl p-5 mb-6 ${
                   darkMode 
                     ? 'from-[#586330]/30 to-[#586330]/10' 
                     : 'from-[#586330]/10 to-[#586330]/5'
@@ -1136,9 +1136,9 @@ export default function ReturnRefundTracker() {
                   </div>
                 </div>
 
-                {/* Timeline & Details Grid */}
+                
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                  {/* Timeline */}
+                  
                   <div>
                     <h4 className={`font-semibold mb-4 ${
                       darkMode ? 'text-[#a3b152]' : 'text-[#586330]'
@@ -1181,7 +1181,7 @@ export default function ReturnRefundTracker() {
                     </div>
                   </div>
 
-                  {/* Quick Details */}
+                  
                   <div>
                     <h4 className={`font-semibold mb-4 ${
                       darkMode ? 'text-[#a3b152]' : 'text-[#586330]'
@@ -1224,7 +1224,7 @@ export default function ReturnRefundTracker() {
                   </div>
                 </div>
 
-                {/* Reason & Notes */}
+                
                 <div className="space-y-4 mb-6">
                   <div>
                     <h4 className={`font-semibold mb-3 ${
