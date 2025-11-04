@@ -8,7 +8,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Check login status from localStorage
+  // ✅ Check login status from localStorage
   const checkLoginStatus = () => {
     const token = localStorage.getItem("authToken");
     setIsLoggedIn(!!token);
@@ -16,20 +16,25 @@ export default function Navbar() {
 
   useEffect(() => {
     checkLoginStatus();
-
-    // Listen for login/logout changes from other tabs or same app
     const handleStorageChange = () => checkLoginStatus();
     window.addEventListener("storage", handleStorageChange);
-
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  // Logout handler
+  // ✅ Logout handler
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("currentUser");
     setIsLoggedIn(false);
-    navigate("/login");
+    navigate("/");
+  };
+
+  // ✅ Scroll to footer
+  const scrollToFooter = () => {
+    const footer = document.getElementById("footer-section");
+    if (footer) {
+      footer.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   return (
@@ -63,14 +68,30 @@ export default function Navbar() {
         >
           Products
         </button>
+
+        {/* ✅ About Us scrolls to footer */}
         <button
-          onClick={() => navigate("/about")}
+          onClick={() => {
+            if (window.location.pathname === "/") {
+              scrollToFooter();
+            } else {
+              navigate("/", { state: { scrollTo: "footer" } });
+            }
+          }}
           className="text-sm font-medium hover:text-[#586330] transition"
         >
           About Us
         </button>
+
+        {/* ✅ Contact scrolls to footer */}
         <button
-          onClick={() => navigate("/contact")}
+          onClick={() => {
+            if (window.location.pathname === "/") {
+              scrollToFooter();
+            } else {
+              navigate("/", { state: { scrollTo: "footer" } });
+            }
+          }}
           className="text-sm font-medium hover:text-[#586330] transition"
         >
           Contact
