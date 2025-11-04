@@ -2,7 +2,7 @@ import { FaFacebookF, FaLinkedinIn, FaYoutube, FaInstagram } from 'react-icons/f
 
 export default function Footer() {
   return (
-    <footer className="bg-[#242522] py-8 px-12">
+    <footer id="footer-section" className="bg-[#242522] py-8 px-12">
       <div className="flex flex-col md:flex-row justify-between items-start">
         {/* Left: Site Name & Social Icons */}
         <div className="mb-8 md:mb-0">
@@ -14,6 +14,7 @@ export default function Footer() {
             <FaInstagram className="text-white hover:text-pink-500" />
           </div>
         </div>
+
         {/* Right: Links Grouped by Topic */}
         <div className="grid grid-cols-3 text-white gap-16">
           {["Topic", "Topic", "Topic"].map((topic, idx) => (
