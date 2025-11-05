@@ -32,7 +32,7 @@ import CustomerChat from './Pages/customer/CustomerChat';
 import Helpcenter from './Pages/SupportTeam/Helpcenter';
 import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
 import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
-
+import Chating from './Pages/SupportTeam/Chating.jsx';
 
 
 //Common for all users
@@ -107,7 +107,8 @@ function App() {
         <Route path="/support-helpcenter" element={<Helpcenter />} />
         <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails />} />
         <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker />} />
-
+        <Route path="/support-chat" element={<Chating/>} />
+         
 
       </Routes>
     </Router>
