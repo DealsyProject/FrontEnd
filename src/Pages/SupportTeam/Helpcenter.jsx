@@ -20,7 +20,8 @@ function Helpcenter() {
   const [newMessage, setNewMessage] = useState('');
   const [chatFilter, setChatFilter] = useState('all');
 
-  const notifications = [
+  // ── Notifications (mock real-time) ─────────────────────────────────
+  const [notifications, setNotifications] = useState([
     {
       id: 1,
       title: 'New Customer Inquiry',
@@ -181,11 +182,16 @@ function Helpcenter() {
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      sendMessage();
-    }
-  };
+  const filteredFaqs = useMemo(() => {
+    if (!search.trim()) return faqsRaw;
+    const term = search.toLowerCase();
+    return faqsRaw.filter(
+      (f) =>
+        f.question.toLowerCase().includes(term) ||
+        (typeof f.answer === 'string' && f.answer.toLowerCase().includes(term)) ||
+        f.tags.some((t) => t.toLowerCase().includes(term))
+    );
+  }, [search]);
 
   const startChat = (user) => {
     setSelectedUser(user);
@@ -198,7 +204,30 @@ function Helpcenter() {
     setMessages([]);
   };
 
-  const unreadCount = notifications.filter(notification => !notification.read).length;
+  // ── Contact form (react-hook-form) ───────────────────────────────
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm();
+
+  const onSubmit = async (data) => {
+    const { errors: validationErrors, isValid } = validateContact(data);
+    if (!isValid) {
+      Object.entries(validationErrors).forEach(([key, msg]) => {
+        setError(key, { message: msg });
+      });
+      return;
+    }
+
+    // Simulate API call
+    await new Promise((r) => setTimeout(r, 1200));
+    console.log('Contact form:', data);
+    toast.success('Message sent – we’ll reply soon!');
+    reset();
+  };
 
   // Proper search and filter functionality
   const filteredChats = useMemo(() => {
@@ -369,13 +398,13 @@ function Helpcenter() {
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#586330] text-white">
                             New
                           </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                        </div>
+                        <ChevronDown
+                          className={`w-5 h-5 text-gray-500 transition-transform ${
+                            openFaq === faq.id ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </button>
 
             {/* Chats Tab */}
             {activeTab === 'chats' && (
@@ -583,8 +612,6 @@ function Helpcenter() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
-
-export default Helpcenter;
