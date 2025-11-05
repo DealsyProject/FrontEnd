@@ -92,7 +92,7 @@ const Login = () => {
           // ✅ SUPPORT TEAM
           else if (role === 'supportteam') {
             console.log('FORCE REDIRECT: support-dashboard');
-            window.location.href = '/support-dashboard';
+            window.location.href = '/support-custemervenderdetails';
           }
 
           // ✅ ADMIN (optional future case)
