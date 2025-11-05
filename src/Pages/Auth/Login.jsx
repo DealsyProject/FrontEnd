@@ -92,13 +92,13 @@ const Login = () => {
           // ✅ SUPPORT TEAM
           else if (role === 'supportteam') {
             console.log('FORCE REDIRECT: support-dashboard');
-            window.location.href = '/support-dashboard';
+            window.location.href = '/support-helpcenter';
           }
 
           // ✅ ADMIN (optional future case)
           else if (role === 'admin') {
             console.log('FORCE REDIRECT: admin-dashboard');
-            window.location.href = '/admin-dashboard';
+            window.location.href = '/admin';
           }
 
           // ✅ DEFAULT fallback

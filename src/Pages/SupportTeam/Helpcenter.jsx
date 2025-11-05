@@ -1,110 +1,183 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
-  EnvelopeIcon, 
-  ChatBubbleLeftRightIcon, 
-  BellIcon,
-  MagnifyingGlassIcon,
-  UserCircleIcon,
-  CalendarIcon,
-  XMarkIcon,
-  PaperAirplaneIcon,
-  PhoneIcon,
-  VideoCameraIcon
-} from '@heroicons/react/24/outline';
+  Mail, 
+  MessageCircle, 
+  Bell,
+  Search,
+  UserCircle,
+  Calendar,
+  X,
+  Send,
+  Phone,
+  Video
+} from 'lucide-react';
 
 function Helpcenter() {
   const [activeTab, setActiveTab] = useState('notifications');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedAgent, setSelectedAgent] = useState(null);
-  const [messages, setMessages] = useState([
-    { id: 1, text: "Hello! How can I help you today?", sender: 'support', time: '10:00 AM' },
-    { id: 2, text: "I'm having issues with my account login", sender: 'user', time: '10:02 AM' },
-  ]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [chatFilter, setChatFilter] = useState('all');
 
   const notifications = [
     {
       id: 1,
-      title: 'Password Reset Successful',
-      description: 'Your password has been successfully reset.',
+      title: 'New Customer Inquiry',
+      description: 'Customer Alex has sent a message about Order #12345',
       time: '2 hours ago',
-      type: 'security',
+      type: 'message',
       read: false
     },
     {
       id: 2,
-      title: 'New Message from Support Team',
-      description: 'You have a new response from our support team.',
+      title: 'Vendor Issue Resolved',
+      description: 'Vendor payment issue for Tech Store has been resolved.',
       time: '5 hours ago',
-      type: 'message',
-      read: true
-    },
-    {
-      id: 3,
-      title: 'Account Verification Complete',
-      description: 'Your account has been successfully verified.',
-      time: '1 day ago',
       type: 'success',
       read: true
     },
     {
+      id: 3,
+      title: 'Urgent: Customer Complaint',
+      description: 'High priority complaint from customer Sarah about product quality.',
+      time: '1 day ago',
+      type: 'security',
+      read: true
+    },
+    {
       id: 4,
-      title: 'Payment Received',
-      description: 'Your recent payment has been processed successfully.',
+      title: 'Vendor Account Verified',
+      description: 'New vendor Home Decor account has been successfully verified.',
       time: '2 days ago',
-      type: 'payment',
+      type: 'success',
       read: true
     }
   ];
 
-  const supportAgents = [
+  const activeChats = [
     { 
       id: 1, 
-      name: 'Abin Prashanth', 
+      name: 'Alex', 
       status: 'online', 
-      department: 'Customer Support',
-      description: 'Specialized in account and customer issues',
-      responseTime: 'Usually responds in 5 minutes'
+      type: 'customer',
+      issue: 'Order #12345 - Inquiry',
+      lastMessage: 'Sure, it\'s #12345.',
+      time: '10:34 AM',
+      unread: 2,
+      avatar: 'A'
     },
     {
       id: 2, 
-      name: 'Majdha', 
+      name: 'Tech Store', 
       status: 'online', 
-      department: 'Vendor Support',
-      description: 'Expert in billing and payment related queries',
-      responseTime: 'Usually responds in 3 minutes'
+      type: 'vendor',
+      issue: 'Payment Processing Issue',
+      lastMessage: 'We need help with payment gateway',
+      time: '10:20 AM',
+      unread: 1,
+      avatar: 'T'
     },
     { 
       id: 3, 
-      name: 'Emily Davis', 
+      name: 'Sarah', 
       status: 'away', 
-      department: 'General Support',
-      description: 'Helps with general product questions',
-      responseTime: 'Usually responds in 15 minutes'
+      type: 'customer',
+      issue: 'Product Return Request',
+      lastMessage: 'I want to return a product.',
+      time: '09:15 AM',
+      unread: 0,
+      avatar: 'S'
+    },
+    {
+      id: 4,
+      name: 'Home Decor',
+      status: 'online',
+      type: 'vendor',
+      issue: 'Inventory Management',
+      lastMessage: 'How do I update stock levels?',
+      time: '08:45 AM',
+      unread: 0,
+      avatar: 'H'
+    },
+    {
+      id: 5,
+      name: 'Mike',
+      status: 'online',
+      type: 'customer',
+      issue: 'Shipping Delay',
+      lastMessage: 'My order is delayed.',
+      time: '08:00 AM',
+      unread: 1,
+      avatar: 'M'
     }
   ];
 
+  // Different initial messages based on user type
+  const getInitialMessages = (user) => {
+    if (user.type === 'customer') {
+      return [
+        { 
+          id: 1, 
+          text: 'Hi, I have a question about my order.', 
+          sender: 'customer', 
+          time: '10:30 AM',
+          avatar: user.avatar
+        },
+        { 
+          id: 2, 
+          text: `Hello ${user.name}! I\'m here to help with your ${user.issue.toLowerCase()}. Can you provide more details?`, 
+          sender: 'support', 
+          time: '10:33 AM',
+          avatar: 'S'
+        },
+        { 
+          id: 3, 
+          text: user.lastMessage, 
+          sender: 'customer', 
+          time: user.time,
+          avatar: user.avatar
+        }
+      ];
+    } else if (user.type === 'vendor') {
+      return [
+        { 
+          id: 1, 
+          text: `Hello, I need assistance with ${user.issue.toLowerCase()}.`, 
+          sender: 'vendor', 
+          time: '10:30 AM',
+          avatar: user.avatar
+        },
+        { 
+          id: 2, 
+          text: `Hi ${user.name}! I\'m here to help with your vendor account. What specific issue are you facing?`, 
+          sender: 'support', 
+          time: '10:33 AM',
+          avatar: 'S'
+        },
+        { 
+          id: 3, 
+          text: user.lastMessage, 
+          sender: 'vendor', 
+          time: user.time,
+          avatar: user.avatar
+        }
+      ];
+    }
+    return [];
+  };
+
   const sendMessage = () => {
-    if (newMessage.trim()) {
+    if (newMessage.trim() && selectedUser) {
       const newMsg = {
         id: messages.length + 1,
         text: newMessage,
-        sender: 'user',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        sender: 'support',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        avatar: 'S'
       };
       setMessages([...messages, newMsg]);
       setNewMessage('');
-      
-      // Simulate auto-reply after 2 seconds
-      setTimeout(() => {
-        const autoReply = {
-          id: messages.length + 2,
-          text: "Thanks for your message. I'll look into this and get back to you shortly.",
-          sender: 'support',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages(prev => [...prev, autoReply]);
-      }, 2000);
     }
   };
 
@@ -114,23 +187,60 @@ function Helpcenter() {
     }
   };
 
-  const startChat = (agent) => {
-    setSelectedAgent(agent);
-    setMessages([
-      { 
-        id: 1, 
-        text: `Hello! I'm ${agent.name} from ${agent.department}. How can I help you today?`, 
-        sender: 'support', 
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-      }
-    ]);
+  const startChat = (user) => {
+    setSelectedUser(user);
+    const initialMessages = getInitialMessages(user);
+    setMessages(initialMessages);
   };
 
   const closeChat = () => {
-    setSelectedAgent(null);
+    setSelectedUser(null);
+    setMessages([]);
   };
 
   const unreadCount = notifications.filter(notification => !notification.read).length;
+
+  // Proper search and filter functionality
+  const filteredChats = useMemo(() => {
+    let filtered = activeChats;
+
+    // First apply type filter
+    if (chatFilter !== 'all') {
+      filtered = filtered.filter(chat => chat.type === chatFilter);
+    }
+
+    // Then apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(chat => 
+        chat.name.toLowerCase().includes(query) ||
+        chat.issue.toLowerCase().includes(query) ||
+        chat.lastMessage.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [activeChats, chatFilter, searchQuery]);
+
+  // Get appropriate chat header based on user type
+  const getChatHeader = (user) => {
+    if (user.type === 'customer') {
+      return `Customer Support - ${user.name}`;
+    } else if (user.type === 'vendor') {
+      return `Vendor Support - ${user.name}`;
+    }
+    return `Chat with ${user.name}`;
+  };
+
+  // Get appropriate placeholder based on user type
+  const getInputPlaceholder = (user) => {
+    if (user.type === 'customer') {
+      return 'Type a response to customer...';
+    } else if (user.type === 'vendor') {
+      return 'Type a response to vendor...';
+    }
+    return 'Type a message...';
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -139,16 +249,16 @@ function Helpcenter() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <ChatBubbleLeftRightIcon className="h-8 w-8 text-[#586330]" />
-              <h1 className="ml-2 text-2xl font-bold text-gray-900">Help Center</h1>
+              <MessageCircle className="h-8 w-8 text-[#586330]" />
+              <h1 className="ml-2 text-2xl font-bold text-gray-900">Support Team Dashboard</h1>
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                <Search className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 type="text"
-                placeholder="Search help articles..."
+                placeholder="Search conversations..."
                 className="block w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#586330] focus:border-[#586330]"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -172,7 +282,7 @@ function Helpcenter() {
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <BellIcon className="h-5 w-5 mr-3" />
+                  <Bell className="h-5 w-5 mr-3" />
                   Notifications
                   {unreadCount > 0 && (
                     <span className="ml-auto bg-white text-[#586330] text-xs rounded-full px-2 py-1 min-w-6 flex items-center justify-center">
@@ -182,16 +292,16 @@ function Helpcenter() {
                 </button>
                 
                 <button
-                  onClick={() => setActiveTab('team')}
+                  onClick={() => setActiveTab('chats')}
                   className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    activeTab === 'team'
+                    activeTab === 'chats'
                       ? 'bg-[#586330] text-white border border-[#586330]'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <UserCircleIcon className="h-5 w-5 mr-3" />
-                  Support Team
-                  {selectedAgent && (
+                  <MessageCircle className="h-5 w-5 mr-3" />
+                  Active Chats
+                  {selectedUser && (
                     <span className="ml-auto bg-green-600 text-white text-xs rounded-full px-2 py-1">
                       Live
                     </span>
@@ -199,36 +309,22 @@ function Helpcenter() {
                 </button>
               </nav>
 
-              {/* Support Team Section */}
+              {/* Quick Stats */}
               <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Online Support</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Stats</h3>
                 <div className="space-y-3">
-                  {supportAgents.map((agent) => (
-                    <div key={agent.id} className="flex items-center p-3 bg-gray-50 rounded-lg">
-                      <div className="relative">
-                        <UserCircleIcon className="h-8 w-8 text-gray-400" />
-                        <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white ${
-                          agent.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'
-                        }`} />
-                      </div>
-                      <div className="ml-3 flex-1">
-                        <p className="text-sm font-medium text-gray-900">{agent.name}</p>
-                        <p className="text-xs text-gray-500">{agent.department}</p>
-                        <p className="text-xs text-gray-400 mt-1">{agent.responseTime}</p>
-                      </div>
-                      <button
-                        onClick={() => startChat(agent)}
-                        disabled={agent.status !== 'online'}
-                        className={`ml-2 px-3 py-1 text-xs rounded-lg transition-colors ${
-                          agent.status === 'online'
-                            ? 'bg-[#586330] text-white hover:bg-[#4a5428]'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        Chat
-                      </button>
-                    </div>
-                  ))}
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-gray-600">Active Chats</p>
+                    <p className="text-2xl font-bold text-blue-600">{activeChats.length}</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm text-gray-600">Resolved Today</p>
+                    <p className="text-2xl font-bold text-green-600">12</p>
+                  </div>
+                  <div className="p-3 bg-orange-50 rounded-lg">
+                    <p className="text-sm text-gray-600">Pending</p>
+                    <p className="text-2xl font-bold text-orange-600">3</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -240,8 +336,8 @@ function Helpcenter() {
             {activeTab === 'notifications' && (
               <div className="bg-white rounded-xl shadow-sm border">
                 <div className="p-6 border-b">
-                  <h2 className="text-xl font-semibold text-gray-900">Email Notifications</h2>
-                  <p className="text-gray-600 mt-1">Manage your notification preferences</p>
+                  <h2 className="text-xl font-semibold text-gray-900">Recent Notifications</h2>
+                  <p className="text-gray-600 mt-1">Stay updated with customer and vendor activities</p>
                 </div>
                 
                 <div className="divide-y">
@@ -254,7 +350,7 @@ function Helpcenter() {
                             notification.type === 'message' ? 'bg-blue-100' :
                             notification.type === 'success' ? 'bg-green-100' : 'bg-purple-100'
                           }`}>
-                            <EnvelopeIcon className={`h-5 w-5 ${
+                            <Mail className={`h-5 w-5 ${
                               notification.type === 'security' ? 'text-red-600' :
                               notification.type === 'message' ? 'text-blue-600' :
                               notification.type === 'success' ? 'text-green-600' : 'text-purple-600'
@@ -264,7 +360,7 @@ function Helpcenter() {
                             <h3 className="font-medium text-gray-900">{notification.title}</h3>
                             <p className="text-gray-600 mt-1">{notification.description}</p>
                             <div className="flex items-center mt-2 text-sm text-gray-500">
-                              <CalendarIcon className="h-4 w-4 mr-1" />
+                              <Calendar className="h-4 w-4 mr-1" />
                               {notification.time}
                             </div>
                           </div>
@@ -281,141 +377,204 @@ function Helpcenter() {
               </div>
             )}
 
-            {/* Support Team Tab */}
-            {activeTab === 'team' && (
-              <div className="space-y-6">
-                {/* Support Team Overview */}
-                {!selectedAgent && (
-                  <div className="bg-white rounded-xl shadow-sm border">
-                    <div className="p-6 border-b">
-                      <h2 className="text-xl font-semibold text-gray-900">Our Support Team</h2>
-                      <p className="text-gray-600 mt-1">Get help from our dedicated support specialists</p>
+            {/* Chats Tab */}
+            {activeTab === 'chats' && (
+              <div className="h-[600px] flex rounded-lg overflow-hidden shadow-sm border border-gray-200 bg-white">
+                {/* Left Sidebar */}
+                <div className="w-96 bg-gray-100 border-r border-gray-200 flex flex-col">
+                  <div className="p-4 border-b border-gray-200">
+                    <div className="relative mb-4">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search by name, issue, or message..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-white border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#586330]/40"
+                      />
                     </div>
-                    
-                    <div className="p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {supportAgents.map((agent) => (
-                          <div key={agent.id} className="border rounded-xl p-6 hover:shadow-md transition-shadow">
-                            <div className="flex items-center space-x-4 mb-4">
-                              <div className="relative">
-                                <UserCircleIcon className="h-16 w-16 text-gray-400" />
-                                <div className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white ${
-                                  agent.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'
-                                }`} />
-                              </div>
-                              <div>
-                                <h3 className="font-semibold text-gray-900 text-lg">{agent.name}</h3>
-                                <p className="text-sm text-gray-600">{agent.department}</p>
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 ${
-                                  agent.status === 'online' 
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {agent.status}
-                                </span>
-                              </div>
-                            </div>
-                            <p className="text-gray-600 text-sm mb-4">{agent.description}</p>
-                            <p className="text-gray-500 text-xs mb-4">{agent.responseTime}</p>
-                            <button
-                              onClick={() => startChat(agent)}
-                              disabled={agent.status !== 'online'}
-                              className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 ${
-                                agent.status === 'online'
-                                  ? 'bg-[#586330] text-white hover:bg-[#4a5428]'
-                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                              }`}
-                            >
-                              <ChatBubbleLeftRightIcon className="h-5 w-5" />
-                              <span>Start Chat</span>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+
+                    <div className="flex gap-2">
+                      {['all', 'customer', 'vendor'].map((filter) => (
+                        <button
+                          key={filter}
+                          onClick={() => setChatFilter(filter)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                            chatFilter === filter
+                              ? 'bg-[#586330] text-white'
+                              : 'text-gray-600 hover:bg-[#586330] hover:text-white'
+                          }`}
+                        >
+                          {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )}
 
-                {/* Active Chat */}
-                {selectedAgent && (
-                  <div className="bg-white rounded-xl shadow-sm border h-[600px] flex flex-col">
-                    {/* Chat Header */}
-                    <div className="p-4 border-b">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="relative">
-                            <UserCircleIcon className="h-12 w-12 text-[#586330]" />
-                            <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{selectedAgent.name}</h3>
-                            <p className="text-sm text-green-600">Online • {selectedAgent.department}</p>
+                  <div className="flex-1 overflow-y-auto">
+                    {filteredChats.length > 0 ? (
+                      filteredChats.map((chat) => (
+                        <div
+                          key={chat.id}
+                          onClick={() => startChat(chat)}
+                          className={`p-4 border-b border-gray-200 cursor-pointer transition ${
+                            selectedUser?.id === chat.id ? 'bg-[#586330]/20' : 'hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${
+                              chat.type === 'customer' 
+                                ? 'bg-blue-100 text-blue-600' 
+                                : 'bg-green-100 text-green-600'
+                            }`}>
+                              {chat.avatar}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-medium text-gray-800 truncate">{chat.name}</h3>
+                                  <span className={`text-xs px-2 py-1 rounded-full ${
+                                    chat.type === 'customer'
+                                      ? 'bg-blue-100 text-blue-600'
+                                      : 'bg-green-100 text-green-600'
+                                  }`}>
+                                    {chat.type}
+                                  </span>
+                                </div>
+                                <span className="text-xs text-gray-400">{chat.time}</span>
+                              </div>
+                              <p className="text-sm font-medium text-gray-700 mb-1">{chat.issue}</p>
+                              <p className="text-xs text-gray-500 truncate">
+                                {chat.lastMessage}
+                              </p>
+                            </div>
+                            {chat.unread > 0 && (
+                              <span className="bg-[#586330] text-white text-xs rounded-full px-2 py-1 min-w-6 flex items-center justify-center">
+                                {chat.unread}
+                              </span>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                            <PhoneIcon className="h-5 w-5" />
-                          </button>
-                          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                            <VideoCameraIcon className="h-5 w-5" />
-                          </button>
-                          <button 
-                            onClick={closeChat}
-                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                          >
-                            <XMarkIcon className="h-5 w-5" />
-                          </button>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center text-gray-500">
+                        <Search className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>No chats found matching your search</p>
+                        <p className="text-sm mt-1">Try adjusting your search terms or filters</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Panel - Chat Area */}
+                {selectedUser ? (
+                  <div className="flex-1 flex flex-col bg-white">
+                    {/* Chat Header */}
+                    <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+                      <div>
+                        <h2 className="text-lg font-semibold text-[#586330]">
+                          {getChatHeader(selectedUser)}
+                        </h2>
+                        <p className="text-sm text-gray-600">{selectedUser.issue}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-3 py-1 rounded-full ${
+                          selectedUser.type === 'customer'
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'bg-green-100 text-green-600'
+                        }`}>
+                          {selectedUser.type.toUpperCase()}
+                        </span>
+                        
+                        <button 
+                          onClick={closeChat}
+                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ml-2 ${
+                          selectedUser.type === 'customer'
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'bg-green-100 text-green-600'
+                        }`}>
+                          {selectedUser.avatar}
                         </div>
                       </div>
                     </div>
 
                     {/* Messages */}
-                    <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
-                      <div className="space-y-4">
-                        {messages.map((message) => (
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex items-start gap-3 ${
+                            message.sender === 'support' ? 'flex-row-reverse' : ''
+                          }`}
+                        >
                           <div
-                            key={message.id}
-                            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                              message.sender === 'support'
+                                ? 'bg-[#586330] text-white'
+                                : selectedUser.type === 'customer'
+                                ? 'bg-blue-100 text-blue-600'
+                                : 'bg-green-100 text-green-600'
+                            }`}
+                          >
+                            {message.avatar}
+                          </div>
+                          <div
+                            className={`flex flex-col ${
+                              message.sender === 'support' ? 'items-end' : 'items-start'
+                            }`}
                           >
                             <div
-                              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                                message.sender === 'user'
-                                  ? 'bg-[#586330] text-white rounded-br-none'
-                                  : 'bg-white text-gray-900 border rounded-bl-none shadow-sm'
+                              className={`max-w-md px-4 py-3 rounded-2xl ${
+                                message.sender === 'support'
+                                  ? 'bg-[#586330]/80 text-white rounded-tr-none'
+                                  : selectedUser.type === 'customer'
+                                  ? 'bg-blue-100 text-blue-900 rounded-tl-none'
+                                  : 'bg-green-100 text-green-900 rounded-tl-none'
                               }`}
                             >
                               <p className="text-sm">{message.text}</p>
-                              <p className={`text-xs mt-1 ${
-                                message.sender === 'user' ? 'text-[#e8eed0]' : 'text-gray-500'
-                              }`}>
-                                {message.time}
-                              </p>
                             </div>
+                            <span className="text-xs text-gray-400 mt-1">
+                              {message.sender === 'support' 
+                                ? 'You' 
+                                : `${selectedUser.name} (${selectedUser.type})`} • {message.time}
+                            </span>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Message Input */}
-                    <div className="p-4 border-t bg-white">
-                      <div className="flex space-x-4">
+                    <div className="p-6 border-t border-gray-200 bg-white">
+                      <div className="flex items-center gap-3">
                         <input
                           type="text"
-                          placeholder="Type your message..."
-                          className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#586330] focus:border-[#586330]"
+                          placeholder={selectedUser ? getInputPlaceholder(selectedUser) : 'Type a message...'}
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
-                          onKeyPress={handleKeyPress}
+                          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                          className="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#586330]/40"
                         />
                         <button
                           onClick={sendMessage}
                           disabled={!newMessage.trim()}
-                          className="bg-[#586330] text-white px-6 py-3 rounded-lg hover:bg-[#4a5428] focus:outline-none focus:ring-2 focus:ring-[#586330] focus:ring-offset-2 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-3 bg-[#586330]/80 hover:bg-[#586330] text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <PaperAirplaneIcon className="h-5 w-5" />
-                          <span>Send</span>
+                          <Send className="w-5 h-5" />
                         </button>
                       </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center bg-white">
+                    <div className="text-center">
+                      <MessageCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No chat selected</h3>
+                      <p className="text-gray-500">Select a conversation from the sidebar to start chatting</p>
                     </div>
                   </div>
                 )}
