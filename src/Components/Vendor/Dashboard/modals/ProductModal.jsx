@@ -178,7 +178,7 @@ const ProductModal = ({
           </button>
           <button
             onClick={onSave}
-            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition font-medium"
+            className="flex-1 px-4 py-2 bg-[#586330]/60 text-white rounded-md hover:bg-[#586330]/90 transition font-medium"
           >
             Save Product
           </button>

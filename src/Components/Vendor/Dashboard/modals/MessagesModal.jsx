@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  FaUser, 
   FaTimes, 
-  FaSearch, 
+  FaSearch,
   FaEdit,
   FaTrash,
   FaCheck,
@@ -13,13 +12,7 @@ import {
   IoMdCheckmarkCircle,
   IoIosSend
 } from 'react-icons/io';
-import { 
-  RiChatSmileLine,
-  RiMessage2Fill
-} from 'react-icons/ri';
-import { 
-  MdEmojiEmotions
-} from 'react-icons/md';
+import { Send } from 'lucide-react';
 
 const MessagesModal = ({ 
   setShowMessages, 
@@ -41,20 +34,15 @@ const MessagesModal = ({
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editMessageText, setEditMessageText] = useState('');
   const [selectedMessageId, setSelectedMessageId] = useState(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
 
   const messagesEndRef = useRef(null);
   const messageOptionsRef = useRef(null);
-  const emojiPickerRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (messageOptionsRef.current && !messageOptionsRef.current.contains(event.target)) {
         setSelectedMessageId(null);
-      }
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
-        setShowEmojiPicker(false);
       }
     };
 
@@ -103,15 +91,6 @@ const MessagesModal = ({
     return responses[threadTitle] || 'Thank you for your message. We will get back to you shortly.';
   };
 
-  const handleEmojiClick = () => {
-    setShowEmojiPicker(!showEmojiPicker);
-  };
-
-  const addEmoji = (emoji) => {
-    setNewMessage(prev => prev + emoji);
-    setShowEmojiPicker(false);
-  };
-
   const sendMessageToThread = (messageObj) => {
     if (activeThread) {
       const activeThreadData = messageThreads.find(thread => thread.id === activeThread);
@@ -128,6 +107,7 @@ const MessagesModal = ({
           : thread
       ));
 
+      // Simulate message status updates
       setTimeout(() => {
         setMessageThreads(prev => prev.map(thread => 
           thread.id === activeThread 
@@ -154,6 +134,7 @@ const MessagesModal = ({
         ));
       }, 2000);
 
+      // Simulate auto-response
       setTimeout(() => {
         const autoResponse = {
           id: Date.now() + 1,
@@ -178,7 +159,7 @@ const MessagesModal = ({
     }
   };
 
-  const handleSendMessageWithUpdate = () => {
+  const handleSendMessage = () => {
     if (newMessage.trim() && activeThread) {
       const newMessageObj = {
         id: Date.now(),
@@ -198,7 +179,6 @@ const MessagesModal = ({
     setActiveThread(threadId);
     setSelectedMessageId(null);
     setEditingMessageId(null);
-    setShowEmojiPicker(false);
     
     setMessageThreads(prev => prev.map(thread => 
       thread.id === threadId 
@@ -284,17 +264,14 @@ const MessagesModal = ({
     }
   };
 
-  const commonEmojis = ['😀', '😂', '🥰', '😎', '👍', '❤️', '🔥', '🎉', '🙏', '💯'];
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl w-full max-w-6xl h-[90vh] flex overflow-hidden shadow-lg border border-gray-200">
         {/* Left Sidebar */}
         <div className="w-96 bg-gray-100 border-r border-gray-200 flex flex-col">
-          {/* Header */}
-          <div className="p-4 border-b border-gray-200 bg-gray-100">
+          <div className="p-4 border-b border-gray-200">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Messages</h2>
+              <h2 className="text-lg font-semibold text-[#586330]">Messages</h2>
               <button 
                 onClick={() => setShowMessages(false)}
                 className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-200 transition-colors"
@@ -303,21 +280,17 @@ const MessagesModal = ({
               </button>
             </div>
 
-            {/* Search */}
             <div className="relative mb-4">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaSearch className="w-4 h-4 text-gray-400" />
-              </div>
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search chats"
-                className="w-full pl-10 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#586330]/40 focus:border-transparent text-sm"
+                className="w-full bg-white border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#586330]/40"
                 value={searchQuery}
                 onChange={handleSearchChange}
               />
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-2">
               {['all', 'active', 'closed'].map((tab) => (
                 <button
@@ -335,11 +308,10 @@ const MessagesModal = ({
             </div>
           </div>
 
-          {/* Chat List */}
-          <div className="flex-1 overflow-y-auto bg-white">
+          <div className="flex-1 overflow-y-auto">
             {filteredThreads.length > 0 ? (
               filteredThreads.map((thread) => (
-                <div 
+                <div
                   key={thread.id}
                   onClick={() => handleThreadClick(thread.id)}
                   className={`p-4 border-b border-gray-200 cursor-pointer transition ${
@@ -372,18 +344,18 @@ const MessagesModal = ({
           </div>
         </div>
 
-        {/* Right Panel - Chat Area */}
+        {/* Right Panel */}
         <div className="flex-1 flex flex-col bg-white">
-          {/* Chat Header */}
           {activeThreadData ? (
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-[#586330]/10 text-[#586330] flex items-center justify-center font-medium">
+              <div>
+                <h2 className="text-lg font-semibold text-[#586330]">
+                  Chat with {activeThreadData.title}
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-[#586330]/10 text-[#586330] flex items-center justify-center ml-2">
                   {activeThreadData.title.charAt(0)}
-                </div>
-                <div>
-                  <h2 className="font-semibold text-[#586330]">{activeThreadData.title}</h2>
-                  <p className="text-xs text-gray-600">online</p>
                 </div>
               </div>
             </div>
@@ -391,19 +363,18 @@ const MessagesModal = ({
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                  <RiMessage2Fill className="w-5 h-5 text-gray-600" />
+                  <span className="text-gray-600 font-medium">?</span>
                 </div>
                 <span className="font-semibold text-gray-800">Select a chat</span>
               </div>
             </div>
           )}
 
-          {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
             {activeThread ? (
               threadMessages.map((msg) => (
-                <div 
-                  key={msg.id} 
+                <div
+                  key={msg.id}
                   className={`flex items-start gap-3 ${
                     msg.isSupport ? "" : "flex-row-reverse"
                   }`}
@@ -436,21 +407,50 @@ const MessagesModal = ({
                       </div>
                     </div>
                   ) : (
-                    <div 
-                      className={`max-w-md px-4 py-3 rounded-2xl relative cursor-pointer ${
-                        msg.isSupport 
-                          ? 'bg-white border border-gray-200 text-gray-800 rounded-tl-none' 
-                          : 'bg-[#586330]/80 text-white rounded-tr-none'
-                      } shadow-sm hover:opacity-95 transition-opacity ${
-                        selectedMessageId === msg.id ? 'ring-2 ring-[#586330]' : ''
+                    <div
+                      className={`flex flex-col ${
+                        msg.isSupport ? "items-start" : "items-end"
                       }`}
-                      onClick={() => !msg.isSupport && handleMessageClick(msg.id)}
                     >
-                      <p className="text-sm">{msg.message}</p>
-                      <div className={`flex justify-end items-center space-x-1 mt-1 ${
-                        msg.isSupport ? 'justify-start' : 'justify-end'
+                      <div
+                        className={`max-w-md px-4 py-3 rounded-2xl relative cursor-pointer ${
+                          msg.isSupport
+                            ? "bg-white border border-gray-200 text-gray-800 rounded-tl-none"
+                            : "bg-[#586330]/80 text-white rounded-tr-none"
+                        } shadow-sm hover:opacity-95 transition-opacity ${
+                          selectedMessageId === msg.id ? 'ring-2 ring-[#586330]' : ''
+                        }`}
+                        onClick={() => !msg.isSupport && handleMessageClick(msg.id)}
+                      >
+                        <p className="text-sm">{msg.message}</p>
+                        
+                        {/* Message Options */}
+                        {!msg.isSupport && selectedMessageId === msg.id && (
+                          <div 
+                            ref={messageOptionsRef}
+                            className="absolute top-0 right-0 mt-8 bg-white rounded-lg shadow-lg border border-gray-200 z-10 min-w-32"
+                          >
+                            <button
+                              onClick={() => handleEditMessage(msg)}
+                              className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
+                            >
+                              <FaEdit className="w-3 h-3" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMessage(msg.id)}
+                              className="w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
+                            >
+                              <FaTrash className="w-3 h-3" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div className={`flex items-center space-x-1 mt-1 ${
+                        msg.isSupport ? "justify-start" : "justify-end"
                       }`}>
-                        <span className="text-xs opacity-80 flex items-center">
+                        <span className="text-xs text-gray-400 flex items-center">
                           {msg.time}
                           {msg.edited && (
                             <span className="ml-1 text-xs opacity-60">(edited)</span>
@@ -462,29 +462,6 @@ const MessagesModal = ({
                           </span>
                         )}
                       </div>
-
-                      {/* Message Options */}
-                      {!msg.isSupport && selectedMessageId === msg.id && (
-                        <div 
-                          ref={messageOptionsRef}
-                          className="absolute top-0 right-0 mt-8 bg-white rounded-lg shadow-lg border border-gray-200 z-10 min-w-32"
-                        >
-                          <button
-                            onClick={() => handleEditMessage(msg)}
-                            className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
-                          >
-                            <FaEdit className="w-3 h-3" />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteMessage(msg.id)}
-                            className="w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
-                          >
-                            <FaTrash className="w-3 h-3" />
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -493,7 +470,7 @@ const MessagesModal = ({
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <RiChatSmileLine className="w-8 h-8 text-gray-400" />
+                    <span className="text-gray-400 text-2xl">💬</span>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-600 mb-2">Messages</h3>
                   <p className="text-gray-500 max-w-sm">
@@ -505,59 +482,23 @@ const MessagesModal = ({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Message Input */}
           {activeThread && (
             <div className="p-6 border-t border-gray-200 bg-white">
               <div className="flex items-center gap-3">
-                {/* Message Input */}
-                <div className="flex-1 bg-gray-50 border border-gray-300 rounded-lg">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type a message..."
-                    className="w-full px-4 py-3 bg-transparent text-gray-900 focus:outline-none text-sm rounded-lg"
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessageWithUpdate()}
-                  />
-                </div>
-
-                {/* Emoji Picker */}
-                <div className="relative" ref={emojiPickerRef}>
-                  <button 
-                    onClick={handleEmojiClick}
-                    className="p-3 text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <MdEmojiEmotions className="w-5 h-5" />
-                  </button>
-                  
-                  {showEmojiPicker && (
-                    <div className="absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-xl border border-gray-300 z-20 p-4 w-64">
-                      <div className="grid grid-cols-8 gap-1">
-                        {commonEmojis.map((emoji, index) => (
-                          <button
-                            key={index}
-                            onClick={() => addEmoji(emoji)}
-                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-all duration-200 text-lg hover:scale-110"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Send Button */}
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#586330]/40"
+                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                />
                 <button
-                  onClick={handleSendMessageWithUpdate}
+                  onClick={handleSendMessage}
                   disabled={!newMessage.trim()}
-                  className={`p-3 rounded-lg transition ${
-                    newMessage.trim() 
-                      ? 'bg-[#586330]/80 hover:bg-[#586330] text-white' 
-                      : 'text-gray-400 cursor-not-allowed bg-gray-200'
-                  }`}
+                  className="p-3 bg-[#586330]/80 hover:bg-[#586330] text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <IoIosSend className="w-5 h-5" />
+                  <Send className="w-5 h-5" />
                 </button>
               </div>
             </div>

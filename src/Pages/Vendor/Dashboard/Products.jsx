@@ -319,7 +319,7 @@ const Products = () => {
           <h1 className="text-3xl font-bold text-gray-800">Products Available</h1>
           <button
             onClick={handleAddProduct}
-            className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition flex items-center space-x-2"
+            className="bg-[#586330] text-white px-6 py-2 rounded-lg hover:bg-[#586330]/60 transition flex items-center space-x-2"
           >
             <span>+</span>
             <span>Add Product</span>
@@ -333,7 +333,7 @@ const Products = () => {
             placeholder="Search products by name, category, or description..."
             value={searchTerm}
             onChange={handleSearch}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent"
           />
         </div>
 
@@ -345,7 +345,7 @@ const Products = () => {
               onClick={() => handleCategoryFilter(category.id)}
               className={`px-4 py-2 rounded-lg transition duration-200 font-medium ${
                 activeCategory === category.id
-                  ? 'bg-green-500 text-white hover:bg-green-600'
+                  ? 'bg-[#586330] text-white hover:bg-[#586330]/60'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
@@ -398,10 +398,10 @@ const Products = () => {
                 </div>
                 
                 <div className="mb-3">
-                  <span className="text-green-600 font-bold text-lg">
+                  <span className="text-[#586330] font-bold text-lg">
                     {formatPrice(product.price)}
                   </span>
-                  <span className="text-xs text-gray-500 bg-green-100 text-green-700 px-2 py-1 rounded ml-2">
+                  <span className="text-xs text-gray-500 bg-[#586330]/20 text-[#586330]/70 px-2 py-1 rounded ml-2">
                     {product.productCategory}
                   </span>
                 </div>
@@ -428,7 +428,7 @@ const Products = () => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleUpdateProduct(product)}
-                    className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition font-medium text-sm"
+                    className="flex-1 bg-[#586330]/60 text-white py-2 rounded-md hover:bg-[#586330]/70 transition font-medium text-sm"
                   >
                     Update
                   </button>
@@ -458,7 +458,7 @@ const Products = () => {
           <div className="text-center mt-8">
             <button 
               onClick={handleLoadMore}
-              className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200 font-medium"
+              className="px-6 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/60 transition duration-200 font-medium"
             >
               Load More Products
             </button>
