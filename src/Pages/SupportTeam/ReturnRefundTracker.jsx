@@ -14,6 +14,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
   ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend 
 } from "recharts";
+import SupportTeamNavbar from "./SupportTeamNavbar";
 
 // Enhanced Sparkline with multiple variants
 const Sparkline = ({ data, color, variant = "line" }) => {
@@ -542,7 +543,7 @@ export default function ReturnRefundTracker() {
 
   return (
     <div className={`min-h-screen ${theme} transition-colors duration-300`}>
-      {/* Enhanced Header */}
+      {/* Enhanced Header */}<SupportTeamNavbar/>
       <header className={`sticky top-0 z-40 backdrop-blur-xl border-b transition-colors ${
         darkMode 
           ? 'bg-gray-900/90 border-gray-700' 

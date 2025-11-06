@@ -27,14 +27,6 @@ import CustomerCheckout from './Pages/customer/CustomerCheckout';
 import CustomerChat from './Pages/customer/CustomerChat';
 
 
-
-// Support Team 
-import Helpcenter from './Pages/SupportTeam/Helpcenter';
-import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
-import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
-import Chating from './Pages/SupportTeam/Chating.jsx';
-
-
 //Common for all users
 import Login from './Pages/Auth/Login';
 
@@ -54,6 +46,17 @@ import CustomerReviews from './Components/Vendor/Home/CustomerReviews';
 import Customers from './Pages/Vendor/Dashboard/Customers';
 import Invoices from './Pages/Vendor/Dashboard/Invoices';
 import Payments from './Pages/Vendor/Dashboard/Payments';
+
+
+// Support Team 
+import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
+import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
+import SupportTeamNavbar from './Pages/SupportTeam/SupportTeamNavbar.jsx';
+import ChatHandler from './Pages/SupportTeam/ChatHandler.jsx';
+
+
+
+
 
 function App() {
   return (
@@ -104,10 +107,10 @@ function App() {
 
 
         {/* Support Team */}
-        <Route path="/support-helpcenter" element={<Helpcenter />} />
+        <Route path="/support-helpcenter" element={<ChatHandler />} />
         <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails />} />
         <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker />} />
-        <Route path="/support-chat" element={<Chating/>} />
+        <Route path="/support-Navbar" element={<SupportTeamNavbar/>} />
          
 
       </Routes>
