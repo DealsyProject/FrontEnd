@@ -175,7 +175,7 @@ const Customers = () => {
                         <h3 className="font-semibold text-gray-800">{customer.name}</h3>
                         <p className="text-sm text-gray-600">{customer.email}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {customer.orders.length} order(s)
+                          {customer.orders.length} order
                         </p>
                       </div>
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
@@ -201,7 +201,7 @@ const Customers = () => {
                       <span>📅 Joined: {new Date(selectedCustomer.joinDate).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <span className="bg-[#586330]/20 text-[#586330]/80 px-3 py-1 rounded-full text-sm font-medium">
                     {selectedCustomer.orders.length} Orders
                   </span>
                 </div>
@@ -228,13 +228,13 @@ const Customers = () => {
                             <div>
                               <h4 className="font-semibold text-gray-800">{order.productName}</h4>
                               <p className="text-sm text-gray-600">
-                                Quantity: {order.quantity} • ₹{order.price.toLocaleString()} each
+                                Quantity: {order.quantity} 
                               </p>
                               <p className="text-sm text-gray-500">
                                 Ordered: {new Date(order.orderDate).toLocaleDateString()}
                               </p>
                             </div>
-                            <span className="text-lg font-bold text-green-600">
+                            <span className="text-lg font-bold text-[#586330]">
                               ₹{(order.quantity * order.price).toLocaleString()}
                             </span>
                           </div>

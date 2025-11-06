@@ -53,7 +53,7 @@ const MessageButton = ({ setShowMessages, messageThreads }) => (
   >
     💬
     {messageThreads.filter(msg => msg.unread).length > 0 && (
-      <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+      <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#586330] rounded-full"></span>
     )}
   </button>
 );
@@ -66,7 +66,7 @@ const NotificationButton = ({ setShowNotifications, notifications }) => (
   >
     🔔
     {notifications.filter(notif => notif.status === 'New').length > 0 && (
-      <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+      <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#586330] rounded-full"></span>
     )}
   </button>
 );

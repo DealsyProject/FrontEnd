@@ -2,8 +2,8 @@ import React from 'react';
 
 const NotificationsWidget = ({ setShowNotifications, notifications }) => {
   return (
-    <div className="bg-green-50 rounded-xl shadow p-6">
-      <h3 className="text-lg font-semibold text-green-800 mb-4">Notifications</h3>
+    <div className="bg-[#586330]/20 rounded-xl shadow p-6">
+      <h3 className="text-lg font-semibold  mb-4">Notifications</h3>
       <div className="space-y-3">
         {notifications.slice(0, 3).map((notification) => (
           <NotificationItem 
@@ -16,7 +16,7 @@ const NotificationsWidget = ({ setShowNotifications, notifications }) => {
       <ViewAllButton 
         onClick={() => setShowNotifications(true)} 
         text="View All Notifications"
-        className="text-green-700 border-green-300 hover:bg-green-100"
+        className="  hover:bg-[#586330]/20"
       />
     </div>
   );

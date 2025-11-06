@@ -9,8 +9,11 @@ import {
   X,
   Send,
   Phone,
-  Video
+  Video,
+  ChevronDown
 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'react-hot-toast';
 
 function Helpcenter() {
   const [activeTab, setActiveTab] = useState('notifications');
@@ -19,8 +22,10 @@ function Helpcenter() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [chatFilter, setChatFilter] = useState('all');
+  const [openFaq, setOpenFaq] = useState(null);
+  const [search, setSearch] = useState('');
 
-  // ── Notifications (mock real-time) ─────────────────────────────────
+  // Notifications (mock real-time)
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -54,7 +59,7 @@ function Helpcenter() {
       type: 'success',
       read: true
     }
-  ];
+  ]);
 
   const activeChats = [
     { 
@@ -114,6 +119,24 @@ function Helpcenter() {
     }
   ];
 
+  const faqsRaw = [
+    {
+      id: 1,
+      question: "How do I reset my password?",
+      answer: "You can reset your password by clicking on 'Forgot Password' on the login page.",
+      tags: ["password", "login", "account"]
+    },
+    {
+      id: 2,
+      question: "How to track my order?",
+      answer: "Go to your orders page and click on the tracking number for real-time updates.",
+      tags: ["order", "tracking", "shipping"]
+    }
+  ];
+
+  // Calculate unread count
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   // Different initial messages based on user type
   const getInitialMessages = (user) => {
     if (user.type === 'customer') {
@@ -127,7 +150,7 @@ function Helpcenter() {
         },
         { 
           id: 2, 
-          text: `Hello ${user.name}! I\'m here to help with your ${user.issue.toLowerCase()}. Can you provide more details?`, 
+          text: `Hello ${user.name}! I'm here to help with your ${user.issue.toLowerCase()}. Can you provide more details?`, 
           sender: 'support', 
           time: '10:33 AM',
           avatar: 'S'
@@ -151,7 +174,7 @@ function Helpcenter() {
         },
         { 
           id: 2, 
-          text: `Hi ${user.name}! I\'m here to help with your vendor account. What specific issue are you facing?`, 
+          text: `Hi ${user.name}! I'm here to help with your vendor account. What specific issue are you facing?`, 
           sender: 'support', 
           time: '10:33 AM',
           avatar: 'S'
@@ -204,7 +227,7 @@ function Helpcenter() {
     setMessages([]);
   };
 
-  // ── Contact form (react-hook-form) ───────────────────────────────
+  // Contact form
   const {
     register,
     handleSubmit,
@@ -212,6 +235,15 @@ function Helpcenter() {
     formState: { errors, isSubmitting },
     setError,
   } = useForm();
+
+  const validateContact = (data) => {
+    const errors = {};
+    if (!data.name?.trim()) errors.name = 'Name is required';
+    if (!data.email?.trim()) errors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(data.email)) errors.email = 'Email is invalid';
+    if (!data.message?.trim()) errors.message = 'Message is required';
+    return { errors, isValid: Object.keys(errors).length === 0 };
+  };
 
   const onSubmit = async (data) => {
     const { errors: validationErrors, isValid } = validateContact(data);
@@ -225,7 +257,7 @@ function Helpcenter() {
     // Simulate API call
     await new Promise((r) => setTimeout(r, 1200));
     console.log('Contact form:', data);
-    toast.success('Message sent – we’ll reply soon!');
+    toast.success('Message sent – we\'ll reply soon!');
     reset();
   };
 
@@ -398,13 +430,13 @@ function Helpcenter() {
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#586330] text-white">
                             New
                           </span>
-                        </div>
-                        <ChevronDown
-                          className={`w-5 h-5 text-gray-500 transition-transform ${
-                            openFaq === faq.id ? 'rotate-180' : ''
-                          }`}
-                        />
-                      </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Chats Tab */}
             {activeTab === 'chats' && (
@@ -612,6 +644,8 @@ function Helpcenter() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
+
+export default Helpcenter;

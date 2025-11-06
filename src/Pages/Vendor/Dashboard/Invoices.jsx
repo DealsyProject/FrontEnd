@@ -559,7 +559,7 @@ const Invoices = () => {
                   <div>
                     <button
                       onClick={handleBackToList}
-                      className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+                      className="flex items-center text-[#586330] mb-4"
                     >
                       ← Back to Invoices
                     </button>
@@ -579,7 +579,7 @@ const Invoices = () => {
                       </button>
                       <button
                         onClick={() => handleSendInvoice(selectedInvoice)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        className="px-4 py-2 bg-[#586330] text-white rounded-lg "
                       >
                         Send to Customer
                       </button>
