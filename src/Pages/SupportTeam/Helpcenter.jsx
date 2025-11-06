@@ -9,8 +9,11 @@ import {
   X,
   Send,
   Phone,
-  Video
+  Video,
+  ChevronDown
 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'react-hot-toast';
 
 function Helpcenter() {
   const [activeTab, setActiveTab] = useState('notifications');
@@ -19,8 +22,11 @@ function Helpcenter() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [chatFilter, setChatFilter] = useState('all');
+  const [openFaq, setOpenFaq] = useState(null);
+  const [search, setSearch] = useState('');
 
-  const notifications = [
+  // Notifications (mock real-time)
+  const [notifications, setNotifications] = useState([
     {
       id: 1,
       title: 'New Customer Inquiry',
@@ -53,7 +59,7 @@ function Helpcenter() {
       type: 'success',
       read: true
     }
-  ];
+  ]);
 
   const activeChats = [
     { 
@@ -113,6 +119,24 @@ function Helpcenter() {
     }
   ];
 
+  const faqsRaw = [
+    {
+      id: 1,
+      question: "How do I reset my password?",
+      answer: "You can reset your password by clicking on 'Forgot Password' on the login page.",
+      tags: ["password", "login", "account"]
+    },
+    {
+      id: 2,
+      question: "How to track my order?",
+      answer: "Go to your orders page and click on the tracking number for real-time updates.",
+      tags: ["order", "tracking", "shipping"]
+    }
+  ];
+
+  // Calculate unread count
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   // Different initial messages based on user type
   const getInitialMessages = (user) => {
     if (user.type === 'customer') {
@@ -126,7 +150,7 @@ function Helpcenter() {
         },
         { 
           id: 2, 
-          text: `Hello ${user.name}! I\'m here to help with your ${user.issue.toLowerCase()}. Can you provide more details?`, 
+          text: `Hello ${user.name}! I'm here to help with your ${user.issue.toLowerCase()}. Can you provide more details?`, 
           sender: 'support', 
           time: '10:33 AM',
           avatar: 'S'
@@ -150,7 +174,7 @@ function Helpcenter() {
         },
         { 
           id: 2, 
-          text: `Hi ${user.name}! I\'m here to help with your vendor account. What specific issue are you facing?`, 
+          text: `Hi ${user.name}! I'm here to help with your vendor account. What specific issue are you facing?`, 
           sender: 'support', 
           time: '10:33 AM',
           avatar: 'S'
@@ -181,11 +205,16 @@ function Helpcenter() {
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      sendMessage();
-    }
-  };
+  const filteredFaqs = useMemo(() => {
+    if (!search.trim()) return faqsRaw;
+    const term = search.toLowerCase();
+    return faqsRaw.filter(
+      (f) =>
+        f.question.toLowerCase().includes(term) ||
+        (typeof f.answer === 'string' && f.answer.toLowerCase().includes(term)) ||
+        f.tags.some((t) => t.toLowerCase().includes(term))
+    );
+  }, [search]);
 
   const startChat = (user) => {
     setSelectedUser(user);
@@ -198,7 +227,39 @@ function Helpcenter() {
     setMessages([]);
   };
 
-  const unreadCount = notifications.filter(notification => !notification.read).length;
+  // Contact form
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm();
+
+  const validateContact = (data) => {
+    const errors = {};
+    if (!data.name?.trim()) errors.name = 'Name is required';
+    if (!data.email?.trim()) errors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(data.email)) errors.email = 'Email is invalid';
+    if (!data.message?.trim()) errors.message = 'Message is required';
+    return { errors, isValid: Object.keys(errors).length === 0 };
+  };
+
+  const onSubmit = async (data) => {
+    const { errors: validationErrors, isValid } = validateContact(data);
+    if (!isValid) {
+      Object.entries(validationErrors).forEach(([key, msg]) => {
+        setError(key, { message: msg });
+      });
+      return;
+    }
+
+    // Simulate API call
+    await new Promise((r) => setTimeout(r, 1200));
+    console.log('Contact form:', data);
+    toast.success('Message sent – we\'ll reply soon!');
+    reset();
+  };
 
   // Proper search and filter functionality
   const filteredChats = useMemo(() => {

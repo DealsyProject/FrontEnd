@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import  { useState } from "react";
 import { Search, Phone, MoreVertical, Send } from "lucide-react";
 import Navbar from "../../Components/Admin/Navbar.jsx";
 
