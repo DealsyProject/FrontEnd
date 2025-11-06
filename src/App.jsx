@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route,  } from 'react-router-dom';
 
 
 
@@ -51,7 +50,6 @@ import Payments from './Pages/Vendor/Dashboard/Payments';
 // Support Team 
 import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
 import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
-import SupportTeamNavbar from './Pages/SupportTeam/SupportTeamNavbar.jsx';
 import ChatHandler from './Pages/SupportTeam/ChatHandler.jsx';
 
 
@@ -110,7 +108,6 @@ function App() {
         <Route path="/support-helpcenter" element={<ChatHandler />} />
         <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails />} />
         <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker />} />
-        <Route path="/support-Navbar" element={<SupportTeamNavbar/>} />
          
 
       </Routes>
