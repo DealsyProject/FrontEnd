@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ProductModal from '../../../Components/Vendor/Dashboard/modals/ProductModal';
 import Sidebar from '../../../Components/Vendor/Dashboard/Sidebar';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../../../Components/utils/axiosInstance'
 
 const Products = () => {
   const navigate = useNavigate();
@@ -19,128 +20,70 @@ const Products = () => {
   const activeView = 'products';
   const [activeCategory, setActiveCategory] = useState('all');
   const [visibleProducts, setVisibleProducts] = useState(6);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false); // Track save state
 
-  // Sample product data with same structure as PostedProduct
-  const [products, setProducts] = useState([
-    { 
-      id: 1, 
-      name: 'Modern Chair', 
-      vendor: 'Furniture World',
-      category: 'furniture', 
-      quantity: 1, 
-      description: 'Comfortable modern chair with premium materials and ergonomic design. Perfect for home or office use with exceptional comfort even during long sitting hours.', 
-      taxRate: '10%', 
-      price: '₹12,000',
-      total: 12000, 
-      location: 'Warehouse A', 
-      image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400',
-      detailImages: [
-        'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400',
-        'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400'
-      ],
-      colors: [
-        { name: 'Black', value: '#000000' },
-        { name: 'White', value: '#FFFFFF' },
-        { name: 'Brown', value: '#8B4513' }
-      ]
-    },
-    { 
-      id: 2, 
-      name: 'Queen Size Bed', 
-      vendor: 'Furniture Masters',
-      category: 'furniture', 
-      quantity: 1, 
-      description: 'Luxury queen size bed with premium wood finish and comfortable mattress. Features elegant design that complements any bedroom decor.', 
-      taxRate: '20%', 
-      price: '₹8,000',
-      total: 8000, 
-      location: 'Warehouse B', 
-      image: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=400',
-      detailImages: [
-        'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=400'
-      ],
-      colors: [
-        { name: 'Walnut', value: '#773F1A' },
-        { name: 'Oak', value: '#DAAD86' }
-      ]
-    },
-    { 
-      id: 3, 
-      name: 'Organic Grocery Bundle', 
-      vendor: 'Fresh Market',
-      category: 'grocery', 
-      quantity: 1, 
-      description: 'Premium organic fruits and vegetables sourced directly from local farms. Includes fresh seasonal produce ensuring highest quality and nutritional value.', 
-      taxRate: '5%', 
-      price: '₹1,299',
-      total: 1299, 
-      location: 'Cold Storage', 
-      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400',
-      detailImages: [
-        'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400'
-      ],
-      colors: [
-        { name: 'Mixed', value: '#7B9B7B' }
-      ]
-    },
-    { 
-      id: 4, 
-      name: 'Kitchen Utensil Set', 
-      vendor: 'Cislin Home',
-      category: 'cislin', 
-      quantity: 1, 
-      description: 'Complete kitchen utensil set made from high-quality stainless steel and heat-resistant materials. Includes all essential tools for modern cooking needs.', 
-      taxRate: '18%', 
-      price: '₹6,599',
-      total: 6599, 
-      location: 'Warehouse C', 
-      image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400',
-      detailImages: [
-        'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400'
-      ],
-      colors: [
-        { name: 'Silver', value: '#C0C0C0' },
-        { name: 'Black', value: '#000000' }
-      ]
-    },
-  ]);
+  // Updated product data structure to match backend DTOs
+  const [products, setProducts] = useState([]);
 
-  // Categories for filtering - matching PostedProduct categories
+  // Categories for filtering - MUST match backend categories exactly
   const categories = [
     { id: 'all', name: 'All Products' },
-    { id: 'grocery', name: 'Grocery' },
-    { id: 'furniture', name: 'Furniture' },
-    { id: 'cislin', name: 'Home Essentials' }
+    { id: 'Grocery', name: 'Grocery' },
+    { id: 'Furniture', name: 'Furniture' },
+    { id: 'Books', name: 'Books' },
+    { id: 'Home Appliance', name: 'Home Appliance' },
+    { id: 'Cloth', name: 'Cloth' }
   ];
+
+  // Fetch products on component mount
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Fetch products from API
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get('/api/Product/all');
+      setProducts(response.data.products || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast.error('Failed to load products');
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
+  // Updated new product structure to match CreateProductDto
   const [newProduct, setNewProduct] = useState({
-    name: '',
-    vendor: '',
-    category: '',
-    quantity: 1,
+    productName: '',
     description: '',
-    taxRate: '',
-    price: '',
-    total: 0,
-    location: '',
+    price: 0,
+    quantity: 1,
+    productCategory: '',
     image: '',
-    detailImages: [],
-    colors: []
+    rating: 0
   });
 
   // Filter products based on active category and search
-  const filteredProducts = products.filter(product => 
-    (activeCategory === 'all' || product.category === activeCategory) &&
-    (product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     product.vendor.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredProducts = products.filter(product => {
+    const categoryMatch = activeCategory === 'all' || 
+      product.productCategory?.toLowerCase() === activeCategory.toLowerCase();
+    
+    const searchMatch = 
+      product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.productCategory?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return categoryMatch && searchMatch;
+  });
 
   // Products to display (with load more functionality)
   const productsToShow = filteredProducts.slice(0, visibleProducts);
@@ -159,18 +102,13 @@ const Products = () => {
   // ✅ Add Product Handler
   const handleAddProduct = () => {
     setNewProduct({
-      name: '',
-      vendor: '',
-      category: '',
-      quantity: 1,
+      productName: '',
       description: '',
-      taxRate: '',
-      price: '',
-      total: 0,
-      location: '',
+      price: 0,
+      quantity: 1,
+      productCategory: '',
       image: '',
-      detailImages: [],
-      colors: []
+      rating: 0
     });
     setShowAddModal(true);
   };
@@ -178,62 +116,197 @@ const Products = () => {
   // ✅ Update Product Handler
   const handleUpdateProduct = (product) => {
     setEditingProduct(product);
-    setNewProduct({ ...product });
+    setNewProduct({ 
+      productName: product.productName,
+      description: product.description,
+      price: product.price,
+      quantity: product.quantity,
+      productCategory: product.productCategory,
+      image: product.image,
+      rating: product.rating || 0
+    });
     setShowUpdateModal(true);
   };
 
-  // ✅ Save New Product
-  const handleSaveNewProduct = () => {
-    if (!newProduct.name || !newProduct.category) {
-      toast.error('Product Name and Category are required!');
-      return;
+  // ✅ Validate product data
+  const validateProduct = () => {
+    if (!newProduct.productName?.trim()) {
+      toast.error('Product Name is required!');
+      return false;
     }
-
-    const newId = products.length ? Math.max(...products.map((p) => p.id)) + 1 : 1;
-    setProducts([...products, { 
-      ...newProduct, 
-      id: newId,
-      image: newProduct.image || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400'
-    }]);
-    setShowAddModal(false);
-    toast.success('Product added successfully!');
+    if (!newProduct.productCategory?.trim()) {
+      toast.error('Category is required!');
+      return false;
+    }
+    if (!newProduct.description?.trim()) {
+      toast.error('Description is required!');
+      return false;
+    }
+    if (newProduct.price <= 0) {
+      toast.error('Price must be greater than 0!');
+      return false;
+    }
+    if (newProduct.quantity < 0) {
+      toast.error('Quantity cannot be negative!');
+      return false;
+    }
+    if (!newProduct.image?.trim()) {
+      toast.error('Product Image is required!');
+      return false;
+    }
+    return true;
   };
 
-  // ✅ Save Updated Product
-  const handleSaveUpdatedProduct = () => {
-    if (!newProduct.name || !newProduct.category) {
-      toast.error('Product Name and Category are required!');
+  // ✅ Save New Product - API call
+  const handleSaveNewProduct = async () => {
+    if (!validateProduct()) {
       return;
     }
 
-    setProducts(products.map((p) => 
-      p.id === editingProduct.id ? { 
-        ...newProduct, 
+    setSaving(true);
+    try {
+      const productData = {
+        productName: newProduct.productName.trim(),
+        description: newProduct.description.trim(),
+        price: parseFloat(newProduct.price),
+        quantity: parseInt(newProduct.quantity),
+        productCategory: newProduct.productCategory.trim(),
+        image: newProduct.image,
+        rating: parseFloat(newProduct.rating) || 0
+      };
+
+      await axiosInstance.post('/api/Product/create', productData);
+      
+      // Refresh products list
+      await fetchProducts();
+      
+      // Close modal and reset state
+      setShowAddModal(false);
+      setNewProduct({
+        productName: '',
+        description: '',
+        price: 0,
+        quantity: 1,
+        productCategory: '',
+        image: '',
+        rating: 0
+      });
+      
+      toast.success('Product added successfully!');
+    } catch (error) {
+      console.error('Error adding product:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.errors?.[0]?.errorMessage ||
+                          'Failed to add product';
+      toast.error(errorMessage);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ✅ Save Updated Product - API call
+  const handleSaveUpdatedProduct = async () => {
+    if (!validateProduct()) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const productData = {
         id: editingProduct.id,
-        image: newProduct.image || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400'
-      } : p
-    ));
-    setShowUpdateModal(false);
-    toast.success('Product updated successfully!');
+        productName: newProduct.productName.trim(),
+        description: newProduct.description.trim(),
+        price: parseFloat(newProduct.price),
+        quantity: parseInt(newProduct.quantity),
+        productCategory: newProduct.productCategory.trim(),
+        image: newProduct.image,
+        rating: parseFloat(newProduct.rating) || 0
+      };
+
+      await axiosInstance.put(`/api/Product/update/${editingProduct.id}`, productData);
+      
+      // Refresh products list
+      await fetchProducts();
+      
+      // Close modal and reset state
+      setShowUpdateModal(false);
+      setEditingProduct(null);
+      setNewProduct({
+        productName: '',
+        description: '',
+        price: 0,
+        quantity: 1,
+        productCategory: '',
+        image: '',
+        rating: 0
+      });
+      
+      toast.success('Product updated successfully!');
+    } catch (error) {
+      console.error('Error updating product:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.errors?.[0]?.errorMessage ||
+                          'Failed to update product';
+      toast.error(errorMessage);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // ✅ Image Upload Handlers
+  // ✅ Delete Product Handler
+  const handleDeleteProduct = async (productId) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) {
+      return;
+    }
+
+    try {
+      await axiosInstance.delete(`/api/Product/delete/${productId}`);
+      
+      // Refresh products list
+      await fetchProducts();
+      toast.success('Product deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to delete product';
+      toast.error(errorMessage);
+    }
+  };
+
+  // ✅ Image Upload Handlers with Base64 conversion
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setNewProduct({ ...newProduct, image: imageUrl });
-      toast.success('Image uploaded successfully!');
+      // Check file size (limit to 5MB for Base64)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64String = event.target.result;
+        setNewProduct({ ...newProduct, image: base64String });
+        toast.success('Image uploaded successfully!');
+      };
+      reader.onerror = () => {
+        toast.error('Failed to read image file');
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleRemoveImage = () => {
-    setNewProduct({ ...newProduct, image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400' });
-    toast.info('Image reset to default');
+    setNewProduct({ ...newProduct, image: '' });
+    toast.info('Image removed');
   };
 
   // Search Logic
   const handleSearch = (e) => setSearchTerm(e.target.value);
+
+  // Format price for display
+  const formatPrice = (price) => {
+    return `₹${parseFloat(price).toLocaleString('en-IN')}`;
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -246,7 +319,7 @@ const Products = () => {
           <h1 className="text-3xl font-bold text-gray-800">Products Available</h1>
           <button
             onClick={handleAddProduct}
-            className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition flex items-center space-x-2"
+            className="bg-[#586330] text-white px-6 py-2 rounded-lg hover:bg-[#586330]/60 transition flex items-center space-x-2"
           >
             <span>+</span>
             <span>Add Product</span>
@@ -257,14 +330,14 @@ const Products = () => {
         <div className="mb-6">
           <input
             type="text"
-            placeholder="Search products by name, category, vendor, or description..."
+            placeholder="Search products by name, category, or description..."
             value={searchTerm}
             onChange={handleSearch}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent"
           />
         </div>
 
-        {/* Product Categories - Same as PostedProduct */}
+        {/* Product Categories */}
         <div className="flex gap-4 mb-8 flex-wrap">
           {categories.map(category => (
             <button
@@ -272,7 +345,7 @@ const Products = () => {
               onClick={() => handleCategoryFilter(category.id)}
               className={`px-4 py-2 rounded-lg transition duration-200 font-medium ${
                 activeCategory === category.id
-                  ? 'bg-green-500 text-white hover:bg-green-600'
+                  ? 'bg-[#586330] text-white hover:bg-[#586330]/60'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
@@ -281,14 +354,23 @@ const Products = () => {
           ))}
         </div>
 
-        {/* Product Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
-            Showing {productsToShow.length} of {filteredProducts.length} products
-          </p>
-        </div>
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-8">
+            <p className="text-gray-600">Loading products...</p>
+          </div>
+        )}
 
-        {/* Product Grid - Same styling as PostedProduct */}
+        {/* Product Count */}
+        {!loading && (
+          <div className="mb-6">
+            <p className="text-gray-600">
+              Showing {productsToShow.length} of {filteredProducts.length} products
+            </p>
+          </div>
+        )}
+
+        {/* Product Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {productsToShow.map(product => (
             <div 
@@ -298,8 +380,8 @@ const Products = () => {
               {/* Product Image */}
               <div className="h-48 bg-gray-200 overflow-hidden">
                 <img 
-                  src={product.image} 
-                  alt={product.name}
+                  src={product.image || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400'} 
+                  alt={product.productName}
                   className="w-full h-full object-cover hover:scale-105 transition duration-300"
                 />
               </div>
@@ -307,16 +389,20 @@ const Products = () => {
               {/* Product Info */}
               <div className="p-6">
                 <div className="flex justify-between items-start mb-3">
-                  <h4 className="text-lg font-semibold text-gray-900">{product.name}</h4>
-                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                    {product.vendor}
-                  </span>
+                  <h4 className="text-lg font-semibold text-gray-900">{product.productName}</h4>
+                  {product.rating > 0 && (
+                    <span className="text-sm text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+                      ⭐ {product.rating.toFixed(1)}
+                    </span>
+                  )}
                 </div>
                 
                 <div className="mb-3">
-                  <span className="text-green-600 font-bold text-lg">{product.price}</span>
-                  <span className="text-xs text-gray-500 bg-green-100 text-green-700 px-2 py-1 rounded ml-2 capitalize">
-                    {product.category === 'cislin' ? 'Home Essentials' : product.category}
+                  <span className="text-[#586330] font-bold text-lg">
+                    {formatPrice(product.price)}
+                  </span>
+                  <span className="text-xs text-gray-500 bg-[#586330]/20 text-[#586330]/70 px-2 py-1 rounded ml-2">
+                    {product.productCategory}
                   </span>
                 </div>
                 
@@ -330,30 +416,36 @@ const Products = () => {
                     <span className="font-medium">Quantity:</span>
                     <span>{product.quantity}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Tax Rate:</span>
-                    <span>{product.taxRate}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Location:</span>
-                    <span className="truncate ml-2">{product.location || 'Not specified'}</span>
-                  </div>
+                  {product.vendorId && (
+                    <div className="flex justify-between">
+                      <span className="font-medium">Vendor ID:</span>
+                      <span>{product.vendorId}</span>
+                    </div>
+                  )}
                 </div>
                 
-                {/* Update Button */}
-                <button
-                  onClick={() => handleUpdateProduct(product)}
-                  className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition font-medium"
-                >
-                  Update Product
-                </button>
+                {/* Action Buttons */}
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleUpdateProduct(product)}
+                    className="flex-1 bg-[#586330]/60 text-white py-2 rounded-md hover:bg-[#586330]/70 transition font-medium text-sm"
+                  >
+                    Update
+                  </button>
+                  <button
+                    onClick={() => handleDeleteProduct(product.id)}
+                    className="flex-1 bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition font-medium text-sm"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
         {/* No Products Message */}
-        {productsToShow.length === 0 && (
+        {!loading && productsToShow.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">
               {searchTerm ? 'No products found matching your search.' : 'No products found in this category.'}
@@ -362,11 +454,11 @@ const Products = () => {
         )}
 
         {/* Load More Button */}
-        {visibleProducts < filteredProducts.length && (
+        {!loading && visibleProducts < filteredProducts.length && (
           <div className="text-center mt-8">
             <button 
               onClick={handleLoadMore}
-              className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200 font-medium"
+              className="px-6 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/60 transition duration-200 font-medium"
             >
               Load More Products
             </button>
@@ -381,9 +473,22 @@ const Products = () => {
           newProduct={newProduct}
           setNewProduct={setNewProduct}
           onSave={handleSaveNewProduct}
-          onClose={() => setShowAddModal(false)}
+          onClose={() => {
+            setShowAddModal(false);
+            setNewProduct({
+              productName: '',
+              description: '',
+              price: 0,
+              quantity: 1,
+              productCategory: '',
+              image: '',
+              rating: 0
+            });
+          }}
           handleImageUpload={handleImageUpload}
           handleRemoveImage={handleRemoveImage}
+          categories={categories.filter(cat => cat.id !== 'all')}
+          isSaving={saving}
         />
       )}
 
@@ -393,9 +498,23 @@ const Products = () => {
           newProduct={newProduct}
           setNewProduct={setNewProduct}
           onSave={handleSaveUpdatedProduct}
-          onClose={() => setShowUpdateModal(false)}
+          onClose={() => {
+            setShowUpdateModal(false);
+            setEditingProduct(null);
+            setNewProduct({
+              productName: '',
+              description: '',
+              price: 0,
+              quantity: 1,
+              productCategory: '',
+              image: '',
+              rating: 0
+            });
+          }}
           handleImageUpload={handleImageUpload}
           handleRemoveImage={handleRemoveImage}
+          categories={categories.filter(cat => cat.id !== 'all')}
+          isSaving={saving}
         />
       )}
 
@@ -404,4 +523,4 @@ const Products = () => {
   );
 };
 
-export default Products;//chnges
+export default Products;

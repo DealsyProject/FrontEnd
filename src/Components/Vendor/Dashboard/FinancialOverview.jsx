@@ -14,10 +14,8 @@ const FinancialOverview = ({ financialData }) => {
 };
 
 const FinancialCard = ({ item }) => (
-  <div className="text-center p-4 bg-gray-50 rounded-lg hover:shadow-md transition-shadow duration-200">
-    <div className={`inline-block w-16 h-16 ${item.bgColor} rounded-full flex items-center justify-center mb-2`}>
-      <span className="text-white text-lg font-bold">₹</span>
-    </div>
+  <div className="text-center p-4 bg-[#586330]/20 rounded-lg hover:shadow-md transition-shadow duration-200">
+    
     <h4 className="text-xl font-bold text-gray-800 mb-1">{item.title}</h4>
     <p className="text-2xl font-bold text-gray-600 mb-1">{item.value}</p>
     <p className="text-sm text-gray-500">{item.subtitle}</p>

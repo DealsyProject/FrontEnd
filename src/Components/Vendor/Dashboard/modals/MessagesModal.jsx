@@ -1,36 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  FaUser, 
-  FaPlus, 
   FaTimes, 
-  FaSearch, 
+  FaSearch,
   FaEdit,
   FaTrash,
   FaCheck,
-  FaTimesCircle,
-  FaImage,
-  FaFile,
-  FaVideo,
-  FaPaperPlane
+  FaTimesCircle
 } from 'react-icons/fa';
 import { 
   IoMdCheckmark, 
   IoMdCheckmarkCircle,
-  IoIosSend,
-  IoIosAttach
+  IoIosSend
 } from 'react-icons/io';
-import { 
-  BsThreeDotsVertical,
-  BsCameraVideo,
-  BsTelephone
-} from 'react-icons/bs';
-import { 
-  RiChatSmileLine,
-  RiMessage2Fill
-} from 'react-icons/ri';
-import { 
-  MdEmojiEmotions
-} from 'react-icons/md';
+import { Send } from 'lucide-react';
 
 const MessagesModal = ({ 
   setShowMessages, 
@@ -38,7 +20,6 @@ const MessagesModal = ({
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const [messageThreads, setMessageThreads] = useState(() => {
-    
     const threadsWithHistory = initialThreads?.map(thread => ({
       ...thread,
       messages: thread.messages || [], 
@@ -53,25 +34,15 @@ const MessagesModal = ({
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editMessageText, setEditMessageText] = useState('');
   const [selectedMessageId, setSelectedMessageId] = useState(null);
-  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
 
   const messagesEndRef = useRef(null);
   const messageOptionsRef = useRef(null);
-  const attachmentMenuRef = useRef(null);
-  const emojiPickerRef = useRef(null);
 
-  
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (messageOptionsRef.current && !messageOptionsRef.current.contains(event.target)) {
         setSelectedMessageId(null);
-      }
-      if (attachmentMenuRef.current && !attachmentMenuRef.current.contains(event.target)) {
-        setShowAttachmentMenu(false);
-      }
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
-        setShowEmojiPicker(false);
       }
     };
 
@@ -81,14 +52,12 @@ const MessagesModal = ({
     };
   }, []);
 
-  
   const getActiveThreadMessages = () => {
     if (!activeThread) return [];
     const thread = messageThreads.find(t => t.id === activeThread);
     return thread?.messages || [];
   };
 
-  
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredThreads(messageThreads);
@@ -101,7 +70,6 @@ const MessagesModal = ({
     }
   }, [searchQuery, messageThreads]);
 
-  
   useEffect(() => {
     scrollToBottom();
   }, [getActiveThreadMessages()]);
@@ -110,7 +78,6 @@ const MessagesModal = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  
   const getAutoResponseMessage = (threadTitle) => {
     const responses = {
       'John Doe': 'Hey! Thanks for your message. I\'ll get back to you soon!',
@@ -124,100 +91,10 @@ const MessagesModal = ({
     return responses[threadTitle] || 'Thank you for your message. We will get back to you shortly.';
   };
 
-  
-  const handleAttachmentClick = () => {
-    setShowAttachmentMenu(!showAttachmentMenu);
-    setShowEmojiPicker(false);
-  };
-
-  const handleImageUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-
-        const imageMessage = {
-          id: Date.now(),
-          sender: 'You',
-          message: `📷 Image: ${file.name}`,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isSupport: false,
-          status: 'sent',
-          type: 'image'
-        };
-        sendMessageToThread(imageMessage);
-      }
-    };
-    input.click();
-    setShowAttachmentMenu(false);
-  };
-
-  const handleFileUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        
-        const fileMessage = {
-          id: Date.now(),
-          sender: 'You',
-          message: `📎 File: ${file.name}`,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isSupport: false,
-          status: 'sent',
-          type: 'file'
-        };
-        sendMessageToThread(fileMessage);
-      }
-    };
-    input.click();
-    setShowAttachmentMenu(false);
-  };
-
-  const handleVideoUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'video/*';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        
-        const videoMessage = {
-          id: Date.now(),
-          sender: 'You',
-          message: `🎥 Video: ${file.name}`,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isSupport: false,
-          status: 'sent',
-          type: 'video'
-        };
-        sendMessageToThread(videoMessage);
-      }
-    };
-    input.click();
-    setShowAttachmentMenu(false);
-  };
-
-  
-  const handleEmojiClick = () => {
-    setShowEmojiPicker(!showEmojiPicker);
-    setShowAttachmentMenu(false);
-  };
-
-  const addEmoji = (emoji) => {
-    setNewMessage(prev => prev + emoji);
-    setShowEmojiPicker(false);
-  };
-
-  
   const sendMessageToThread = (messageObj) => {
     if (activeThread) {
       const activeThreadData = messageThreads.find(thread => thread.id === activeThread);
 
-      
       setMessageThreads(prev => prev.map(thread => 
         thread.id === activeThread 
           ? {
@@ -230,7 +107,7 @@ const MessagesModal = ({
           : thread
       ));
 
-      
+      // Simulate message status updates
       setTimeout(() => {
         setMessageThreads(prev => prev.map(thread => 
           thread.id === activeThread 
@@ -257,7 +134,7 @@ const MessagesModal = ({
         ));
       }, 2000);
 
-      
+      // Simulate auto-response
       setTimeout(() => {
         const autoResponse = {
           id: Date.now() + 1,
@@ -282,9 +159,8 @@ const MessagesModal = ({
     }
   };
 
-  const handleSendMessageWithUpdate = () => {
+  const handleSendMessage = () => {
     if (newMessage.trim() && activeThread) {
-      
       const newMessageObj = {
         id: Date.now(),
         sender: 'You',
@@ -301,10 +177,8 @@ const MessagesModal = ({
 
   const handleThreadClick = (threadId) => {
     setActiveThread(threadId);
-    setSelectedMessageId(null); 
-    setEditingMessageId(null); 
-    setShowAttachmentMenu(false); 
-    setShowEmojiPicker(false); 
+    setSelectedMessageId(null);
+    setEditingMessageId(null);
     
     setMessageThreads(prev => prev.map(thread => 
       thread.id === threadId 
@@ -317,7 +191,6 @@ const MessagesModal = ({
     setSearchQuery(e.target.value);
   };
 
-  
   const handleMessageClick = (messageId) => {
     setSelectedMessageId(selectedMessageId === messageId ? null : messageId);
   };
@@ -375,11 +248,9 @@ const MessagesModal = ({
     }
   };
 
-  
   const activeThreadData = messageThreads.find(thread => thread.id === activeThread);
   const threadMessages = getActiveThreadMessages();
 
-  
   const renderMessageStatus = (status) => {
     switch (status) {
       case 'sent':
@@ -387,92 +258,78 @@ const MessagesModal = ({
       case 'delivered':
         return <IoMdCheckmark className="w-4 h-4 text-gray-400" />;
       case 'read':
-        return <IoMdCheckmarkCircle className="w-4 h-4 text-blue-500" />;
+        return <IoMdCheckmarkCircle className="w-4 h-4 text-[#586330]" />;
       default:
         return null;
     }
   };
 
-  
-  const commonEmojis = ['😀', '😂', '🥰', '😎', '👍', '❤️', '🔥', '🎉', '🙏', '💯'];
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-6xl h-[90vh] flex overflow-hidden">
-        
-        <div className="w-96 bg-[#f0f2f5] border-r border-gray-300 flex flex-col">
-          
-          <div className="p-4 bg-[#f0f2f5] border-b border-gray-300 flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                <FaUser className="w-5 h-5 text-gray-600" />
-              </div>
-              <span className="text-lg font-semibold text-gray-800">Chats</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              
+      <div className="bg-white rounded-xl w-full max-w-6xl h-[90vh] flex overflow-hidden shadow-lg border border-gray-200">
+        {/* Left Sidebar */}
+        <div className="w-96 bg-gray-100 border-r border-gray-200 flex flex-col">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-[#586330]">Messages</h2>
               <button 
                 onClick={() => setShowMessages(false)}
-                className="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-200 transition-colors"
+                className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 <FaTimes className="w-4 h-4" />
               </button>
             </div>
-          </div>
 
-          
-          <div className="p-3 bg-[#f0f2f5]">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaSearch className="w-4 h-4 text-gray-500" />
-              </div>
+            <div className="relative mb-4">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search or start new chat"
-                className="w-full pl-10 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                placeholder="Search chats"
+                className="w-full bg-white border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#586330]/40"
                 value={searchQuery}
                 onChange={handleSearchChange}
               />
-              {searchQuery && (
+            </div>
+
+            <div className="flex gap-2">
+              {['all', 'active', 'closed'].map((tab) => (
                 <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    activeTab === tab
+                      ? "bg-[#586330] text-white"
+                      : "text-gray-600 hover:bg-[#586330] hover:text-white"
+                  }`}
                 >
-                  <FaTimes className="w-3 h-3 text-gray-500 hover:text-gray-700" />
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
-              )}
+              ))}
             </div>
           </div>
 
-          
-          <div className="flex-1 overflow-y-auto bg-white">
+          <div className="flex-1 overflow-y-auto">
             {filteredThreads.length > 0 ? (
               filteredThreads.map((thread) => (
-                <div 
+                <div
                   key={thread.id}
                   onClick={() => handleThreadClick(thread.id)}
-                  className={`flex items-center p-3 border-b border-gray-100 cursor-pointer transition-colors ${
-                    activeThread === thread.id ? 'bg-[#f0f2f5]' : 'hover:bg-gray-50'
+                  className={`p-4 border-b border-gray-200 cursor-pointer transition ${
+                    activeThread === thread.id ? "bg-[#586330]/20" : "hover:bg-gray-100"
                   }`}
                 >
-                  
-                  <div className="flex-shrink-0 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                    {thread.title.charAt(0)}
-                  </div>
-                  
-                  
-                  <div className="ml-3 flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-semibold text-gray-800 text-sm truncate">{thread.title}</h3>
-                      <span className="text-xs text-gray-500 whitespace-nowrap ml-2">{thread.time}</span>
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#586330]/10 text-[#586330] flex items-center justify-center font-medium">
+                      {thread.title.charAt(0)}
                     </div>
-                    <div className="flex justify-between items-center mt-1">
-                      <p className="text-sm text-gray-600 truncate flex-1">{thread.preview}</p>
-                      {thread.unread && (
-                        <span className="ml-2 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
-                          {thread.unreadCount || 1}
-                        </span>
-                      )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-medium text-gray-800 truncate">{thread.title}</h3>
+                        <span className="text-xs text-gray-400">{thread.time}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 truncate">
+                        {thread.preview}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -487,99 +344,87 @@ const MessagesModal = ({
           </div>
         </div>
 
-        
-        <div className="flex-1 flex flex-col bg-[#efeae2]">
-         
+        {/* Right Panel */}
+        <div className="flex-1 flex flex-col bg-white">
           {activeThreadData ? (
-            <div className="p-3 bg-[#f0f2f5] border-b border-gray-300 flex justify-between items-center">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+              <div>
+                <h2 className="text-lg font-semibold text-[#586330]">
+                  Chat with {activeThreadData.title}
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-[#586330]/10 text-[#586330] flex items-center justify-center ml-2">
                   {activeThreadData.title.charAt(0)}
-                </div>
-                <div>
-                  <h2 className="font-semibold text-gray-800">{activeThreadData.title}</h2>
-                  <p className="text-xs text-gray-600">online</p>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="p-3 bg-[#f0f2f5] border-b border-gray-300 flex justify-between items-center">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                  <RiMessage2Fill className="w-5 h-5 text-gray-600" />
+                  <span className="text-gray-600 font-medium">?</span>
                 </div>
                 <span className="font-semibold text-gray-800">Select a chat</span>
               </div>
             </div>
           )}
 
-         
-          <div className="flex-1 overflow-y-auto p-4 bg-[#efeae2]">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
             {activeThread ? (
-              <div className="space-y-2">
-                {threadMessages.map((msg) => (
-                  <div 
-                    key={msg.id} 
-                    className={`flex ${msg.isSupport ? 'justify-start' : 'justify-end'} relative`}
-                  >
-                    {editingMessageId === msg.id ? (
-                      
-                      <div className="max-w-xs lg:max-w-md w-full">
-                        <div className="bg-white rounded-2xl p-2 shadow-sm border border-green-300">
-                          <input
-                            type="text"
-                            value={editMessageText}
-                            onChange={(e) => setEditMessageText(e.target.value)}
-                            className="w-full px-3 py-2 text-gray-800 text-sm focus:outline-none"
-                            autoFocus
-                            onKeyPress={(e) => e.key === 'Enter' && handleSaveEdit()}
-                          />
-                          <div className="flex justify-end space-x-2 mt-2">
-                            <button
-                              onClick={handleCancelEdit}
-                              className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
-                            >
-                              <FaTimesCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={handleSaveEdit}
-                              className="p-1 text-green-500 hover:text-green-700 transition-colors"
-                            >
-                              <FaCheck className="w-4 h-4" />
-                            </button>
-                          </div>
+              threadMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex items-start gap-3 ${
+                    msg.isSupport ? "" : "flex-row-reverse"
+                  }`}
+                >
+                  {editingMessageId === msg.id ? (
+                    <div className="max-w-md w-full">
+                      <div className="bg-white rounded-2xl p-2 shadow-sm border border-[#586330]">
+                        <input
+                          type="text"
+                          value={editMessageText}
+                          onChange={(e) => setEditMessageText(e.target.value)}
+                          className="w-full px-3 py-2 text-gray-800 text-sm focus:outline-none"
+                          autoFocus
+                          onKeyPress={(e) => e.key === 'Enter' && handleSaveEdit()}
+                        />
+                        <div className="flex justify-end space-x-2 mt-2">
+                          <button
+                            onClick={handleCancelEdit}
+                            className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
+                          >
+                            <FaTimesCircle className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleSaveEdit}
+                            className="p-1 text-[#586330] hover:text-[#586330]/80 transition-colors"
+                          >
+                            <FaCheck className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-                    ) : (
-                      
-                      <div 
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl relative cursor-pointer ${
-                          msg.isSupport 
-                            ? 'bg-white rounded-tl-none' 
-                            : 'bg-[#d9fdd3] rounded-tr-none'
+                    </div>
+                  ) : (
+                    <div
+                      className={`flex flex-col ${
+                        msg.isSupport ? "items-start" : "items-end"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-md px-4 py-3 rounded-2xl relative cursor-pointer ${
+                          msg.isSupport
+                            ? "bg-white border border-gray-200 text-gray-800 rounded-tl-none"
+                            : "bg-[#586330]/80 text-white rounded-tr-none"
                         } shadow-sm hover:opacity-95 transition-opacity ${
-                          selectedMessageId === msg.id ? 'ring-2 ring-green-400' : ''
+                          selectedMessageId === msg.id ? 'ring-2 ring-[#586330]' : ''
                         }`}
                         onClick={() => !msg.isSupport && handleMessageClick(msg.id)}
                       >
-                        <p className="text-gray-800 text-sm">{msg.message}</p>
-                        <div className={`flex justify-end items-center space-x-1 mt-1 ${
-                          msg.isSupport ? 'justify-start' : 'justify-end'
-                        }`}>
-                          <span className="text-xs text-gray-500 flex items-center">
-                            {msg.time}
-                            {msg.edited && (
-                              <span className="ml-1 text-xs text-gray-400">(edited)</span>
-                            )}
-                          </span>
-                          {!msg.isSupport && msg.status && (
-                            <span className="ml-1">
-                              {renderMessageStatus(msg.status)}
-                            </span>
-                          )}
-                        </div>
-
+                        <p className="text-sm">{msg.message}</p>
                         
+                        {/* Message Options */}
                         {!msg.isSupport && selectedMessageId === msg.id && (
                           <div 
                             ref={messageOptionsRef}
@@ -602,119 +447,58 @@ const MessagesModal = ({
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                ))}
-               
-                <div ref={messagesEndRef} />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <RiChatSmileLine className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">WhatsApp Web</h3>
-                  <p className="text-gray-500 max-w-sm">
-                    Send and receive messages without keeping your phone online.
-                    Use WhatsApp on up to 4 linked devices and 1 phone at the same time.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          
-          {activeThread && (
-            <div className="p-3 bg-[#f0f2f5]">
-              <div className="flex items-center space-x-2">
-                
-                <div className="relative" ref={attachmentMenuRef}>
-                  <button 
-                    onClick={handleAttachmentClick}
-                    className="p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-200 transition-colors"
-                  >
-                    <IoIosAttach className="w-5 h-5" />
-                  </button>
-                  
-                 
-                  {showAttachmentMenu && (
-                    <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-20 min-w-48">
-                      <button
-                        onClick={handleImageUpload}
-                        className="w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 transition-colors border-b border-gray-100"
-                      >
-                        <FaImage className="w-4 h-4 text-green-500" />
-                        <span>Photo & Video</span>
-                      </button>
-                      <button
-                        onClick={handleFileUpload}
-                        className="w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 transition-colors border-b border-gray-100"
-                      >
-                        <FaFile className="w-4 h-4 text-blue-500" />
-                        <span>Document</span>
-                      </button>
-                      <button
-                        onClick={handleVideoUpload}
-                        className="w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 transition-colors"
-                      >
-                        <FaVideo className="w-4 h-4 text-purple-500" />
-                        <span>Camera</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                
-                <div className="flex-1 bg-white rounded-full border border-gray-300">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type a message"
-                    className="w-full px-4 py-2 bg-transparent text-gray-900 focus:outline-none text-sm rounded-full"
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessageWithUpdate()}
-                  />
-                </div>
-
-                
-                <div className="relative" ref={emojiPickerRef}>
-                  <button 
-                    onClick={handleEmojiClick}
-                    className="p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-200 transition-colors"
-                  >
-                    <MdEmojiEmotions className="w-5 h-5" />
-                  </button>
-                  
-                  
-                  {showEmojiPicker && (
-                    <div className="absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-xl border border-gray-300 z-20 p-4 w-64">
-                      <div className="grid grid-cols-8 gap-1">
-                        {commonEmojis.map((emoji, index) => (
-                          <button
-                            key={index}
-                            onClick={() => addEmoji(emoji)}
-                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-all duration-200 text-lg hover:scale-110"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
+                      <div className={`flex items-center space-x-1 mt-1 ${
+                        msg.isSupport ? "justify-start" : "justify-end"
+                      }`}>
+                        <span className="text-xs text-gray-400 flex items-center">
+                          {msg.time}
+                          {msg.edited && (
+                            <span className="ml-1 text-xs opacity-60">(edited)</span>
+                          )}
+                        </span>
+                        {!msg.isSupport && msg.status && (
+                          <span className="ml-1">
+                            {renderMessageStatus(msg.status)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
+              ))
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-gray-400 text-2xl">💬</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-600 mb-2">Messages</h3>
+                  <p className="text-gray-500 max-w-sm">
+                    Select a chat to start messaging. Your conversations will appear here.
+                  </p>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
 
-               
+          {activeThread && (
+            <div className="p-6 border-t border-gray-200 bg-white">
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#586330]/40"
+                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                />
                 <button
-                  onClick={handleSendMessageWithUpdate}
+                  onClick={handleSendMessage}
                   disabled={!newMessage.trim()}
-                  className={`p-2 rounded-full transition-colors ${
-                    newMessage.trim() 
-                      ? 'bg-green-500 text-white hover:bg-green-600' 
-                      : 'text-gray-400 cursor-not-allowed'
-                  }`}
+                  className="p-3 bg-[#586330]/80 hover:bg-[#586330] text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <IoIosSend className="w-5 h-5" />
+                  <Send className="w-5 h-5" />
                 </button>
               </div>
             </div>
