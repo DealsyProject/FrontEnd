@@ -153,10 +153,14 @@ const Login = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6 text-gray-900">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label 
+                  htmlFor="email" 
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Enter Email
                 </label>
                 <input
+                  id="email"
                   type="email"
                   name="email"
                   value={formData.email}
@@ -165,14 +169,19 @@ const Login = () => {
                   placeholder="Enter your email"
                   required
                   disabled={isLoading}
+                  autoComplete="email"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label 
+                  htmlFor="password" 
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Enter Password
                 </label>
                 <input
+                  id="password"
                   type="password"
                   name="password"
                   value={formData.password}
@@ -181,6 +190,7 @@ const Login = () => {
                   placeholder="Enter your password"
                   required
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
               </div>
 
@@ -213,4 +223,3 @@ const Login = () => {
 };
 
 export default Login;
-  //azaru pushed

@@ -45,8 +45,8 @@ import Register from './Pages/Auth/Register';
 
 //Vendor
 import VendorRegister from './Components/Vendor/Registration/VendorExtraForm.jsx';
-import Subscription from './Pages/Vendor/Subscription';
-import Home from './Pages/Vendor/Home';
+
+
 import ProductDetail from './Components/Vendor/Home/ProductDetail';
 import Dashboard from './Pages/Vendor/Dashboard/Dashboard';
 import Products from './Pages/Vendor/Dashboard/Products';
@@ -75,12 +75,11 @@ function App() {
 
 
         {/* Vendor */}
-        <Route path="/VendorHome" element={<Home />} />
+       
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/vendor-register" element={<VendorRegister />} />
         <Route path="/reviews" element={<CustomerReviews />} />
-        <Route path="/subscription" element={<Subscription />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/vendor-dashboard" element={<Dashboard />} />
         <Route path="/products" element={<Products />} />

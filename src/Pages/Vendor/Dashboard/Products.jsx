@@ -4,12 +4,11 @@ import 'react-toastify/dist/ReactToastify.css';
 import ProductModal from '../../../Components/Vendor/Dashboard/modals/ProductModal';
 import Sidebar from '../../../Components/Vendor/Dashboard/Sidebar';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../../../Components/utils/axiosInstance'
+import axiosInstance from '../../../Components/utils/axiosInstance';
 
 const Products = () => {
   const navigate = useNavigate();
   
-  // Add logout function
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
@@ -21,12 +20,13 @@ const Products = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [visibleProducts, setVisibleProducts] = useState(6);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false); // Track save state
-
-  // Updated product data structure to match backend DTOs
+  const [saving, setSaving] = useState(false);
   const [products, setProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
 
-  // Categories for filtering - MUST match backend categories exactly
   const categories = [
     { id: 'all', name: 'All Products' },
     { id: 'Grocery', name: 'Grocery' },
@@ -36,43 +36,75 @@ const Products = () => {
     { id: 'Cloth', name: 'Cloth' }
   ];
 
-  // Fetch products on component mount
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  // Fetch products from API
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.get('/api/Product/all');
-      setProducts(response.data.products || []);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      toast.error('Failed to load products');
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-
-  // Updated new product structure to match CreateProductDto
+  // Updated state to support multiple images
   const [newProduct, setNewProduct] = useState({
     productName: '',
     description: '',
     price: 0,
     quantity: 1,
     productCategory: '',
-    image: '',
+    images: [], // Changed from 'image' to 'images' array
     rating: 0
   });
 
-  // Filter products based on active category and search
+  const handleApiError = (error, defaultMessage) => {
+    console.error('API Error:', error);
+    
+    if (error.response?.status === 401) {
+      toast.error('Session expired. Please login again.');
+      handleLogout();
+      return;
+    }
+    
+    if (error.response?.status === 403) {
+      toast.error('You do not have permission to perform this action.');
+      return;
+    }
+    
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.data?.errors?.[0]?.errorMessage ||
+                        defaultMessage;
+    toast.error(errorMessage);
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Fetch vendor's own products
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      // Changed to use my-products endpoint for vendor's own products
+      const response = await axiosInstance.get('/api/Product/my-products');
+      setProducts(response.data.products || []);
+    } catch (error) {
+      handleApiError(error, 'Failed to load products');
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const searchProducts = async () => {
+    if (!searchTerm.trim()) {
+      fetchProducts();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/api/Product/search?searchTerm=${encodeURIComponent(searchTerm)}`);
+      // Filter to show only vendor's products from search results
+      const vendorProducts = response.data.products || [];
+      setProducts(vendorProducts);
+    } catch (error) {
+      handleApiError(error, 'Failed to search products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredProducts = products.filter(product => {
     const categoryMatch = activeCategory === 'all' || 
       product.productCategory?.toLowerCase() === activeCategory.toLowerCase();
@@ -85,21 +117,30 @@ const Products = () => {
     return categoryMatch && searchMatch;
   });
 
-  // Products to display (with load more functionality)
   const productsToShow = filteredProducts.slice(0, visibleProducts);
 
-  // Handle category filter
   const handleCategoryFilter = (categoryId) => {
     setActiveCategory(categoryId);
     setVisibleProducts(6);
   };
 
-  // Handle load more
   const handleLoadMore = () => {
     setVisibleProducts(prev => prev + 3);
   };
 
-  // ✅ Add Product Handler
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    if (!e.target.value.trim()) {
+      fetchProducts();
+    }
+  };
+
+  const handleSearchSubmit = (e) => {
+    if (e.key === 'Enter' || e.type === 'click') {
+      searchProducts();
+    }
+  };
+
   const handleAddProduct = () => {
     setNewProduct({
       productName: '',
@@ -107,13 +148,12 @@ const Products = () => {
       price: 0,
       quantity: 1,
       productCategory: '',
-      image: '',
+      images: [], // Reset to empty array
       rating: 0
     });
     setShowAddModal(true);
   };
 
-  // ✅ Update Product Handler
   const handleUpdateProduct = (product) => {
     setEditingProduct(product);
     setNewProduct({ 
@@ -122,13 +162,12 @@ const Products = () => {
       price: product.price,
       quantity: product.quantity,
       productCategory: product.productCategory,
-      image: product.image,
+      images: product.images?.map(img => img.imageData) || [], // Map images from response
       rating: product.rating || 0
     });
     setShowUpdateModal(true);
   };
 
-  // ✅ Validate product data
   const validateProduct = () => {
     if (!newProduct.productName?.trim()) {
       toast.error('Product Name is required!');
@@ -150,14 +189,17 @@ const Products = () => {
       toast.error('Quantity cannot be negative!');
       return false;
     }
-    if (!newProduct.image?.trim()) {
-      toast.error('Product Image is required!');
+    if (!newProduct.images || newProduct.images.length === 0) {
+      toast.error('At least 1 product image is required!');
+      return false;
+    }
+    if (newProduct.images.length > 3) {
+      toast.error('Maximum 3 images allowed!');
       return false;
     }
     return true;
   };
 
-  // ✅ Save New Product - API call
   const handleSaveNewProduct = async () => {
     if (!validateProduct()) {
       return;
@@ -171,16 +213,14 @@ const Products = () => {
         price: parseFloat(newProduct.price),
         quantity: parseInt(newProduct.quantity),
         productCategory: newProduct.productCategory.trim(),
-        image: newProduct.image,
+        images: newProduct.images, // Send array of Base64 images
         rating: parseFloat(newProduct.rating) || 0
       };
 
       await axiosInstance.post('/api/Product/create', productData);
       
-      // Refresh products list
       await fetchProducts();
       
-      // Close modal and reset state
       setShowAddModal(false);
       setNewProduct({
         productName: '',
@@ -188,23 +228,18 @@ const Products = () => {
         price: 0,
         quantity: 1,
         productCategory: '',
-        image: '',
+        images: [],
         rating: 0
       });
       
       toast.success('Product added successfully!');
     } catch (error) {
-      console.error('Error adding product:', error);
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.errors?.[0]?.errorMessage ||
-                          'Failed to add product';
-      toast.error(errorMessage);
+      handleApiError(error, 'Failed to add product');
     } finally {
       setSaving(false);
     }
   };
 
-  // ✅ Save Updated Product - API call
   const handleSaveUpdatedProduct = async () => {
     if (!validateProduct()) {
       return;
@@ -219,16 +254,14 @@ const Products = () => {
         price: parseFloat(newProduct.price),
         quantity: parseInt(newProduct.quantity),
         productCategory: newProduct.productCategory.trim(),
-        image: newProduct.image,
+        images: newProduct.images, // Send array of Base64 images
         rating: parseFloat(newProduct.rating) || 0
       };
 
       await axiosInstance.put(`/api/Product/update/${editingProduct.id}`, productData);
       
-      // Refresh products list
       await fetchProducts();
       
-      // Close modal and reset state
       setShowUpdateModal(false);
       setEditingProduct(null);
       setNewProduct({
@@ -237,23 +270,18 @@ const Products = () => {
         price: 0,
         quantity: 1,
         productCategory: '',
-        image: '',
+        images: [],
         rating: 0
       });
       
       toast.success('Product updated successfully!');
     } catch (error) {
-      console.error('Error updating product:', error);
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.errors?.[0]?.errorMessage ||
-                          'Failed to update product';
-      toast.error(errorMessage);
+      handleApiError(error, 'Failed to update product');
     } finally {
       setSaving(false);
     }
   };
 
-  // ✅ Delete Product Handler
   const handleDeleteProduct = async (productId) => {
     if (!window.confirm('Are you sure you want to delete this product?')) {
       return;
@@ -261,32 +289,45 @@ const Products = () => {
 
     try {
       await axiosInstance.delete(`/api/Product/delete/${productId}`);
-      
-      // Refresh products list
       await fetchProducts();
       toast.success('Product deleted successfully!');
     } catch (error) {
-      console.error('Error deleting product:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to delete product';
-      toast.error(errorMessage);
+      handleApiError(error, 'Failed to delete product');
     }
   };
 
-  // ✅ Image Upload Handlers with Base64 conversion
+  // Updated image upload handler for multiple images
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (limit to 5MB for Base64)
+      // Check if already have 3 images
+      if (newProduct.images.length >= 3) {
+        toast.error('Maximum 3 images allowed');
+        return;
+      }
+
+      // Check file size
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size must be less than 5MB');
+        return;
+      }
+
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please select a valid image file (JPEG, PNG, WebP)');
         return;
       }
 
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64String = event.target.result;
-        setNewProduct({ ...newProduct, image: base64String });
-        toast.success('Image uploaded successfully!');
+        // Add new image to the array
+        setNewProduct(prev => ({ 
+          ...prev, 
+          images: [...prev.images, base64String] 
+        }));
+        toast.success(`Image ${newProduct.images.length + 1} uploaded successfully!`);
       };
       reader.onerror = () => {
         toast.error('Failed to read image file');
@@ -295,17 +336,178 @@ const Products = () => {
     }
   };
 
-  const handleRemoveImage = () => {
-    setNewProduct({ ...newProduct, image: '' });
-    toast.info('Image removed');
+  // Updated remove image handler to remove specific image by index
+  const handleRemoveImage = (index) => {
+    setNewProduct(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+    toast.info(`Image ${index + 1} removed`);
   };
 
-  // Search Logic
-  const handleSearch = (e) => setSearchTerm(e.target.value);
-
-  // Format price for display
   const formatPrice = (price) => {
     return `₹${parseFloat(price).toLocaleString('en-IN')}`;
+  };
+
+  const renderRating = (rating) => {
+    return (
+      <div className="flex items-center space-x-1">
+        {[...Array(5)].map((_, index) => (
+          <span
+            key={index}
+            className={`text-sm ${
+              index < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'
+            }`}
+          >
+            ★
+          </span>
+        ))}
+        <span className="text-xs text-gray-600 ml-1">({rating})</span>
+      </div>
+    );
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setActiveCategory('all');
+    setVisibleProducts(6);
+    fetchProducts();
+  };
+
+  // Product Card Component with Image Gallery
+  const ProductCard = ({ product }) => {
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const productImages = product.images || [];
+    const hasMultipleImages = productImages.length > 1;
+
+    return (
+      <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition duration-300 border border-gray-200">
+        {/* Product Image Gallery */}
+        <div className="h-48 bg-gray-200 overflow-hidden relative group">
+          <img 
+            src={productImages[selectedImageIndex]?.imageData || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400'} 
+            alt={product.productName}
+            className="w-full h-full object-cover hover:scale-105 transition duration-300"
+            onError={(e) => {
+              e.target.src = 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
+            }}
+          />
+          
+          {/* Image Counter */}
+          {hasMultipleImages && (
+            <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+              {selectedImageIndex + 1}/{productImages.length}
+            </div>
+          )}
+
+          {/* Stock Status */}
+          {product.quantity === 0 && (
+            <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-sm font-medium">
+              Out of Stock
+            </div>
+          )}
+
+          {/* Rating Badge */}
+          {product.rating > 0 && (
+            <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-sm">
+              ⭐ {product.rating.toFixed(1)}
+            </div>
+          )}
+
+          {/* Image Thumbnails Overlay - Show on hover if multiple images */}
+          {hasMultipleImages && (
+            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="flex gap-2 justify-center">
+                {productImages.map((img, index) => (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImageIndex(index);
+                    }}
+                    className={`w-12 h-12 rounded overflow-hidden transition-all ${
+                      selectedImageIndex === index 
+                        ? 'ring-2 ring-white scale-110' 
+                        : 'opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={img.imageData}
+                      alt={`Thumbnail ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Product Info */}
+        <div className="p-6">
+          <div className="flex justify-between items-start mb-3">
+            <h4 className="text-lg font-semibold text-gray-900 line-clamp-2">{product.productName}</h4>
+            <span className="text-xs text-[#586330] bg-[#586330]/20 px-2 py-1 rounded-full font-medium">
+              {product.productCategory}
+            </span>
+          </div>
+          
+          <div className="mb-3">
+            <span className="text-[#586330] font-bold text-xl">
+              {formatPrice(product.price)}
+            </span>
+            {product.rating > 0 && (
+              <div className="mt-1">
+                {renderRating(product.rating)}
+              </div>
+            )}
+          </div>
+          
+          <p className="text-gray-600 mb-4 text-sm leading-relaxed line-clamp-3">
+            {product.description}
+          </p>
+
+          <div className="space-y-2 text-sm text-gray-700 mb-4">
+            <div className="flex justify-between">
+              <span className="font-medium">Quantity:</span>
+              <span className={`font-semibold ${
+                product.quantity > 10 ? 'text-green-600' : 
+                product.quantity > 0 ? 'text-yellow-600' : 'text-red-600'
+              }`}>
+                {product.quantity} in stock
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Images:</span>
+              <span className="text-gray-600">{productImages.length} photo{productImages.length !== 1 ? 's' : ''}</span>
+              </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Added:</span>
+              <span>{new Date(product.createdOn).toLocaleDateString()}</span>
+            </div>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex space-x-2">
+            <button
+              onClick={() => handleUpdateProduct(product)}
+              className="flex-1 bg-[#586330] text-white py-2 rounded-lg hover:bg-[#586330]/80 transition font-medium text-sm"
+            >
+              Update
+            </button>
+            <button
+              onClick={() => handleDeleteProduct(product.id)}
+              className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition font-medium text-sm"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -316,25 +518,43 @@ const Products = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 text-black">
         <header className="mb-6 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-800">Products Available</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">My Products</h1>
+            <p className="text-gray-600 mt-2">Manage your product inventory and listings</p>
+          </div>
           <button
             onClick={handleAddProduct}
-            className="bg-[#586330] text-white px-6 py-2 rounded-lg hover:bg-[#586330]/60 transition flex items-center space-x-2"
+            className="bg-[#586330] text-white px-6 py-3 rounded-lg hover:bg-[#586330]/80 transition flex items-center space-x-2 font-medium"
           >
-            <span>+</span>
+            <span className="text-lg">+</span>
             <span>Add Product</span>
           </button>
         </header>
 
         {/* Search Bar */}
         <div className="mb-6">
-          <input
-            type="text"
-            placeholder="Search products by name, category, or description..."
-            value={searchTerm}
-            onChange={handleSearch}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent"
-          />
+          <div className="flex gap-4">
+            <input
+              type="text"
+              placeholder="Search products by name, category, or description..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              onKeyPress={handleSearchSubmit}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent"
+            />
+            <button
+              onClick={handleSearchSubmit}
+              className="px-6 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/80 transition font-medium"
+            >
+              Search
+            </button>
+            <button
+              onClick={handleResetFilters}
+              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium"
+            >
+              Reset
+            </button>
+          </div>
         </div>
 
         {/* Product Categories */}
@@ -345,8 +565,8 @@ const Products = () => {
               onClick={() => handleCategoryFilter(category.id)}
               className={`px-4 py-2 rounded-lg transition duration-200 font-medium ${
                 activeCategory === category.id
-                  ? 'bg-[#586330] text-white hover:bg-[#586330]/60'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-[#586330] text-white hover:bg-[#586330]/80 shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
               {category.name}
@@ -356,100 +576,64 @@ const Products = () => {
 
         {/* Loading State */}
         {loading && (
-          <div className="text-center py-8">
-            <p className="text-gray-600">Loading products...</p>
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#586330] mb-4"></div>
+            <p className="text-gray-600 text-lg">Loading products...</p>
           </div>
         )}
 
-        {/* Product Count */}
+        {/* Product Count and Stats */}
         {!loading && (
-          <div className="mb-6">
+          <div className="mb-6 flex justify-between items-center">
             <p className="text-gray-600">
               Showing {productsToShow.length} of {filteredProducts.length} products
+              {activeCategory !== 'all' && ` in ${categories.find(c => c.id === activeCategory)?.name}`}
             </p>
+            <div className="flex gap-4 text-sm">
+              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                Total: {products.length}
+              </span>
+              <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full">
+                In Stock: {products.filter(p => p.quantity > 0).length}
+              </span>
+            </div>
           </div>
         )}
 
         {/* Product Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {productsToShow.map(product => (
-            <div 
-              key={product.id} 
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300"
-            >
-              {/* Product Image */}
-              <div className="h-48 bg-gray-200 overflow-hidden">
-                <img 
-                  src={product.image || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400'} 
-                  alt={product.productName}
-                  className="w-full h-full object-cover hover:scale-105 transition duration-300"
-                />
-              </div>
-              
-              {/* Product Info */}
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-3">
-                  <h4 className="text-lg font-semibold text-gray-900">{product.productName}</h4>
-                  {product.rating > 0 && (
-                    <span className="text-sm text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-                      ⭐ {product.rating.toFixed(1)}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="mb-3">
-                  <span className="text-[#586330] font-bold text-lg">
-                    {formatPrice(product.price)}
-                  </span>
-                  <span className="text-xs text-gray-500 bg-[#586330]/20 text-[#586330]/70 px-2 py-1 rounded ml-2">
-                    {product.productCategory}
-                  </span>
-                </div>
-                
-                <p className="text-gray-600 mb-4 text-sm leading-relaxed line-clamp-3">
-                  {product.description}
-                </p>
-
-                {/* Additional Product Details */}
-                <div className="space-y-2 text-sm text-gray-700 mb-4">
-                  <div className="flex justify-between">
-                    <span className="font-medium">Quantity:</span>
-                    <span>{product.quantity}</span>
-                  </div>
-                  {product.vendorId && (
-                    <div className="flex justify-between">
-                      <span className="font-medium">Vendor ID:</span>
-                      <span>{product.vendorId}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleUpdateProduct(product)}
-                    className="flex-1 bg-[#586330]/60 text-white py-2 rounded-md hover:bg-[#586330]/70 transition font-medium text-sm"
-                  >
-                    Update
-                  </button>
-                  <button
-                    onClick={() => handleDeleteProduct(product.id)}
-                    className="flex-1 bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition font-medium text-sm"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {productsToShow.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
 
         {/* No Products Message */}
         {!loading && productsToShow.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">
-              {searchTerm ? 'No products found matching your search.' : 'No products found in this category.'}
+          <div className="text-center py-16 bg-white rounded-xl shadow-md">
+            <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">📦</span>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">
+              {searchTerm || activeCategory !== 'all' ? 'No products found' : 'No products available'}
+            </h3>
+            <p className="text-gray-500 mb-6">
+              {searchTerm 
+                ? 'Try adjusting your search terms or filters' 
+                : activeCategory !== 'all'
+                ? `No products found in ${categories.find(c => c.id === activeCategory)?.name} category`
+                : 'Get started by adding your first product'
+              }
             </p>
+            {products.length === 0 && (
+              <button
+                onClick={handleAddProduct}
+                className="bg-[#586330] text-white px-6 py-3 rounded-lg hover:bg-[#586330]/80 transition font-medium"
+              >
+                Add Your First Product
+              </button>
+            )}
           </div>
         )}
 
@@ -458,10 +642,41 @@ const Products = () => {
           <div className="text-center mt-8">
             <button 
               onClick={handleLoadMore}
-              className="px-6 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/60 transition duration-200 font-medium"
+              className="px-8 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/80 transition duration-200 font-medium shadow-md"
             >
-              Load More Products
+              Load More Products ({filteredProducts.length - visibleProducts} remaining)
             </button>
+          </div>
+        )}
+
+        {/* Products Summary */}
+        {!loading && products.length > 0 && (
+          <div className="mt-8 bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Products Summary</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{products.length}</div>
+                <div className="text-sm text-blue-800">Total Products</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  {products.filter(p => p.quantity > 0).length}
+                </div>
+                <div className="text-sm text-green-800">In Stock</div>
+              </div>
+              <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {products.filter(p => p.quantity === 0).length}
+                </div>
+                <div className="text-sm text-yellow-800">Out of Stock</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">
+                  {products.reduce((sum, p) => sum + (p.images?.length || 0), 0)}
+                </div>
+                <div className="text-sm text-purple-800">Total Images</div>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -481,7 +696,7 @@ const Products = () => {
               price: 0,
               quantity: 1,
               productCategory: '',
-              image: '',
+              images: [],
               rating: 0
             });
           }}
@@ -507,7 +722,7 @@ const Products = () => {
               price: 0,
               quantity: 1,
               productCategory: '',
-              image: '',
+              images: [],
               rating: 0
             });
           }}
@@ -518,7 +733,17 @@ const Products = () => {
         />
       )}
 
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer 
+        position="top-right" 
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 };
