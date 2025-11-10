@@ -32,7 +32,6 @@ import CustomerChat from './Pages/customer/CustomerChat';
 import Helpcenter from './Pages/SupportTeam/Helpcenter';
 import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
 import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
-import Chating from './Pages/SupportTeam/Chating.jsx';
 
 
 //Common for all users
@@ -47,10 +46,10 @@ import Register from './Pages/Auth/Register';
 import VendorRegister from './Components/Vendor/Registration/VendorExtraForm.jsx';
 
 
-import ProductDetail from './Components/Vendor/Home/ProductDetail';
+
 import Dashboard from './Pages/Vendor/Dashboard/Dashboard';
 import Products from './Pages/Vendor/Dashboard/Products';
-import CustomerReviews from './Components/Vendor/Home/CustomerReviews';
+
 import Customers from './Pages/Vendor/Dashboard/Customers';
 import Invoices from './Pages/Vendor/Dashboard/Invoices';
 import Payments from './Pages/Vendor/Dashboard/Payments';
@@ -79,8 +78,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/vendor-register" element={<VendorRegister />} />
-        <Route path="/reviews" element={<CustomerReviews />} />
-        <Route path="/product/:id" element={<ProductDetail />} />
+        
+      
         <Route path="/vendor-dashboard" element={<Dashboard />} />
         <Route path="/products" element={<Products />} />
         <Route path="/customers" element={<Customers />} />
