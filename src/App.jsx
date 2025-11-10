@@ -32,7 +32,6 @@ import CustomerChat from './Pages/customer/CustomerChat';
 import Helpcenter from './Pages/SupportTeam/Helpcenter';
 import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
 import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
-import Chating from './Pages/SupportTeam/Chating.jsx';
 
 
 //Common for all users
