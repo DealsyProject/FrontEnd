@@ -1,40 +1,55 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { FaSearch } from "react-icons/fa";
 
 function NavbarSupport() {
-  return (
-    <nav className="bg-blue-600 text-white shadow-md">
-      <div className="container mx-auto px-6 py-3 flex justify-between items-center">
-        {/* Logo / Title */}
-        <h1 className="text-xl font-bold tracking-wide"> Deasly Support Team</h1>
+  const navigate = useNavigate();
 
-        {/* Menu Links */}
-        <ul className="flex space-x-8 text-sm font-medium">
-          <li>
-            <Link
-              to="/support-custemervenderdetails"
-              className="hover:text-yellow-300 transition duration-200"
-            >
-              Customer/Vendor Details
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/support-helpcenter"
-              className="hover:text-yellow-300 transition duration-200"
-            >
-              Help Center
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/support-returnrefundtracker"
-              className="hover:text-yellow-300 transition duration-200"
-            >
-              Return Tracker
-            </Link>
-          </li>
-        </ul>
+  return (
+    <nav className="flex justify-between items-center px-8 py-3 bg-gradient-to-r from-[#ffffff] to-[#cff5be] backdrop-blur-md shadow-md">
+      {/* Left Section - Logo and Search */}
+      <div className="flex items-center space-x-4">
+        <div
+          onClick={() => navigate("/")}
+          className="bg-white/40 backdrop-blur-md rounded-full px-6 py-2 cursor-pointer flex items-center shadow-sm hover:shadow-md transition"
+        >
+          <span className="font-serif text-2xl font-bold select-none text-[#586330]">
+            Dealsy
+          </span>
+        </div>
+
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search support..."
+            className="bg-white/40 backdrop-blur-md px-4 py-2 rounded-full text-sm outline-none text-gray-700 placeholder-gray-500"
+          />
+          <FaSearch className="absolute right-3 top-2 text-gray-500" />
+        </div>
+      </div>
+
+      {/* Center Section - Links */}
+      <div className="bg-white/40 backdrop-blur-md rounded-full px-6 py-2 flex items-center space-x-6 text-sm font-medium text-[#586330] shadow-sm">
+        <Link
+          to="/support-custemervenderdetails"
+          className="hover:text-green-800 transition"
+        >
+          Customer/Vendor Details
+        </Link>
+
+        <Link
+          to="/support-helpcenter"
+          className="hover:text-green-800 transition"
+        >
+          Help Center
+        </Link>
+
+        <Link
+          to="/support-returnrefundtracker"
+          className="hover:text-green-800 transition"
+        >
+          Return Tracker
+        </Link>
       </div>
     </nav>
   );
