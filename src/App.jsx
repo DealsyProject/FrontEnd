@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route,  } from 'react-router-dom';
 
 
 
@@ -27,13 +26,6 @@ import CustomerCheckout from './Pages/customer/CustomerCheckout';
 import CustomerChat from './Pages/customer/CustomerChat';
 
 
-
-// Support Team 
-import Helpcenter from './Pages/SupportTeam/Helpcenter';
-import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
-import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
-
-
 //Common for all users
 import Login from './Pages/Auth/Login';
 
@@ -53,6 +45,16 @@ import Products from './Pages/Vendor/Dashboard/Products';
 import Customers from './Pages/Vendor/Dashboard/Customers';
 import Invoices from './Pages/Vendor/Dashboard/Invoices';
 import Payments from './Pages/Vendor/Dashboard/Payments';
+
+
+// Support Team 
+import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
+import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
+import Helpcenter from './Pages/SupportTeam/Helpcenter.jsx';
+
+
+
+
 
 function App() {
   return (
@@ -105,7 +107,7 @@ function App() {
         <Route path="/support-helpcenter" element={<Helpcenter />} />
         <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails />} />
         <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker />} />
-        
+
          
 
       </Routes>

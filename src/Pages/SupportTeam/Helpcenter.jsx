@@ -4,16 +4,13 @@ import {
   MessageCircle, 
   Bell,
   Search,
-  UserCircle,
   Calendar,
   X,
   Send,
-  Phone,
-  Video,
-  ChevronDown
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
+import NavbarSupport from '../../Components/SupportTeam/NavbarSupport';
 
 function Helpcenter() {
   const [activeTab, setActiveTab] = useState('notifications');
@@ -305,7 +302,7 @@ function Helpcenter() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header */}<NavbarSupport/>
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
