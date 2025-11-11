@@ -1,35 +1,118 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route,  } from 'react-router-dom';
+
+
+
+//admin
+import AdminDashboard from './Pages/Admin/AdminDashboard.jsx';
+import ProductPage from './Pages/Admin/ProductPage.jsx';
+import OrdersPage from './Pages/Admin/OrdersPage.jsx';
+import TransactionsPage from './Pages/Admin/TransactionsPage.jsx';
+import UserManagement from './Pages/Admin/UserManagment.jsx';
+import ChatSupport from './Pages/Admin/ChatSupport.jsx';
+import PendingVendors from './Pages/Admin/PendingVendors.jsx';
+import ProductReturnPage from "./Pages/Admin/ProductReturnPage.jsx";
+import SupportTeamPage from "./Pages/Admin/SupportTeamPage.jsx";
+
+
+//customer
+import CustomerHome from './Pages/customer/CustomerHome';
+import CustomerRegistration from './Components/customer/Registration/CustomerExtraForm.jsx';
+import CustomerProducts from './Pages/customer/CustomerProducts';
+import CustomerProductView from './Pages/customer/CustomerProductview';
+import CustomerProfile from './Pages/customer/CustomerProfile';
+import CustomerCart from './Pages/customer/CustomerCart';
+import CustomerWishList from './Pages/customer/CustomerWishList';
+import CustomerCheckout from './Pages/customer/CustomerCheckout';
+import CustomerChat from './Pages/customer/CustomerChat';
+
+
+//Common for all users
+import Login from './Pages/Auth/Login';
+
+//Common for vendor/customer
+import Register from './Pages/Auth/Register';
+
+
+
+//Vendor
+import VendorRegister from './Components/Vendor/Registration/VendorExtraForm.jsx';
+
+
+
+import Dashboard from './Pages/Vendor/Dashboard/Dashboard';
+import Products from './Pages/Vendor/Dashboard/Products';
+
+import Customers from './Pages/Vendor/Dashboard/Customers';
+import Invoices from './Pages/Vendor/Dashboard/Invoices';
+import Payments from './Pages/Vendor/Dashboard/Payments';
+
+
+// Support Team 
+import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
+import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
+import Helpcenter from './Pages/SupportTeam/Helpcenter.jsx';
+
+
+
+
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Router>
+
+      <Routes>
+
+        {/* admin */}
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/productPage" element={<ProductPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/Transaction" element={<TransactionsPage />} />
+        <Route path="/user" element={<UserManagement />} />
+        <Route path="/ChatSupport" element={<ChatSupport />} />
+        <Route path="/Vendors" element={<PendingVendors />} />
+        <Route path="/product-returns" element={<ProductReturnPage />} />
+        <Route path="/support-team" element={<SupportTeamPage />} />
+
+
+
+        {/* Vendor */}
+       
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/vendor-register" element={<VendorRegister />} />
+        
+      
+        <Route path="/vendor-dashboard" element={<Dashboard />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/customers" element={<Customers />} />
+        <Route path="/invoices" element={<Invoices />} />
+        <Route path="/payments" element={<Payments />} />
+
+
+
+        {/* Customer  */}
+        <Route path="/" element={<CustomerHome />} />
+        <Route path="/customer-register" element={<CustomerRegistration />} />
+        <Route path="/customerproducts" element={<CustomerProducts />} />
+        <Route path="/customerproductview/:id" element={<CustomerProductView />} />
+        <Route path="/customerprofile" element={<CustomerProfile />} />
+        <Route path="/customercart" element={<CustomerCart />} />
+        <Route path="/customerwishlist" element={<CustomerWishList />} />
+        <Route path="/customercheckout" element={<CustomerCheckout />} />
+        <Route path="/customerchat" element={<CustomerChat />} />
+
+
+
+        {/* Support Team */}
+        <Route path="/support-helpcenter" element={<Helpcenter />} />
+        <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails />} />
+        <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker />} />
+
+         
+
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
