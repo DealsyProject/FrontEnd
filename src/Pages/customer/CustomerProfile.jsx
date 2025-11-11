@@ -2,31 +2,89 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../../Components/customer/Common/Navbar";
 import Footer from "../../Components/customer/Common/Footer";
 import axiosInstance from "../../Components/utils/axiosInstance";
+import { Pencil, Trash2 } from "lucide-react";
 
 export default function ProfilePage() {
   const [active, setActive] = useState("My Profile");
   const [profile, setProfile] = useState(null);
+  const [photoUrl, setPhotoUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const menu = ["My Profile", "My Orders", "Returned", "Refunded"];
 
+  // ✅ Fetch both profile and photo
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance.get("/api/CustomerViewDetails/profile");
-        setProfile(response.data);
+
+        const profileRes = await axiosInstance.get(
+          "/api/CustomerViewDetails/profile"
+        );
+        setProfile(profileRes.data);
+
+        // ✅ Fetch photo as JSON
+        const photoRes = await axiosInstance.get("/api/CustomerPicture/photoView");
+        if (photoRes.data && photoRes.data.imageUrl) {
+          setPhotoUrl(photoRes.data.imageUrl);
+        }
       } catch (err) {
-        console.error("Error fetching profile:", err);
-        setError("Unable to fetch profile details.");
+        console.error("Error fetching data:", err);
+        setError("Unable to fetch profile or photo details.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
+    fetchData();
   }, []);
+
+  // ✅ Handle profile picture upload - convert to base64 like vendor profile
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload a valid image');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64Image = ev.target?.result;
+      
+      try {
+        // ✅ Send base64 image in JSON payload
+        await axiosInstance.put("/api/CustomerPicture/photoUpdate", {
+          photo: base64Image
+        });
+        
+        alert("Profile picture updated successfully!");
+        setPhotoUrl(base64Image);
+      } catch (err) {
+        console.error("Error updating photo:", err);
+        alert("Failed to update photo.");
+      }
+    };
+    
+    reader.readAsDataURL(file);
+  };
+
+  // ✅ Handle profile picture delete
+  const handlePhotoDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete your profile photo?"))
+      return;
+
+    try {
+      await axiosInstance.delete("/api/CustomerPicture/photoDelete");
+      setPhotoUrl(null);
+      alert("Profile picture deleted successfully!");
+    } catch (err) {
+      console.error("Error deleting photo:", err);
+      alert("Failed to delete photo.");
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-pink-50">
@@ -36,14 +94,46 @@ export default function ProfilePage() {
         <div className="bg-white rounded-xl shadow-md w-full max-w-6xl p-6 flex flex-col md:flex-row gap-8">
           {/* Left Sidebar */}
           <div className="w-full md:w-1/4 border rounded-xl p-4">
-            <div className="flex flex-col items-center">
-              <img
-                src="https://i.pravatar.cc/102"
-                alt="profile"
-                className="w-20 h-20 rounded-full mb-2"
-              />
+            <div className="flex flex-col items-center relative">
+              {/* ✅ Profile Picture Section */}
+              {loading ? (
+                <div className="w-24 h-24 bg-gray-200 rounded-full animate-pulse mb-2"></div>
+              ) : (
+                <div className="relative">
+                  <img
+                    src={
+                      photoUrl ||
+                      "https://cdn-icons-png.flaticon.com/512/847/847969.png"
+                    }
+                    alt="profile"
+                    className="w-24 h-24 rounded-full object-cover mb-2 border"
+                  />
 
-              {/* ✅ Show loading, error, or profile name */}
+                  {/* ✅ Edit (Upload) Icon */}
+                  <label className="absolute bottom-0 right-1 bg-black text-white p-1.5 rounded-full cursor-pointer hover:bg-gray-800">
+                    <Pencil size={14} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* ✅ Delete button only if photo exists */}
+              {photoUrl && (
+                <button
+                  onClick={handlePhotoDelete}
+                  className="flex items-center gap-1 bg-red-500 text-white text-xs px-3 py-1 rounded-md mt-2"
+                >
+                  <Trash2 size={12} />
+                  Delete Photo
+                </button>
+              )}
+
+              {/* ✅ Show profile name / status */}
               {loading ? (
                 <p className="text-gray-500 text-sm mb-4">Loading...</p>
               ) : error ? (
@@ -56,6 +146,7 @@ export default function ProfilePage() {
                 </p>
               )}
 
+              {/* Sidebar Menu */}
               <div className="w-full space-y-2">
                 {menu.map((item) => (
                   <button
@@ -76,7 +167,7 @@ export default function ProfilePage() {
 
           {/* Right Content Area */}
           <div className="flex-1 border rounded-xl p-6">
-            {/* ✅ Profile Information */}
+            {/* ✅ My Profile */}
             {active === "My Profile" && (
               <div>
                 <h3 className="text-lg font-semibold mb-6 border-b pb-2">
@@ -128,7 +219,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* ✅ My Orders */}
+            {/* Other Tabs */}
             {active === "My Orders" && (
               <div>
                 <h3 className="text-lg font-semibold mb-4">My Orders</h3>
@@ -137,18 +228,14 @@ export default function ProfilePage() {
                 </p>
               </div>
             )}
-
-            {/* ✅ Returned Orders */}
             {active === "Returned" && (
               <div>
                 <h3 className="text-lg font-semibold mb-4">Returned Orders</h3>
                 <p className="text-gray-600 text-sm">
-                  You haven’t returned any products yet.
+                  You haven't returned any products yet.
                 </p>
               </div>
             )}
-
-            {/* ✅ Refunded Orders */}
             {active === "Refunded" && (
               <div>
                 <h3 className="text-lg font-semibold mb-4">Refunded Orders</h3>
