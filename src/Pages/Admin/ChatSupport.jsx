@@ -1,4 +1,4 @@
-import  { useState } from "react";
+import { useState } from "react";
 import { Search, Phone, MoreVertical, Send } from "lucide-react";
 import Navbar from "../../Components/Admin/Navbar.jsx";
 
@@ -83,7 +83,7 @@ export default function SupportChatAccess() {
           {/* Left Sidebar */}
           <div className="w-96 bg-gray-100 border-r border-gray-200 flex flex-col">
             <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-emerald-700 mb-4">Support Chat Access</h2>
+              <h2 className="text-lg font-semibold text-[#586330] mb-4">Support Chat Access</h2>
 
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -92,7 +92,7 @@ export default function SupportChatAccess() {
                   placeholder="Search chats"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-emerald-400"
+                  className="w-full bg-white border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#586330]"
                 />
               </div>
 
@@ -103,8 +103,8 @@ export default function SupportChatAccess() {
                     onClick={() => setActiveTab(tab)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                       activeTab === tab
-                        ? "bg-emerald-500 text-white"
-                        : "text-gray-600 hover:bg-emerald-50"
+                        ? "bg-[#586330] text-white"
+                        : "text-gray-600 hover:bg-[#586330]/10"
                     }`}
                   >
                     {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -119,11 +119,11 @@ export default function SupportChatAccess() {
                   key={chat.id}
                   onClick={() => setSelectedChat(chat.id)}
                   className={`p-4 border-b border-gray-200 cursor-pointer transition ${
-                    selectedChat === chat.id ? "bg-emerald-50" : "hover:bg-gray-100"
+                    selectedChat === chat.id ? "bg-[#586330]/10" : "hover:bg-gray-100"
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-medium">
+                    <div className="w-10 h-10 rounded-full bg-[#586330]/20 text-[#586330] flex items-center justify-center font-medium">
                       {chat.avatar}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -145,7 +145,7 @@ export default function SupportChatAccess() {
           <div className="flex-1 flex flex-col bg-white">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
               <div>
-                <h2 className="text-lg font-semibold text-emerald-700">
+                <h2 className="text-lg font-semibold text-[#586330]">
                   Chat with {chats[selectedChat].customer}
                 </h2>
                 <p className="text-sm text-gray-500">{chats[selectedChat].orderId}</p>
@@ -160,7 +160,7 @@ export default function SupportChatAccess() {
                 <button className="p-2 hover:bg-gray-100 rounded-lg transition">
                   <MoreVertical className="w-5 h-5 text-gray-500" />
                 </button>
-                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center ml-2">
+                <div className="w-10 h-10 rounded-full bg-[#586330]/20 text-[#586330] flex items-center justify-center ml-2">
                   {chats[selectedChat].avatar}
                 </div>
               </div>
@@ -177,7 +177,7 @@ export default function SupportChatAccess() {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                       message.sender === "support"
-                        ? "bg-emerald-500 text-white"
+                        ? "bg-[#586330] text-white"
                         : "bg-gray-200 text-gray-700"
                     }`}
                   >
@@ -191,7 +191,7 @@ export default function SupportChatAccess() {
                     <div
                       className={`max-w-md px-4 py-3 rounded-2xl ${
                         message.sender === "support"
-                          ? "bg-emerald-500 text-white rounded-tr-none"
+                          ? "bg-[#586330] text-white rounded-tr-none"
                           : "bg-white border border-gray-200 text-gray-800 rounded-tl-none"
                       }`}
                     >
@@ -213,12 +213,12 @@ export default function SupportChatAccess() {
                   placeholder="Type a message..."
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  className="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-emerald-400"
+                  className="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#586330]"
                   onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                 />
                 <button
                   onClick={handleSendMessage}
-                  className="p-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition"
+                  className="p-3 bg-[#586330] hover:bg-[#586330]/90 text-white rounded-lg transition"
                 >
                   <Send className="w-5 h-5" />
                 </button>

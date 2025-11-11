@@ -43,8 +43,6 @@ const Login = () => {
       const { data } = response;
 
       if (response.status === 200) {
-        console.log('Login response data:', data);
-
         // Store authentication data
         localStorage.setItem('authToken', data.token);
         localStorage.setItem(
@@ -60,60 +58,35 @@ const Login = () => {
 
         toast.success('Login successful!');
 
-        console.log('Role:', data.role);
-        console.log('isRegistrationComplete:', data.isRegistrationComplete);
-
-        // Redirect based on role
         setTimeout(() => {
           const role = data.role?.toString().toLowerCase();
 
-          // ✅ VENDOR
+          
           if (role === 'vendor') {
             if (data.isRegistrationComplete) {
-              console.log('FORCE REDIRECT: vendor-dashboard');
-              window.location.href = '/vendor-dashboard';
+              navigate('/vendor-dashboard', { replace: true });
             } else {
-              console.log('FORCE REDIRECT: vendor-register');
-              window.location.href = '/vendor-register';
+              navigate('/vendor-register', { replace: true });
             }
-          }
-
-          // ✅ CUSTOMER
-          else if (role === 'customer') {
+          } else if (role === 'customer') {
             if (data.isRegistrationComplete) {
-              console.log('FORCE REDIRECT: home');
-              window.location.href = '/';
+              navigate('/', { replace: true });
             } else {
-              console.log('FORCE REDIRECT: customer-register');
-              window.location.href = '/customer-register';
+              navigate('/customer-register', { replace: true });
             }
-          }
-
-          // ✅ SUPPORT TEAM
-          else if (role === 'supportteam') {
-            console.log('FORCE REDIRECT: support-dashboard');
-            window.location.href = '/support-helpcenter';
-          }
-
-          // ✅ ADMIN (optional future case)
-          else if (role === 'admin') {
-            console.log('FORCE REDIRECT: admin-dashboard');
-            window.location.href = '/admin';
-          }
-
-          // ✅ DEFAULT fallback
-          else {
-            console.log('FORCE REDIRECT: home');
-            window.location.href = '/';
+          } else if (role === 'supportteam') {
+            navigate('/support-helpcenter', { replace: true });
+          } else if (role === 'admin') {
+            navigate('/admin', { replace: true });
+          } else {
+            navigate('/', { replace: true });
           }
         }, 1000);
       }
     } catch (error) {
       console.error('Login error:', error);
-
       if (error.response) {
-        const errorMessage = error.response.data?.message || 'Login failed';
-        toast.error(errorMessage);
+        toast.error(error.response.data?.message || 'Login failed');
       } else if (error.request) {
         toast.error('Network error. Please check your connection.');
       } else {
