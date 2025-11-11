@@ -1,3 +1,4 @@
+// src/pages/Vendor/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -6,7 +7,6 @@ import { useNavigate } from 'react-router-dom';
 // Import components
 import MessagesModal from '../../../Components/Vendor/Dashboard/modals/MessagesModal';
 import NotificationsModal from '../../../Components/Vendor/Dashboard/modals/NotificationsModal';
-import ProfileModal from '../../../Components/Vendor/Dashboard/modals/ProfileModal';
 import Sidebar from "../../../Components/Vendor/Dashboard/Sidebar";
 import DashboardHeader from '../../../Components/Vendor/Dashboard/DashboardHeader';
 import DashboardMain from '../../../Components/Vendor/Dashboard/DashboardMain';
@@ -22,37 +22,36 @@ const Dashboard = () => {
   const [showMessages, setShowMessages] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  
+
   const navigate = useNavigate();
-  
-  // Custom hooks for data management
-  const { 
-    userData, 
-    vendorData, 
-    financialData, 
-    recentActivities, 
-    isLoading, 
-    messageThreads, 
+
+  // Fetch dashboard data
+  const {
+    userData,
+    vendorData,
+    financialData,
+    recentActivities,
+    isLoading,
+    messageThreads,
     notifications,
-    fetchDashboardData 
+    fetchDashboardData
   } = useDashboardData(navigate);
-  
+
+  // Profile hook
   const {
     profileForm,
     profilePreview,
-    idCardPreview,
     isProfileCreated,
+    isUpdating,
     handleInputChange,
     handleProfileSave,
     handleProfileCancel,
-    handleIdCardUpload,
     handleProfileImageUpload,
     handleRemoveProfileImage,
-    handleRemoveIdCard,
-    idCardInputRef,
     profileInputRef
-  } = useProfile(vendorData, userData, setShowProfile);
+  } = useProfile(setShowProfile, fetchDashboardData);
 
+  // Load data on mount
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -64,73 +63,72 @@ const Dashboard = () => {
     navigate('/login');
   };
 
-  
-  // Loading and error states
+  // Handle backdrop click for modals
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      setShowProfile(false);
+    }
+  };
+
+  // Loading & error states
   if (isLoading) return <LoadingState />;
   if (!userData) return <ErrorState message="Unable to load user data" />;
 
   return (
     <div className="flex h-screen bg-gray-100">
       <ToastContainer position="top-right" autoClose={3000} />
-      
-      {/* Modals */}
+
+      {/* External Modals */}
       {showMessages && (
-        <MessagesModal 
+        <MessagesModal
           setShowMessages={setShowMessages}
           messageThreads={messageThreads}
         />
       )}
-      
+
       {showNotifications && (
-        <NotificationsModal 
+        <NotificationsModal
           setShowNotifications={setShowNotifications}
           notifications={notifications}
         />
       )}
-      
-      {showProfile && (
-        <ProfileModal 
-          setShowProfile={setShowProfile}
-          profileForm={profileForm}
-          handleInputChange={handleInputChange}
-          idCardInputRef={idCardInputRef}
-          handleIdCardUpload={handleIdCardUpload}
-          idCardPreview={idCardPreview}
-          handleRemoveIdCard={handleRemoveIdCard}
-          profileInputRef={profileInputRef}
-          handleProfileImageUpload={handleProfileImageUpload}
-          profilePreview={profilePreview}
-          handleRemoveProfileImage={handleRemoveProfileImage}
-          handleProfileCancel={handleProfileCancel}
-          handleProfileSave={handleProfileSave}
-          userData={userData}
-          vendorData={vendorData}
-        />
-      )}
 
-      <Sidebar 
-        handleLogout={handleLogout} 
-        activeView={activeView} 
+      {/* Sidebar */}
+      <Sidebar
+        handleLogout={handleLogout}
+        activeView={activeView}
         setActiveView={setActiveView}
         userData={userData}
       />
 
+      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header with Profile Modal */}
         <DashboardHeader
           activeView={activeView}
           setShowMessages={setShowMessages}
           setShowNotifications={setShowNotifications}
+          showProfile={showProfile}
           setShowProfile={setShowProfile}
           handleLogout={handleLogout}
           messageThreads={messageThreads}
           notifications={notifications}
           userData={userData}
-          isProfileCreated={isProfileCreated}
+          vendorData={vendorData}
           profileForm={profileForm}
           profilePreview={profilePreview}
+          isProfileCreated={isProfileCreated}
+          isUpdating={isUpdating}
+          handleInputChange={handleInputChange}
+          handleProfileSave={handleProfileSave}
+          handleProfileCancel={handleProfileCancel}
+          handleProfileImageUpload={handleProfileImageUpload}
           handleRemoveProfileImage={handleRemoveProfileImage}
+          profileInputRef={profileInputRef}
+          handleBackdropClick={handleBackdropClick} // Pass backdrop handler
         />
 
+        {/* Main Dashboard Content */}
         <DashboardMain
           activeView={activeView}
           financialData={financialData}

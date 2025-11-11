@@ -76,7 +76,7 @@ const Products = () => {
     try {
       setLoading(true);
       // Changed to use my-products endpoint for vendor's own products
-      const response = await axiosInstance.get('/api/Product/my-products');
+      const response = await axiosInstance.get('/Product/my-products');
       setProducts(response.data.products || []);
     } catch (error) {
       handleApiError(error, 'Failed to load products');
@@ -94,7 +94,7 @@ const Products = () => {
 
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/api/Product/search?searchTerm=${encodeURIComponent(searchTerm)}`);
+      const response = await axiosInstance.get(`/Product/search?searchTerm=${encodeURIComponent(searchTerm)}`);
       // Filter to show only vendor's products from search results
       const vendorProducts = response.data.products || [];
       setProducts(vendorProducts);
@@ -217,7 +217,7 @@ const Products = () => {
         rating: parseFloat(newProduct.rating) || 0
       };
 
-      await axiosInstance.post('/api/Product/create', productData);
+      await axiosInstance.post('/Product/create', productData);
       
       await fetchProducts();
       
@@ -258,7 +258,7 @@ const Products = () => {
         rating: parseFloat(newProduct.rating) || 0
       };
 
-      await axiosInstance.put(`/api/Product/update/${editingProduct.id}`, productData);
+      await axiosInstance.put(`/Product/update/${editingProduct.id}`, productData);
       
       await fetchProducts();
       
@@ -288,7 +288,7 @@ const Products = () => {
     }
 
     try {
-      await axiosInstance.delete(`/api/Product/delete/${productId}`);
+      await axiosInstance.delete(`/Product/delete/${productId}`);
       await fetchProducts();
       toast.success('Product deleted successfully!');
     } catch (error) {
