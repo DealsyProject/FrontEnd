@@ -42,7 +42,7 @@ export default function VendorManagement() {
     {
       id: 3,
       name: 'Vendor Three',
-      email: 'vendor3@email.com',
+      email: 'vendor3@email.com', 
       shopName: 'Fashion Hub',
       phone: '555-555-5555',
       address: '789 Fashion Ave, City, Country',
