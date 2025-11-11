@@ -1,47 +1,28 @@
+// utils/axiosInstance.js
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'https://localhost:7001', 
-  timeout: 10000, 
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: 'https://localhost:7001/api', // <-- API base
+  timeout: 30000,
+  headers: { 'Content-Type': 'application/json' },
 });
 
-
 axiosInstance.interceptors.request.use(
-  (config) => {
+  config => {
     const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  error => Promise.reject(error)
 );
 
-
 axiosInstance.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    
+  response => response,
+  error => {
     if (error.response?.status === 401) {
-      
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('currentUser');
+      localStorage.clear();
       window.location.href = '/login';
-    } else if (error.response?.status === 403) {
-      
-      console.error('Access forbidden');
-    } else if (error.response?.status === 500) {
-      
-      console.error('Server error occurred');
     }
-    
     return Promise.reject(error);
   }
 );

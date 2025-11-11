@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route,  } from 'react-router-dom';
 
 
 
@@ -27,14 +26,6 @@ import CustomerCheckout from './Pages/customer/CustomerCheckout';
 import CustomerChat from './Pages/customer/CustomerChat';
 
 
-
-// Support Team 
-import Helpcenter from './Pages/SupportTeam/Helpcenter';
-import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
-import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
-import Chating from './Pages/SupportTeam/Chating.jsx';
-
-
 //Common for all users
 import Login from './Pages/Auth/Login';
 
@@ -45,15 +36,25 @@ import Register from './Pages/Auth/Register';
 
 //Vendor
 import VendorRegister from './Components/Vendor/Registration/VendorExtraForm.jsx';
-import Subscription from './Pages/Vendor/Subscription';
-import Home from './Pages/Vendor/Home';
-import ProductDetail from './Components/Vendor/Home/ProductDetail';
+
+
+
 import Dashboard from './Pages/Vendor/Dashboard/Dashboard';
 import Products from './Pages/Vendor/Dashboard/Products';
-import CustomerReviews from './Components/Vendor/Home/CustomerReviews';
+
 import Customers from './Pages/Vendor/Dashboard/Customers';
 import Invoices from './Pages/Vendor/Dashboard/Invoices';
 import Payments from './Pages/Vendor/Dashboard/Payments';
+
+
+// Support Team 
+import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
+import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
+import Helpcenter from './Pages/SupportTeam/Helpcenter.jsx';
+
+
+
+
 
 function App() {
   return (
@@ -75,13 +76,12 @@ function App() {
 
 
         {/* Vendor */}
-        <Route path="/VendorHome" element={<Home />} />
+       
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/vendor-register" element={<VendorRegister />} />
-        <Route path="/reviews" element={<CustomerReviews />} />
-        <Route path="/subscription" element={<Subscription />} />
-        <Route path="/product/:id" element={<ProductDetail />} />
+        
+      
         <Route path="/vendor-dashboard" element={<Dashboard />} />
         <Route path="/products" element={<Products />} />
         <Route path="/customers" element={<Customers />} />
@@ -107,7 +107,7 @@ function App() {
         <Route path="/support-helpcenter" element={<Helpcenter />} />
         <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails />} />
         <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker />} />
-        
+
          
 
       </Routes>

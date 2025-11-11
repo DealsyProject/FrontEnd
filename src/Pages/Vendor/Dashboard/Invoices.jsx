@@ -1,12 +1,19 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '../../../Components/Vendor/Dashboard/Sidebar';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../../../Components/utils/axiosInstance';
 
 const Invoices = () => {
   const navigate = useNavigate();
   const printRef = useRef();
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [viewMode, setViewMode] = useState('list');
   
   // Add logout function
   const handleLogout = () => {
@@ -17,138 +24,67 @@ const Invoices = () => {
   };
 
   const activeView = 'invoices';
-  const [invoices, setInvoices] = useState([
-    {
-      id: 'INV-001',
-      customer: {
-        id: 1,
-        name: 'John Smith',
-        email: 'john.smith@email.com',
-        phone: '+1 (555) 123-4567',
-        address: {
-          street: '123 Main Street',
-          city: 'New York',
-          state: 'NY',
-          zipCode: '10001',
-          country: 'USA'
-        }
-      },
-      date: '2024-03-15',
-      dueDate: '2024-04-15',
-      status: 'paid', // paid, pending, overdue
-      items: [
-        {
-          id: 1,
-          productName: 'Modern Chair',
-          description: 'Comfortable modern chair with ergonomic design',
-          quantity: 2,
-          unitPrice: 12000,
-          productImage: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80'
-        },
-        {
-          id: 2,
-          productName: 'Coffee Table',
-          description: 'Glass top coffee table with wooden legs',
-          quantity: 1,
-          unitPrice: 8000,
-          productImage: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80'
-        }
-      ],
-      taxRate: 10,
-      shipping: 500,
-      notes: 'Thank you for your business!'
-    },
-    {
-      id: 'INV-002',
-      customer: {
-        id: 2,
-        name: 'Sarah Johnson',
-        email: 'sarah.j@email.com',
-        phone: '+1 (555) 987-6543',
-        address: {
-          street: '456 Oak Avenue',
-          city: 'Los Angeles',
-          state: 'CA',
-          zipCode: '90210',
-          country: 'USA'
-        }
-      },
-      date: '2024-03-18',
-      dueDate: '2024-04-18',
-      status: 'pending',
-      items: [
-        {
-          id: 3,
-          productName: 'Queen Size Bed',
-          description: 'Luxury queen size bed with memory foam mattress',
-          quantity: 1,
-          unitPrice: 25000,
-          productImage: 'https://images.unsplash.com/photo-1617325247661-675ab4b64ae2?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1171'
-        }
-      ],
-      taxRate: 8,
-      shipping: 750,
-      notes: 'Delivery within 5-7 business days'
-    },
-    {
-      id: 'INV-003',
-      customer: {
-        id: 3,
-        name: 'Mike Chen',
-        email: 'mike.chen@email.com',
-        phone: '+1 (555) 456-7890',
-        address: {
-          street: '789 Pine Road',
-          city: 'Chicago',
-          state: 'IL',
-          zipCode: '60601',
-          country: 'USA'
-        }
-      },
-      date: '2024-03-10',
-      dueDate: '2024-03-25',
-      status: 'overdue',
-      items: [
-        {
-          id: 1,
-          productName: 'Modern Chair',
-          description: 'Comfortable modern chair with ergonomic design',
-          quantity: 4,
-          unitPrice: 12000,
-          productImage: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80'
-        },
-        {
-          id: 4,
-          productName: 'Dining Table',
-          description: '6-seater wooden dining table',
-          quantity: 1,
-          unitPrice: 18000,
-          productImage: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80'
-        }
-      ],
-      taxRate: 10,
-      shipping: 1000,
-      notes: 'Please make payment within due date'
-    }
-  ]);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'detail'
+  // Fetch invoices from customer data
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get('/api/Customer/all');
+      const customers = response.data.customers || [];
+      
+      // Extract invoices from all customers
+      const allInvoices = [];
+      customers.forEach(customer => {
+        if (customer.invoices && customer.invoices.length > 0) {
+          customer.invoices.forEach(invoice => {
+            allInvoices.push({
+              ...invoice,
+              customer: {
+                id: customer.id,
+                name: customer.fullName,
+                email: customer.email,
+                phone: customer.phoneNumber,
+                address: {
+                  street: customer.address || 'Not specified',
+                  city: 'Unknown',
+                  state: 'Unknown',
+                  zipCode: customer.pincode || '000000',
+                  country: 'India'
+                }
+              }
+            });
+          });
+        }
+      });
+      
+      setInvoices(allInvoices);
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      toast.error('Failed to load invoices');
+      setInvoices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Calculate invoice totals
   const calculateInvoiceTotals = (invoice) => {
-    const subtotal = invoice.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const taxAmount = (subtotal * invoice.taxRate) / 100;
-    const total = subtotal + taxAmount + invoice.shipping;
+    const subtotal = invoice.items?.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) || 0;
+    const taxRate = invoice.taxRate || 0;
+    const taxAmount = (subtotal * taxRate) / 100;
+    const shipping = invoice.shipping || 0;
+    const total = subtotal + taxAmount + shipping;
     return { subtotal, taxAmount, total };
   };
 
   // Filter invoices
   const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch = 
-      invoice.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      invoice.invoiceId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.customer.email.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -181,11 +117,13 @@ const Invoices = () => {
       const printContent = printRef.current;
       const printWindow = window.open('', '_blank');
       
+      const { subtotal, taxAmount, total } = calculateInvoiceTotals(invoice);
+      
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Invoice ${invoice.id}</title>
+            <title>Invoice ${invoice.invoiceId}</title>
             <style>
               body { 
                 font-family: Arial, sans-serif; 
@@ -288,7 +226,7 @@ const Invoices = () => {
               </div>
               <div class="invoice-info">
                 <h2>INVOICE</h2>
-                <p><strong>Invoice No:</strong> ${invoice.id}</p>
+                <p><strong>Invoice No:</strong> ${invoice.invoiceId}</p>
                 <p><strong>Date:</strong> ${new Date(invoice.date).toLocaleDateString()}</p>
                 <p><strong>Due Date:</strong> ${new Date(invoice.dueDate).toLocaleDateString()}</p>
                 <span class="status-badge status-${invoice.status}">${invoice.status.toUpperCase()}</span>
@@ -327,34 +265,34 @@ const Invoices = () => {
                 </tr>
               </thead>
               <tbody>
-                ${invoice.items.map(item => `
+                ${invoice.items?.map(item => `
                   <tr>
                     <td>${item.productName}</td>
-                    <td>${item.description}</td>
+                    <td>${item.description || 'N/A'}</td>
                     <td>${item.quantity}</td>
-                    <td>₹${item.unitPrice.toLocaleString()}</td>
-                    <td>₹${(item.quantity * item.unitPrice).toLocaleString()}</td>
+                    <td>₹${item.unitPrice?.toLocaleString() || '0'}</td>
+                    <td>₹${((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString()}</td>
                   </tr>
-                `).join('')}
+                `).join('') || ''}
               </tbody>
             </table>
 
             <div class="totals">
               <div class="total-row">
                 <span>Subtotal:</span>
-                <span>₹${calculateInvoiceTotals(invoice).subtotal.toLocaleString()}</span>
+                <span>₹${subtotal.toLocaleString()}</span>
               </div>
               <div class="total-row">
-                <span>Tax (${invoice.taxRate}%):</span>
-                <span>₹${calculateInvoiceTotals(invoice).taxAmount.toLocaleString()}</span>
+                <span>Tax (${invoice.taxRate || 0}%):</span>
+                <span>₹${taxAmount.toLocaleString()}</span>
               </div>
               <div class="total-row">
                 <span>Shipping:</span>
-                <span>₹${invoice.shipping.toLocaleString()}</span>
+                <span>₹${(invoice.shipping || 0).toLocaleString()}</span>
               </div>
               <div class="total-row grand-total">
                 <span>Total Amount:</span>
-                <span>₹${calculateInvoiceTotals(invoice).total.toLocaleString()}</span>
+                <span>₹${total.toLocaleString()}</span>
               </div>
             </div>
 
@@ -388,7 +326,7 @@ const Invoices = () => {
 
   // Send invoice
   const handleSendInvoice = (invoice) => {
-    toast.success(`Invoice ${invoice.id} sent to ${invoice.customer.email}`);
+    toast.success(`Invoice ${invoice.invoiceId} sent to ${invoice.customer.email}`);
   };
 
   // View invoice details
@@ -401,6 +339,25 @@ const Invoices = () => {
   const handleBackToList = () => {
     setViewMode('list');
     setSelectedInvoice(null);
+  };
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return `₹${amount?.toLocaleString('en-IN') || '0'}`;
+  };
+
+  // Format date
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
   };
 
   return (
@@ -418,130 +375,141 @@ const Invoices = () => {
               <p className="text-gray-600 mt-2">Manage and view all customer invoices</p>
             </header>
 
+            {loading && (
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#586330]"></div>
+                <p className="text-gray-600 mt-2">Loading invoices...</p>
+              </div>
+            )}
+
             {/* Filters and Search */}
-            <div className="bg-white rounded-xl shadow-md p-4 mb-6">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    placeholder="Search by invoice ID, customer name, or email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div className="w-full md:w-48">
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="paid">Paid</option>
-                    <option value="pending">Pending</option>
-                    <option value="overdue">Overdue</option>
-                  </select>
+            {!loading && (
+              <div className="bg-white rounded-xl shadow-md p-4 mb-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Search by invoice ID, customer name, or email..."
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="w-full md:w-48">
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="paid">Paid</option>
+                      <option value="pending">Pending</option>
+                      <option value="overdue">Overdue</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Invoices List */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Invoice
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Customer
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Due Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredInvoices.map((invoice) => {
-                      const { total } = calculateInvoiceTotals(invoice);
-                      return (
-                        <tr key={invoice.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{invoice.id}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{invoice.customer.name}</div>
-                            <div className="text-sm text-gray-500">{invoice.customer.email}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(invoice.date).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(invoice.dueDate).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                            ₹{total.toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <StatusBadge status={invoice.status} />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleViewDetails(invoice)}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                View
-                              </button>
-                              <button
-                                onClick={() => handlePrintInvoice(invoice)}
-                                className="text-gray-600 hover:text-gray-900"
-                              >
-                                Print
-                              </button>
-                              <button
-                                onClick={() => handleSendInvoice(invoice)}
-                                className="text-green-600 hover:text-green-900"
-                              >
-                                Send
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Empty State */}
-              {filteredInvoices.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-4xl">📄</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No invoices found</h3>
-                  <p className="text-gray-500">
-                    {searchTerm || statusFilter !== 'all' 
-                      ? 'Try adjusting your search or filters' 
-                      : 'No invoices have been created yet'}
-                  </p>
+            {!loading && (
+              <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Invoice
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Customer
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Due Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredInvoices.map((invoice) => {
+                        const { total } = calculateInvoiceTotals(invoice);
+                        return (
+                          <tr key={invoice.invoiceId} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{invoice.invoiceId}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{invoice.customer.name}</div>
+                              <div className="text-sm text-gray-500">{invoice.customer.email}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {formatDate(invoice.date)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {formatDate(invoice.dueDate)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                              {formatCurrency(total)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <StatusBadge status={invoice.status} />
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleViewDetails(invoice)}
+                                  className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  onClick={() => handlePrintInvoice(invoice)}
+                                  className="text-gray-600 hover:text-gray-900 px-2 py-1 rounded hover:bg-gray-50"
+                                >
+                                  Print
+                                </button>
+                                <button
+                                  onClick={() => handleSendInvoice(invoice)}
+                                  className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50"
+                                >
+                                  Send
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </div>
+
+                {/* Empty State */}
+                {filteredInvoices.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-4xl">📄</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">No invoices found</h3>
+                    <p className="text-gray-500">
+                      {searchTerm || statusFilter !== 'all' 
+                        ? 'Try adjusting your search or filters' 
+                        : 'No invoices have been created yet'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         ) : (
           // Invoice Detail View
@@ -559,27 +527,27 @@ const Invoices = () => {
                   <div>
                     <button
                       onClick={handleBackToList}
-                      className="flex items-center text-[#586330] mb-4"
+                      className="flex items-center text-[#586330] hover:text-[#586330]/80 mb-4 transition-colors"
                     >
                       ← Back to Invoices
                     </button>
-                    <h1 className="text-3xl font-bold text-gray-800">Invoice {selectedInvoice.id}</h1>
+                    <h1 className="text-3xl font-bold text-gray-800">Invoice {selectedInvoice.invoiceId}</h1>
                     <StatusBadge status={selectedInvoice.status} />
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-gray-800 mb-2">
-                      ₹{calculateInvoiceTotals(selectedInvoice).total.toLocaleString()}
+                      {formatCurrency(calculateInvoiceTotals(selectedInvoice).total)}
                     </div>
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handlePrintInvoice(selectedInvoice)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         Print Invoice
                       </button>
                       <button
                         onClick={() => handleSendInvoice(selectedInvoice)}
-                        className="px-4 py-2 bg-[#586330] text-white rounded-lg "
+                        className="px-4 py-2 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/80 transition-colors"
                       >
                         Send to Customer
                       </button>
@@ -621,60 +589,67 @@ const Invoices = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-sm">
                   <div>
                     <p className="text-gray-600">Invoice Date</p>
-                    <p className="font-semibold">{new Date(selectedInvoice.date).toLocaleDateString()}</p>
+                    <p className="font-semibold">{formatDate(selectedInvoice.date)}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Due Date</p>
-                    <p className="font-semibold">{new Date(selectedInvoice.dueDate).toLocaleDateString()}</p>
+                    <p className="font-semibold">{formatDate(selectedInvoice.dueDate)}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Tax Rate</p>
-                    <p className="font-semibold">{selectedInvoice.taxRate}%</p>
+                    <p className="font-semibold">{selectedInvoice.taxRate || 0}%</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Shipping</p>
-                    <p className="font-semibold">₹{selectedInvoice.shipping.toLocaleString()}</p>
+                    <p className="font-semibold">{formatCurrency(selectedInvoice.shipping || 0)}</p>
                   </div>
                 </div>
 
                 {/* Items Table */}
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Items</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Product</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Description</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Quantity</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Unit Price</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {selectedInvoice.items.map((item, index) => (
-                          <tr key={index}>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center">
-                                <img
-                                  src={item.productImage}
-                                  alt={item.productName}
-                                  className="w-12 h-12 object-cover rounded mr-3"
-                                />
-                                <span className="font-medium">{item.productName}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{item.description}</td>
-                            <td className="px-4 py-3">{item.quantity}</td>
-                            <td className="px-4 py-3">₹{item.unitPrice.toLocaleString()}</td>
-                            <td className="px-4 py-3 font-semibold">
-                              ₹{(item.quantity * item.unitPrice).toLocaleString()}
-                            </td>
+                  {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Product</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Description</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Quantity</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Unit Price</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {selectedInvoice.items.map((item, index) => (
+                            <tr key={index}>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center">
+                                  <img
+                                    src={item.productImage || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80'}
+                                    alt={item.productName}
+                                    className="w-12 h-12 object-cover rounded mr-3"
+                                    onError={(e) => {
+                                      e.target.src = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80';
+                                    }}
+                                  />
+                                  <span className="font-medium">{item.productName}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{item.description || 'N/A'}</td>
+                              <td className="px-4 py-3">{item.quantity}</td>
+                              <td className="px-4 py-3">{formatCurrency(item.unitPrice)}</td>
+                              <td className="px-4 py-3 font-semibold">
+                                {formatCurrency((item.quantity || 0) * (item.unitPrice || 0))}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-4">No items found in this invoice</p>
+                  )}
                 </div>
 
                 {/* Totals */}
@@ -684,19 +659,19 @@ const Invoices = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span>Subtotal:</span>
-                          <span>₹{calculateInvoiceTotals(selectedInvoice).subtotal.toLocaleString()}</span>
+                          <span>{formatCurrency(calculateInvoiceTotals(selectedInvoice).subtotal)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Tax ({selectedInvoice.taxRate}%):</span>
-                          <span>₹{calculateInvoiceTotals(selectedInvoice).taxAmount.toLocaleString()}</span>
+                          <span>Tax ({selectedInvoice.taxRate || 0}%):</span>
+                          <span>{formatCurrency(calculateInvoiceTotals(selectedInvoice).taxAmount)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Shipping:</span>
-                          <span>₹{selectedInvoice.shipping.toLocaleString()}</span>
+                          <span>{formatCurrency(selectedInvoice.shipping || 0)}</span>
                         </div>
                         <div className="border-t pt-2 flex justify-between text-lg font-bold">
                           <span>Total:</span>
-                          <span>₹{calculateInvoiceTotals(selectedInvoice).total.toLocaleString()}</span>
+                          <span>{formatCurrency(calculateInvoiceTotals(selectedInvoice).total)}</span>
                         </div>
                       </div>
                     </div>

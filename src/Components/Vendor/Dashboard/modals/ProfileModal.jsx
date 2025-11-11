@@ -1,226 +1,127 @@
+// Components/Vendor/Dashboard/modals/ProfileModal.jsx
 import React from 'react';
 
 const ProfileModal = ({
   setShowProfile,
   profileForm,
   handleInputChange,
-  idCardInputRef,
-  handleIdCardUpload,
-  idCardPreview,
-  handleRemoveIdCard,
   profileInputRef,
   handleProfileImageUpload,
   profilePreview,
   handleRemoveProfileImage,
   handleProfileCancel,
   handleProfileSave,
-  handleBackdropClick
+  handleBackdropClick,
+  isUpdating
 }) => {
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
-      <div 
+      <div
         className="bg-white rounded-xl w-full max-w-6xl h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-800">Create Your Profile</h2>
-          <button 
+          <h2 className="text-2xl font-bold text-gray-800">
+            {profileForm.vendorName ? 'Edit Your Profile' : 'Create Your Profile'}
+          </h2>
+          <button
             onClick={() => setShowProfile(false)}
-            className="text-gray-500 hover:text-gray-700 text-xl p-2"
+            className="text-gray-500 hover:text-gray-700 text-xl p-2 transition-colors"
+            aria-label="Close modal"
           >
-            ✕
+            X
           </button>
         </div>
 
+        {/* Body */}
         <div className="p-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
+            {/* Left Column */}
             <div className="space-y-6">
-             
               <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Vendor General Details</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Business Details</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="vendorName" className="block text-sm font-medium text-gray-700 mb-2">
                       Vendor Name <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="text"
+                      id="vendorName"
                       name="vendorName"
-                      value={profileForm.vendorName}
+                      type="text"
+                      value={profileForm.vendorName || ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter vendor name"
+                      className="w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter your name"
+                      required
                     />
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Upload ID Card</label>
-                    <input
-                      type="file"
-                      ref={idCardInputRef}
-                      onChange={handleIdCardUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <div 
-                      onClick={() => idCardInputRef.current?.click()}
-                      className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                    <label htmlFor="businessType" className="block text-sm font-medium text-gray-700 mb-2">
+                      Business Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="businessType"
+                      name="businessType"
+                      value={profileForm.businessType || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
                     >
-                      {idCardPreview ? (
-                        <div className="relative">
-                          <img 
-                            src={idCardPreview} 
-                            alt="ID Card Preview" 
-                            className="max-h-32 mx-auto rounded"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveIdCard();
-                            }}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                          >
-                            ✕
-                          </button>
-                          <p className="text-sm text-green-600 mt-2">ID Card uploaded successfully</p>
-                        </div>
-                      ) : (
-                        <div>
-                          <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          <span className="text-gray-500">Click to upload ID card</span>
-                          <p className="text-xs text-gray-400 mt-1">Supports: JPG, PNG, PDF</p>
-                        </div>
-                      )}
-                    </div>
+                      <option value="">Select business type</option>
+                      <option value="grocery">Grocery</option>
+                      <option value="furniture">Furniture</option>
+                      <option value="books">Books</option>
+                      <option value="home appliance">Home Appliance</option>
+                      <option value="cloth">Cloth</option>
+                      <option value="all">All</option>                  
+                    </select>
                   </div>
                 </div>
               </div>
 
-              
               <div>
-                <div className="mb-4">
-                  <label className="block text-sm  font-medium text-gray-700 mb-2">
-                    Vendor Category <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="vendorCategory"
-                    value={profileForm.vendorCategory}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select a category</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Clothing">Clothing</option>
-                    <option value="Home & Garden">Home & Garden</option>
-                    <option value="Beauty & Personal Care">Beauty & Personal Care</option>
-                    <option value="Sports & Outdoors">Sports & Outdoors</option>
-                    <option value="Books & Media">Books & Media</option>
-                    <option value="Food & Beverages">Food & Beverages</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">About</label>
-                  <textarea
-                    name="about"
-                    value={profileForm.about}
-                    onChange={handleInputChange}
-                    rows="3"
-                    className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Tell us about your business, products, and services..."
-                  />
-                </div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Business Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={profileForm.description || ''}
+                  onChange={handleInputChange}
+                  rows="4"
+                  className="w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Describe your business, products, and what makes you unique..."
+                  required
+                />
               </div>
 
-              
               <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      name="phoneNumber"
-                      value={profileForm.phoneNumber}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter phone number"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      name="emailAddress"
-                      value={profileForm.emailAddress}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter email address"
-                    />
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="isActiveMember"
-                      checked={profileForm.isActiveMember}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label className="ml-2 text-sm text-gray-700">Active Member</label>
-                  </div>
-                </div>
+                <label htmlFor="about" className="block text-sm font-medium text-gray-700 mb-2">
+                  About <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="about"
+                  name="about"
+                  value={profileForm.about || ''}
+                  onChange={handleInputChange}
+                  rows="4"
+                  className="w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Tell us more about your business story and mission..."
+                  required
+                />
               </div>
             </div>
 
             {/* Right Column */}
             <div className="space-y-6">
-              {/* Payment & Tax Details */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Payment & Tax Details</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Default Payment Terms</label>
-                    <select
-                      name="paymentTerms"
-                      value={profileForm.paymentTerms}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="Net 30 Days">Net 30 Days</option>
-                      <option value="Net 15 Days">Net 15 Days</option>
-                      <option value="Net 60 Days">Net 60 Days</option>
-                      <option value="Due on Receipt">Due on Receipt</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tax ID <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="taxId"
-                      value={profileForm.taxId}
-                      onChange={handleInputChange}
-                      className="w-full px-3 text-black py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter tax ID (GSTIN, EIN, etc.)"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Profile Picture Upload */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Upload your picture</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Profile Picture</h3>
                 <input
                   type="file"
                   ref={profileInputRef}
@@ -228,15 +129,22 @@ const ProfileModal = ({
                   accept="image/*"
                   className="hidden"
                 />
-                <div 
+                <div
                   onClick={() => profileInputRef.current?.click()}
                   className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                  role="button"
+                  tabIndex={0}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      profileInputRef.current?.click();
+                    }
+                  }}
                 >
                   {profilePreview ? (
                     <div className="relative">
-                      <img 
-                        src={profilePreview} 
-                        alt="Profile Preview" 
+                      <img
+                        src={profilePreview}
+                        alt="Profile Preview"
                         className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-md"
                       />
                       <button
@@ -245,9 +153,10 @@ const ProfileModal = ({
                           e.stopPropagation();
                           handleRemoveProfileImage();
                         }}
-                        className="absolute top-4 right-1/2 translate-x-12 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 -translate-x-1/2 -translate-y-1/2"
+                        aria-label="Remove profile picture"
                       >
-                        ✕
+                        X
                       </button>
                       <p className="text-sm text-green-600">Profile picture uploaded</p>
                     </div>
@@ -259,27 +168,35 @@ const ProfileModal = ({
                         </svg>
                       </div>
                       <span className="text-gray-500">Click to upload profile picture</span>
-                      <p className="text-xs text-gray-400 mt-1">Supports: JPG, PNG</p>
+                      <p className="text-xs text-gray-400 mt-1">JPG, PNG</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              
-
               {/* Action Buttons */}
               <div className="flex space-x-4 pt-6">
                 <button
                   onClick={handleProfileCancel}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                  type="button"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleProfileSave}
-                  className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-sm"
+                  disabled={isUpdating || !profileForm.vendorName || !profileForm.businessType || !profileForm.description || !profileForm.about}
+                  className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                  type="button"
                 >
-                  Save Profile
+                  {isUpdating ? (
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    profileForm.vendorName ? 'Update Profile' : 'Save Profile'
+                  )}
                 </button>
               </div>
             </div>
