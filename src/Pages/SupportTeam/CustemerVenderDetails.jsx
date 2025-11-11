@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Search, Download, RefreshCw, Copy, Eye, Users, Mail, Phone, MapPin } from "lucide-react";
+import NavbarSupport from "../../Components/SupportTeam/NavbarSupport";
+
 
 export default function CustomerVendorDetails() {
   const [data, setData] = useState([]);
@@ -131,7 +133,7 @@ export default function CustomerVendorDetails() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#586330]/5 to-[#586330]/10 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header */}<NavbarSupport/>
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-[#586330] rounded-xl">
