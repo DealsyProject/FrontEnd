@@ -1,4 +1,3 @@
-import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaSearch } from "react-icons/fa";
 
@@ -10,22 +9,15 @@ function NavbarSupport() {
       {/* Left Section - Logo and Search */}
       <div className="flex items-center space-x-4">
         <div
-          onClick={() => navigate("/")}
+         
           className="bg-white/40 backdrop-blur-md rounded-full px-6 py-2 cursor-pointer flex items-center shadow-sm hover:shadow-md transition"
         >
           <span className="font-serif text-2xl font-bold select-none text-[#586330]">
-            Dealsy
+            Dealsy Support Team
           </span>
         </div>
 
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search support..."
-            className="bg-white/40 backdrop-blur-md px-4 py-2 rounded-full text-sm outline-none text-gray-700 placeholder-gray-500"
-          />
-          <FaSearch className="absolute right-3 top-2 text-gray-500" />
-        </div>
+
       </div>
 
       {/* Center Section - Links */}
