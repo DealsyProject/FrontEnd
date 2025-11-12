@@ -153,7 +153,7 @@ const sendOutOfStockNotification = async (product) => {
     }
     return <CheckCircle className="w-4 h-4 text-green-600" />;
   };
-  //
+  //new
 
   // Get image URL - handle both string URLs and image objects
   const getProductImage = (product) => {
