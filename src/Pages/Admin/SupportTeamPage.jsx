@@ -4,19 +4,19 @@ import { Link } from 'react-router-dom';
 import Navbar from '../../Components/Admin/Navbar.jsx';
 
 const SupportTeamPage = () => {
-  // 💡 Updated to a light color scheme with white and green accents
+  // 🫒 Olive green theme (#586330)
   const colors = {
-    backgroundLight: '#f8f8f8', // Near white background
-    surfaceLight: '#ffffff', // Pure white surface for cards/tables
-    primary: '#10b981', // Emerald green for primary actions (Save, Add Member)
-    borderLight: '#e5e7eb', // Light gray border
-    textLight: '#1f2937', // Dark gray text for readability
-    textSecondaryLight: '#6b7280', // Medium gray for secondary text
-    statusActiveBg: '#d1fae5', // Light green for active status background
-    statusActiveText: '#065f46', // Dark green for active status text
-    statusInactiveBg: '#f3f4f6', // Light gray for inactive status background
-    statusInactiveText: '#4b5563', // Darker gray for inactive status text
-    deleteAction: '#ef4444', // Red for delete action (kept the same for warning)
+    backgroundLight: '#f8f8f8',
+    surfaceLight: '#ffffff',
+    primary: '#586330',
+    borderLight: '#e5e7eb',
+    textLight: '#1f2937',
+    textSecondaryLight: '#6b7280',
+    statusActiveBg: '#e5e9d3',
+    statusActiveText: '#3f4722',
+    statusInactiveBg: '#f3f4f6',
+    statusInactiveText: '#4b5563',
+    deleteAction: '#ef4444',
   };
 
   const [members, setMembers] = useState([
@@ -38,7 +38,6 @@ const SupportTeamPage = () => {
 
     if (editIndex !== null) {
       const updated = [...members];
-      // Ensure we don't accidentally link the state by cloning the member object
       updated[editIndex] = { ...newMember, id: members[editIndex].id, active: members[editIndex].active }; 
       setMembers(updated);
     } else {
@@ -60,7 +59,6 @@ const SupportTeamPage = () => {
     <div className="font-display" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, paddingTop: '80px' }}>
       <div className="flex min-h-screen w-full">
         <Navbar />
-      
 
         <main className="flex-1 p-8">
           <div className="flex flex-col gap-6">
@@ -74,7 +72,7 @@ const SupportTeamPage = () => {
                   onClick={() => { setShowModal(true); setEditIndex(null); setNewMember({ name: '', email: '', phone: '', role: '', status: 'Active', bio: '' }); }}
                   className="flex items-center gap-2 rounded-lg h-10 px-4 text-sm font-bold text-white"
                   style={{ backgroundColor: colors.primary }}>
-                  <span className="material-symbols-outlined">person_add</span> Add New Member
+                   Add New Member
                 </button>
               </div>
             </div>
@@ -113,10 +111,7 @@ const SupportTeamPage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right flex justify-end gap-2">
-                        {/* View profile: navigates to separate page */}
-                        <Link to={`/support/${member.id}`} className="p-2 rounded-lg hover:bg-gray-100" style={{ color: colors.textSecondaryLight }}>
-                          <span className="material-symbols-outlined">person</span>
-                        </Link>
+                    
 
                         <button onClick={() => { setEditIndex(index); setNewMember(members[index]); setShowModal(true); }} className="p-2 rounded-lg hover:bg-gray-100" style={{ color: colors.textSecondaryLight }}>
                           <span className="material-symbols-outlined">edit</span>

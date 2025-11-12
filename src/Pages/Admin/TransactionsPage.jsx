@@ -1,23 +1,21 @@
-// TransactionsPage.jsx - Updated to Light Theme (White and Green)
+// TransactionsPage.jsx - Updated to Olive Theme (#586330)
 import React, { useState } from 'react';
 import { Search, Eye, Check, X, SlidersHorizontal, Download, FileText } from 'lucide-react';
 import Navbar from '../../Components/Admin/Navbar.jsx';
 
 export default function TransactionsPage() {
-  // 💡 Define the Light Color Scheme (White & Green)
   const colors = {
-    backgroundLight: '#f8f8f8', // Near white background
-    surfaceLight: '#ffffff', // Pure white surface for cards/tables
-    primary: '#10b981', // Emerald green for primary actions (Export Data)
-    borderLight: '#e5e7eb', // Light gray border
-    textLight: '#1f2937', // Dark gray text for readability
-    textSecondaryLight: '#6b7280', // Medium gray for secondary text
-    accentBlue: '#3b82f6', // Use a standard blue for Transaction ID/Active Tab if green is too dominant
-    hoverGray: '#f3f4f6', // Very light gray for button hovers
-    
-    // Status Colors (Light Theme Versions)
-    pendingBg: 'bg-blue-100 text-blue-700',
-    completedBg: 'bg-green-100 text-green-700',
+    backgroundLight: '#f8f8f8',
+    surfaceLight: '#ffffff',
+    primary: '#586330',
+    borderLight: '#e5e7eb',
+    textLight: '#1f2937',
+    textSecondaryLight: '#6b7280',
+    accentBlue: '#586330',
+    hoverGray: '#f3f4f6',
+
+    pendingBg: 'bg-[#e5e9d3] text-[#586330]',
+    completedBg: 'bg-[#dce3c0] text-[#586330]',
     failedBg: 'bg-red-100 text-red-700',
   };
 
@@ -62,7 +60,6 @@ export default function TransactionsPage() {
     return true;
   });
 
-  // Summary stats
   const summary = {
     total: transactions.length,
     pending: transactions.filter(t => t.status.toLowerCase() === 'pending').length,
@@ -76,9 +73,7 @@ export default function TransactionsPage() {
       onClick={() => setActiveTab(tab)}
       className={`pb-3 transition-colors text-sm font-medium ${
         activeTab === tab 
-          // 💡 Use accent blue for active tab text and border
           ? `text-[${colors.accentBlue}] border-b-2 border-[${colors.accentBlue}]` 
-          // 💡 Use secondary text color for inactive tabs
           : `text-[${colors.textSecondaryLight}] hover:text-[${colors.textLight}] border-b-2 border-transparent`
       }`}
     >
@@ -87,16 +82,13 @@ export default function TransactionsPage() {
   );
 
   return (
-    // 💡 Main background and text color switch
     <div className="min-h-screen pt-24" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight }}>
       <main className="py-8">
         <Navbar />
         <div className="px-10">
-          {/* Header */}
           <div className="mb-8 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
             <div>
               <h1 className="text-4xl font-semibold">Transactions & Billing</h1>
-              {/* 💡 Use secondary text color */}
               <p className="mt-1 text-sm" style={{ color: colors.textSecondaryLight }}>
                 Review, approve, or decline financial transactions and invoices.
               </p>
@@ -105,7 +97,6 @@ export default function TransactionsPage() {
             <div className="flex gap-2">
               <button 
                 onClick={() => setShowFilter(!showFilter)}
-                // 💡 Light theme button styles
                 className={`px-4 py-2 border rounded-lg text-sm transition-colors flex items-center gap-2`}
                 style={{ backgroundColor: colors.surfaceLight, borderColor: colors.borderLight, color: colors.textSecondaryLight }}
               >
@@ -113,10 +104,9 @@ export default function TransactionsPage() {
               </button>
 
               <button 
-                // 💡 Primary Green Button
                 className="px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-colors flex items-center gap-2"
                 style={{ backgroundColor: colors.primary, transition: 'background-color 0.2s' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#059669'} // Darker green on hover
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4b572a'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.primary}
               >
                 <Download className="w-4 h-4" /> Export Data
@@ -124,11 +114,8 @@ export default function TransactionsPage() {
             </div>
           </div>
 
-          {/* Summary Cards */}
           <div className="flex flex-wrap gap-4 mb-6">
-            {/* 💡 Card surface and border */}
             <div className="rounded-xl p-4 w-48 shadow-sm" style={{ backgroundColor: colors.surfaceLight, border: `1px solid ${colors.borderLight}` }}>
-              {/* 💡 Secondary text color */}
               <div className="text-sm" style={{ color: colors.textSecondaryLight }}>Total Transactions</div>
               <div className="text-xl font-semibold">{summary.total}</div>
             </div>
@@ -150,8 +137,6 @@ export default function TransactionsPage() {
             </div>
           </div>
 
-          {/* Tabs */}
-          {/* 💡 Light theme border */}
           <div className="flex gap-8 mb-6 border-b" style={{ borderColor: colors.borderLight }}>
             <TabButton tab="pending" label="Pending Transactions" />
             <TabButton tab="completed" label="Completed Transactions" />
@@ -159,79 +144,28 @@ export default function TransactionsPage() {
             <TabButton tab="all" label="All Transactions" />
           </div>
 
-          {/* Filter Panel */}
           {showFilter && (
-            // 💡 Light theme filter panel background and border
             <div className="rounded-lg p-4 mb-6 flex flex-col md:flex-row gap-4 items-center" style={{ backgroundColor: colors.surfaceLight, border: `1px solid ${colors.borderLight}` }}>
-              <input
-                type="text"
-                placeholder="Transaction ID"
-                // 💡 Light theme input styles
-                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }}
-                value={filter.id}
-                onChange={e => setFilter({...filter, id: e.target.value})}
-              />
-              <input
-                type="text"
-                placeholder="Customer Name"
-                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }}
-                value={filter.customer}
-                onChange={e => setFilter({...filter, customer: e.target.value})}
-              />
-              <input
-                type="number"
-                placeholder="Amount"
-                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }}
-                value={filter.amount}
-                onChange={e => setFilter({...filter, amount: e.target.value})}
-              />
-              <select
-                value={filter.type}
-                onChange={e => setFilter({...filter, type: e.target.value})}
-                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }}
-              >
+              <input type="text" placeholder="Transaction ID" className="border rounded-lg px-3 py-2 text-sm" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }} value={filter.id} onChange={e => setFilter({...filter, id: e.target.value})}/>
+              <input type="text" placeholder="Customer Name" className="border rounded-lg px-3 py-2 text-sm" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }} value={filter.customer} onChange={e => setFilter({...filter, customer: e.target.value})}/>
+              <input type="number" placeholder="Amount" className="border rounded-lg px-3 py-2 text-sm" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }} value={filter.amount} onChange={e => setFilter({...filter, amount: e.target.value})}/>
+              <select value={filter.type} onChange={e => setFilter({...filter, type: e.target.value})} className="border rounded-lg px-3 py-2 text-sm" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }}>
                 <option value="All">All Types</option>
                 <option value="Sale">Sale</option>
                 <option value="Payout">Payout</option>
                 <option value="Refund">Refund</option>
               </select>
-              <input
-                type="date"
-                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }}
-                value={filter.fromDate}
-                onChange={e => setFilter({...filter, fromDate: e.target.value})}
-              />
-              <input
-                type="date"
-                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }}
-                value={filter.toDate}
-                onChange={e => setFilter({...filter, toDate: e.target.value})}
-              />
-              <button 
-                // 💡 Reset button style
-                className="px-4 py-2 rounded-lg text-sm text-white transition-colors"
-                style={{ backgroundColor: colors.textSecondaryLight, transition: 'background-color 0.2s' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4b5563'} 
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.textSecondaryLight}
-                onClick={() => setFilter({id:'', customer:'', amount:'', type:'All', fromDate:'', toDate:''})}
-              >
+              <input type="date" className="border rounded-lg px-3 py-2 text-sm" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }} value={filter.fromDate} onChange={e => setFilter({...filter, fromDate: e.target.value})}/>
+              <input type="date" className="border rounded-lg px-3 py-2 text-sm" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }} value={filter.toDate} onChange={e => setFilter({...filter, toDate: e.target.value})}/>
+              <button className="px-4 py-2 rounded-lg text-sm text-white" style={{ backgroundColor: colors.textSecondaryLight }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4b572a'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.textSecondaryLight} onClick={() => setFilter({id:'', customer:'', amount:'', type:'All', fromDate:'', toDate:''})}>
                 Reset
               </button>
             </div>
           )}
 
-          {/* Transactions Table */}
-          {/* 💡 Table surface and border */}
           <div className="rounded-lg shadow-xl overflow-x-auto" style={{ backgroundColor: colors.surfaceLight, border: `1px solid ${colors.borderLight}` }}>
             <table className="w-full min-w-[950px]" style={{ color: colors.textLight }}>
               <thead>
-                {/* 💡 Table header background and border */}
                 <tr className="border-b" style={{ borderColor: colors.borderLight, backgroundColor: colors.backgroundLight }}>
                   <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textSecondaryLight }}>Transaction ID</th>
                   <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textSecondaryLight }}>Customer</th>
@@ -246,13 +180,7 @@ export default function TransactionsPage() {
               <tbody>
                 {filteredTransactions.length > 0 ? (
                   filteredTransactions.map((txn, index) => (
-                    <tr 
-                      key={txn.id} 
-                      // 💡 Light theme border and hover
-                      className={`hover:bg-gray-50 transition-colors`}
-                      style={{ borderBottom: index !== filteredTransactions.length - 1 ? `1px solid ${colors.borderLight}` : 'none' }}
-                    >
-                      {/* 💡 Primary accent for ID */}
+                    <tr key={txn.id} className="hover:bg-gray-50 transition-colors" style={{ borderBottom: index !== filteredTransactions.length - 1 ? `1px solid ${colors.borderLight}` : 'none' }}>
                       <td className="px-6 py-4 font-medium" style={{ color: colors.accentBlue }}>{txn.id}</td>
                       <td className="px-6 py-4">{txn.customer}</td>
                       <td className="px-6 py-4" style={{ color: colors.textSecondaryLight }}>{txn.type}</td>
@@ -264,11 +192,7 @@ export default function TransactionsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <button 
-                          // 💡 Light theme invoice button
-                          className="flex items-center gap-1 px-2 py-1 rounded text-xs"
-                          style={{ backgroundColor: colors.backgroundLight, color: colors.textSecondaryLight, border: `1px solid ${colors.borderLight}` }}
-                        >
+                        <button className="flex items-center gap-1 px-2 py-1 rounded text-xs" style={{ backgroundColor: colors.backgroundLight, color: colors.textSecondaryLight, border: `1px solid ${colors.borderLight}` }}>
                           <FileText className="w-3 h-3" /> Invoice
                         </button>
                       </td>
@@ -278,11 +202,9 @@ export default function TransactionsPage() {
                         </button>
                         {txn.status.toLowerCase() === 'pending' && (
                           <>
-                            {/* Approve button - Primary Green */}
                             <button title="Approve" className="p-2 rounded-full transition-colors group" style={{ backgroundColor: colors.backgroundLight, color: colors.primary }}>
                               <Check className="w-4 h-4" />
                             </button>
-                            {/* Decline button - Red */}
                             <button title="Decline" className="p-2 rounded-full transition-colors group" style={{ backgroundColor: colors.backgroundLight, color: '#ef4444' }}>
                               <X className="w-4 h-4" />
                             </button>
@@ -299,9 +221,8 @@ export default function TransactionsPage() {
                   </tr>
                 )}
               </tbody>
-            </table> 
+            </table>
           </div>
-
         </div>
       </main>
     </div>

@@ -55,7 +55,7 @@ const ProductModal = ({
               {/* Product Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Product Name *
+                  Product Name
                 </label>
                 <input
                   type="text"
@@ -69,7 +69,7 @@ const ProductModal = ({
               {/* Category */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
+                  Category
                 </label>
                 <select
                   value={newProduct.productCategory || ''}
@@ -90,7 +90,7 @@ const ProductModal = ({
                 {/* Price */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price (₹) *
+                    Price (₹)
                   </label>
                   <input
                     type="number"
@@ -106,7 +106,7 @@ const ProductModal = ({
                 {/* Quantity */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Quantity *
+                    Quantity
                   </label>
                   <input
                     type="number"
@@ -119,28 +119,10 @@ const ProductModal = ({
                 </div>
               </div>
 
-              {/* Rating */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rating (0-5)
-                </label>
-                <input
-                  type="number"
-                  placeholder="0.0"
-                  min="0"
-                  max="5"
-                  step="0.1"
-                  value={newProduct.rating || ''}
-                  onChange={(e) => handleNumberInputChange('rating', e.target.value)}
-                  className="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent outline-none transition"
-                />
-                <p className="text-xs text-gray-500 mt-1">Rate from 0 to 5 stars</p>
-              </div>
-
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description *
+                  Description
                 </label>
                 <textarea
                   placeholder="Describe your product features, specifications, and benefits..."
@@ -155,7 +137,7 @@ const ProductModal = ({
             {/* Right Column - Images */}
             <div className="space-y-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Product Images * (1-3 images)
+                Product Images (1-3 images)
               </label>
 
               {/* Main Image Preview */}
@@ -261,11 +243,11 @@ const ProductModal = ({
             </div>
           </div>
 
-          {/* Required Fields Note */}
-          <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
-            <p className="text-sm text-amber-800 flex items-center">
-              <span className="text-amber-500 mr-2">⚠️</span>
-              All fields marked with * are required. At least 1 product image is mandatory.
+          {/* Optional Fields Note */}
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800 flex items-center">
+              <span className="text-blue-500 mr-2">💡</span>
+              All fields are optional. You can add as much information as you'd like.
             </p>
           </div>
         </div>

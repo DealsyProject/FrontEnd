@@ -1,335 +1,195 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { Bell, Package, X, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 
-const NotificationsModal = ({ setShowNotifications, notifications }) => {
-  const [updatedNotifications, setUpdatedNotifications] = useState(notifications);
-  const [showCustomerProfile, setShowCustomerProfile] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [customerReviews, setCustomerReviews] = useState([]);
+const NotificationsModal = ({ 
+  setShowNotifications, 
+  notifications = [], 
+  outOfStockNotifications = [], 
+  otherNotifications = [],
+  markNotificationAsRead, 
+  refreshNotifications,
+  unreadCount = 0,
+  isConnected = false
+}) => {
+  const [activeTab, setActiveTab] = useState('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  
-  const generateCustomerData = (customerName) => {
-    
-    const customerId = customerName.toLowerCase().replace(/\s+/g, '-');
-    
-    return {
-      id: customerId,
-      name: customerName,
-      email: `${customerId}@example.com`,
-      joinDate: new Date(Date.now() - Math.floor(Math.random() * 365) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      totalOrders: Math.floor(Math.random() * 50) + 1,
-      totalSpent: Math.floor(Math.random() * 10000) + 1000,
-      averageRating: (Math.random() * 2 + 3).toFixed(1), 
-      location: ['New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX', 'Phoenix, AZ'][Math.floor(Math.random() * 5)],
-      phone: `+1 (555) ${Math.floor(100 + Math.random() * 900)}-${Math.floor(1000 + Math.random() * 9000)}`,
-      avatar: '👤'
-    };
+  console.log('🔔 [Modal] Received notifications:', notifications);
+  console.log('📦 [Modal] Real out-of-stock notifications:', outOfStockNotifications);
+  console.log('📝 [Modal] Other notifications:', otherNotifications);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshNotifications();
+    setTimeout(() => setIsRefreshing(false), 1000);
   };
 
-  
-  const generateReviews = (customerId, customerName) => {
-    const products = ['Wireless Headphones', 'Smart Watch', 'Bluetooth Speaker', 'Laptop Backpack', 'Desk Lamp', 'Fitness Tracker', 'Phone Case', 'Water Bottle'];
-    const vendors = ['Tech Gadgets Inc.', 'Audio Solutions', 'Office Supplies Co.', 'Home Essentials', 'Fitness Gear Pro'];
-    
-    const reviewCount = Math.floor(Math.random() * 5) + 1; 
-    
-    return Array.from({ length: reviewCount }, (_, index) => ({
-      id: index + 1,
-      product: products[Math.floor(Math.random() * products.length)],
-      rating: Math.floor(Math.random() * 2) + 4, 
-      comment: `Great product! ${customerName} was very satisfied with the quality and service.`,
-      date: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      vendor: vendors[Math.floor(Math.random() * vendors.length)]
-    }));
+  const handleMarkAsRead = async (notificationId, e) => {
+    e.stopPropagation();
+    await markNotificationAsRead(notificationId);
   };
 
-  
-  const handleProfileView = (customerName) => {
-    console.log('Opening profile for:', customerName); 
-    
-    
-    const customer = generateCustomerData(customerName);
-    const reviews = generateReviews(customer.id, customerName);
-    
-    setSelectedCustomer(customer);
-    setCustomerReviews(reviews);
-    setShowCustomerProfile(true);
-    toast.info(`Opening profile for ${customerName}`, { position: 'top-right' });
+  const getDisplayNotifications = () => {
+    switch (activeTab) {
+      case 'outOfStock':
+        return outOfStockNotifications;
+      case 'other':
+        return otherNotifications;
+      default:
+        return notifications;
+    }
   };
 
-  
-  const handleDelivered = (id) => {
-    setUpdatedNotifications((prev) =>
-      prev.map((n) =>
-        n.id === id
-          ? {
-              ...n,
-              status: n.status === 'Delivered' ? 'Pending' : 'Delivered',
-            }
-          : n
-      )
-    );
-    toast.success('Product status updated successfully!', { position: 'bottom-right' });
-  };
+  const displayNotifications = getDisplayNotifications();
 
-  
-  const handleCloseProfile = () => {
-    setShowCustomerProfile(false);
-    setSelectedCustomer(null);
-    setCustomerReviews([]);
-  };
-
-  
-  const renderStars = (rating) => {
-    return (
-      <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <span
-            key={star}
-            className={`text-lg ${
-              star <= rating ? 'text-yellow-400' : 'text-gray-300'
-            }`}
-          >
-            ★
-          </span>
-        ))}
-        <span className="ml-2 text-sm text-gray-600">({parseFloat(rating).toFixed(1)})</span>
-      </div>
-    );
-  };
-
-  
-  const CustomerProfile = () => {
-    if (!selectedCustomer) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl w-full max-w-4xl h-[90vh] flex flex-col">
-          
-          <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b">
+          <div className="flex items-center space-x-3">
+            <Bell className="h-6 w-6 text-blue-600" />
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">Customer Profile</h2>
-              <p className="text-gray-600">Detailed customer information and review history</p>
-            </div>
-            <button
-              onClick={handleCloseProfile}
-              className="text-gray-500 hover:text-gray-700 text-xl bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition"
-            >
-              ✕
-            </button>
-          </div>
-
-          
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-             
-              <div className="lg:col-span-1">
-                <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
-                  <div className="text-center mb-6">
-                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
-                      {selectedCustomer.avatar}
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-800">{selectedCustomer.name}</h3>
-                    <p className="text-gray-600">{selectedCustomer.email}</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Member since:</span>
-                      <span className="font-medium">{new Date(selectedCustomer.joinDate).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Location:</span>
-                      <span className="font-medium">{selectedCustomer.location}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Phone:</span>
-                      <span className="font-medium">{selectedCustomer.phone}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Total Orders:</span>
-                      <span className="font-medium text-blue-600">{selectedCustomer.totalOrders}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Total Spent:</span>
-                      <span className="font-medium text-green-600">${selectedCustomer.totalSpent.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Avg. Rating:</span>
-                      <div className="flex items-center">
-                        {renderStars(selectedCustomer.averageRating)}
-                      </div>
-                    </div>
-                  </div>
+              <h2 className="text-xl font-semibold">Notifications</h2>
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <span>{unreadCount} unread</span>
+                <div className={`flex items-center space-x-1 ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+                  {isConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
+                  <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
                 </div>
               </div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <RefreshCw className={`h-5 w-5 text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={() => setShowNotifications(false)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5 text-gray-600" />
+            </button>
+          </div>
+        </div>
 
-             
-              <div className="lg:col-span-2">
-                <div className="bg-white rounded-xl shadow border border-gray-200">
-                  <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-xl font-bold text-gray-800">Review History</h3>
-                    <p className="text-gray-600">Customer's recent product reviews</p>
-                  </div>
+        {/* Tabs */}
+        <div className="border-b">
+          <div className="flex space-x-1 px-6">
+            <button
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                activeTab === 'all'
+                  ? 'bg-blue-100 text-blue-700 border-b-2 border-blue-700'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab('all')}
+            >
+              All ({notifications.length})
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                activeTab === 'outOfStock'
+                  ? 'bg-red-100 text-red-700 border-b-2 border-red-700'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab('outOfStock')}
+            >
+              Out of Stock ({outOfStockNotifications.length})
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                activeTab === 'other'
+                  ? 'bg-gray-100 text-gray-700 border-b-2 border-gray-700'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab('other')}
+            >
+              Other ({otherNotifications.length})
+            </button>
+          </div>
+        </div>
 
-                  <div className="p-6">
-                    {customerReviews.length > 0 ? (
-                      <div className="space-y-6">
-                        {customerReviews.map((review) => (
-                          <div key={review.id} className="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
-                            <div className="flex justify-between items-start mb-3">
-                              <div>
-                                <h4 className="font-semibold text-gray-800">{review.product}</h4>
-                                <p className="text-sm text-gray-500">Vendor: {review.vendor}</p>
-                              </div>
-                              <div className="text-right">
-                                {renderStars(review.rating)}
-                                <p className="text-sm text-gray-500 mt-1">
-                                  {new Date(review.date).toLocaleDateString()}
-                                </p>
-                              </div>
-                            </div>
-                            <p className="text-gray-700 bg-gray-50 rounded-lg p-4">
-                              {review.comment}
-                            </p>
-                          </div>
-                        ))}
+        {/* Notifications List */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {displayNotifications.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Bell className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>No notifications found</p>
+              <p className="text-sm">Notifications will appear here when available</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {displayNotifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`p-4 rounded-lg border transition-colors ${
+                    notification.isRead
+                      ? 'bg-gray-50 border-gray-200'
+                      : 'bg-blue-50 border-blue-200'
+                  } ${
+                    notification.isOutOfStock ? 'border-l-4 border-l-red-500' : ''
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        {notification.isOutOfStock && (
+                          <Package className="h-4 w-4 text-red-500" />
+                        )}
+                        <h3 className={`font-medium ${
+                          notification.isRead ? 'text-gray-700' : 'text-gray-900'
+                        }`}>
+                          {notification.title}
+                        </h3>
+                        {!notification.isRead && (
+                          <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs">
+                            New
+                          </span>
+                        )}
                       </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <div className="text-gray-400 text-6xl mb-4">📝</div>
-                        <h4 className="text-lg font-semibold text-gray-600 mb-2">No Reviews Yet</h4>
-                        <p className="text-gray-500">This customer hasn't written any reviews yet.</p>
+                      <p className="text-gray-600 text-sm mb-2">
+                        {notification.message}
+                      </p>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <span>
+                          {new Date(notification.createdAt).toLocaleDateString()}
+                        </span>
+                        {notification.priority && (
+                          <span className={`px-2 py-1 rounded ${
+                            notification.priority === 'HIGH' 
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {notification.priority}
+                          </span>
+                        )}
+                        {notification.isOutOfStock && (
+                          <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
+                            Out of Stock
+                          </span>
+                        )}
                       </div>
+                    </div>
+                    {!notification.isRead && (
+                      <button
+                        onClick={(e) => handleMarkAsRead(notification.id, e)}
+                        className="ml-2 px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                      >
+                        Mark Read
+                      </button>
                     )}
                   </div>
                 </div>
-
-                
-                <div className="bg-white rounded-xl shadow border border-gray-200 p-6 mt-6">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4">Order Statistics</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{selectedCustomer.totalOrders}</div>
-                      <div className="text-sm text-gray-600">Total Orders</div>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">${selectedCustomer.totalSpent.toLocaleString()}</div>
-                      <div className="text-sm text-gray-600">Total Spent</div>
-                    </div>
-                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                      <div className="text-2xl font-bold text-yellow-600">{selectedCustomer.averageRating}</div>
-                      <div className="text-sm text-gray-600">Avg Rating</div>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">
-                        ${Math.ceil(selectedCustomer.totalSpent / selectedCustomer.totalOrders).toLocaleString()}
-                      </div>
-                      <div className="text-sm text-gray-600">Avg Order Value</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
-          </div>
-
-          
-          <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
-            <button
-              onClick={handleCloseProfile}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-            >
-              Back to Notifications
-            </button>
-            
-          </div>
+          )}
         </div>
       </div>
-    );
-  };
-
-  
-  console.log('All customers in notifications:', updatedNotifications.map(n => n.customer));
-
-  return (
-    <>
-      {showCustomerProfile ? (
-        <CustomerProfile />
-      ) : (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-4xl h-[80vh] flex flex-col">
-            
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-800">Notifications</h2>
-              <button
-                onClick={() => setShowNotifications(false)}
-                className="text-gray-500 hover:text-gray-700 text-xl bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition"
-              >
-                ✕
-              </button>
-            </div>
-
-            
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="bg-white rounded-xl shadow">
-                {updatedNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className="p-6 border-b border-gray-100 last:border-b-0"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-800">
-                          <span className="text-blue-600">
-                            {notification.customer}
-                          </span>{' '}
-                          has ordered your {notification.product}
-                        </p>
-                        <p className="text-sm text-gray-500 mt-1">{notification.date}</p>
-                      </div>
-
-                      <div className="flex items-center space-x-3 ml-4">
-                        
-                        <button
-                          onClick={() => handleProfileView(notification.customer)}
-                          className="px-4 py-2 bg-green-100 text-green-800 text-sm font-medium rounded-lg hover:bg-green-200 transition flex items-center"
-                        >
-                          👤 Profile View
-                        </button>
-
-                        
-                        <button
-                          onClick={() => handleDelivered(notification.id)}
-                          className={`px-4 py-2 text-sm font-medium rounded-lg transition flex items-center ${
-                            notification.status === 'Delivered'
-                              ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                              : 'bg-gray-100 text-gray-800 hover:bg-blue-100 hover:text-blue-800'
-                          }`}
-                        >
-                          {notification.status === 'Delivered' ? '✅ Delivered' : '📦 Mark Delivered'}
-                        </button>
-
-                        
-                        {/* <span
-                          className={`px-3 py-1 text-xs font-medium rounded-full ${
-                            notification.action === 'Accepted'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {notification.action}
-                        </span> */}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 };
 
