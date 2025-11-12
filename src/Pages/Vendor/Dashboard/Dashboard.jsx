@@ -1,5 +1,4 @@
-// src/pages/Vendor/Dashboard.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +15,7 @@ import ErrorState from '../../../Components/Vendor/Dashboard/ErrorState';
 // Import hooks
 import { useDashboardData } from '../../../Components/Vendor/Dashboard/hooks/useDashboardData';
 import { useProfile } from '../../../Components/Vendor/Dashboard/hooks/useProfile';
+import { useNotificationHub } from '../../../Components/Vendor/Dashboard/hooks/useNotificationHub';
 import axiosInstance from '../../../Components/utils/axiosInstance';
 
 const Dashboard = () => {
@@ -23,7 +23,6 @@ const Dashboard = () => {
   const [showMessages, setShowMessages] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [outOfStockNotifications, setOutOfStockNotifications] = useState([]);
 
   const navigate = useNavigate();
 
@@ -35,7 +34,7 @@ const Dashboard = () => {
     recentActivities,
     isLoading,
     messageThreads,
-    notifications,
+    notifications: dashboardNotifications,
     fetchDashboardData
   } = useDashboardData(navigate);
 
@@ -53,181 +52,117 @@ const Dashboard = () => {
     profileInputRef
   } = useProfile(setShowProfile, fetchDashboardData);
 
- const fetchOutOfStockNotifications = useCallback(async () => {
-  try {
-    console.log('🔔 [DEBUG] Fetching out-of-stock notifications...');
-    
-    if (!vendorData?.id) {
-      console.log('❌ No vendor ID available');
-      return;
-    }
+  // SignalR hook
+  const {
+    notifications: signalRNotifications,
+    unreadCount,
+    isConnected,
+    connectionStatus,
+    markNotificationAsRead,
+    refreshNotifications
+  } = useNotificationHub();
 
-    const response = await axiosInstance.get('/Notification/vendor-out-of-stock');
-    
-    console.log('🔔 [DEBUG] Raw API response:', response.data);
-    
-    if (response.data.notifications && Array.isArray(response.data.notifications)) {
-      const formattedNotifications = response.data.notifications.map(notification => {
-        console.log('🔔 [DEBUG] Processing notification:', notification);
-        return {
-          id: notification.id,
-          type: notification.type || 'OUT_OF_STOCK',
-          title: notification.title || 'Out of Stock Alert',
-          message: notification.message,
-          productName: notification.productName,
-          productId: notification.productId,
-          createdAt: notification.createdAt || notification.createdOn,
-          isRead: notification.isRead || false,
-          priority: notification.priority || 'HIGH',
-          isOutOfStock: true, // ← FORCE THIS TO TRUE
-          ...notification // Keep original properties but override isOutOfStock
-        };
-      });
-      
-      console.log('🔔 [DEBUG] Formatted out-of-stock notifications:', formattedNotifications);
-      setOutOfStockNotifications(formattedNotifications);
-    } else {
-      console.log('❌ No notifications array found');
-      setOutOfStockNotifications([]);
-    }
-  } catch (error) {
-    console.error('❌ Error fetching out-of-stock notifications:', error);
-    setOutOfStockNotifications([]);
-  }
-}, [vendorData?.id]);
+  
+const allNotifications = useMemo(() => {
+  console.log('📊 [Dashboard] Combining notifications');
+  console.log('   - Dashboard notifications (raw):', dashboardNotifications);
+  console.log('   - SignalR notifications (raw):', signalRNotifications);
 
-// Add this function to your Dashboard.jsx
-const testNotificationEndpoint = async () => {
-  try {
-    console.log('🧪 [API TEST] Testing /Notification/vendor-out-of-stock endpoint directly');
-    const response = await axiosInstance.get('/Notification/vendor-out-of-stock');
-    
-    console.log('🧪 [API TEST] Response status:', response.status);
-    console.log('🧪 [API TEST] Response headers:', response.headers);
-    console.log('🧪 [API TEST] Full response:', response);
-    console.log('🧪 [API TEST] Response data:', response.data);
-    
-    if (response.data.notifications) {
-      console.log('🧪 [API TEST] Notifications count:', response.data.notifications.length);
-      response.data.notifications.forEach((notif, index) => {
-        console.log(`🧪 [API TEST] Notification ${index}:`, notif);
-        console.log(`🧪 [API TEST] Has id:`, notif.id);
-        console.log(`🧪 [API TEST] Has type:`, notif.type);
-        console.log(`🧪 [API TEST] Has productId:`, notif.productId);
-      });
-    } else {
-      console.log('🧪 [API TEST] No notifications array in response');
-    }
-    
-    return response.data;
-  } catch (error) {
-    console.error('🧪 [API TEST] Error:', error);
-    console.error('🧪 [API TEST] Error details:', error.response?.data);
-    return null;
-  }
-};
+  // Use SignalR notifications as primary source when connected
+  const primaryNotifications = isConnected && signalRNotifications?.length > 0 
+    ? signalRNotifications 
+    : dashboardNotifications || [];
 
-// Call this function in your useEffect
-useEffect(() => {
-  if (vendorData?.id) {
-    console.log('🚀 Vendor data loaded, testing notifications...');
-    testNotificationEndpoint(); // Test the endpoint directly
-    fetchOutOfStockNotifications();
+  // Normalize notifications to ensure consistent structure
+  const normalized = primaryNotifications.map(n => {
+    const normalizedNotification = {
+      id: n.id,
+      type: n.type || '',
+      title: n.title || '',
+      message: n.message || '',
+      productId: n.productId,
+      createdAt: n.createdAt || n.createdOn,
+      isRead: n.isRead || false,
+      priority: n.priority || '',
+      isOutOfStock: n.isOutOfStock === true || 
+                    n.type?.toLowerCase() === 'out_of_stock' || 
+                    n.type?.toLowerCase() === 'out-of-stock',
+      source: isConnected ? 'signalr' : 'api',
+      // Include raw data for debugging
+      _raw: n
+    };
     
-    const interval = setInterval(() => {
-      fetchOutOfStockNotifications();
-    }, 15000);
-    
-    return () => clearInterval(interval);
-  }
-}, [vendorData?.id, fetchOutOfStockNotifications]);
+    console.log(`📊 [Dashboard] Normalized notification ${normalizedNotification.id}:`, normalizedNotification);
+    return normalizedNotification;
+  });
 
-// Add this check to see if the vendor IDs match
-console.log('🔍 [VENDOR CHECK] Logged in vendor ID:', vendorData?.id);
-console.log('🔍 [VENDOR CHECK] Notification was sent to vendor ID: 1');
-console.log('🔍 [VENDOR CHECK] Do they match?', vendorData?.id === 1);
+  console.log('📊 [Dashboard] Final normalized notifications:', normalized);
+  return normalized;
+}, [signalRNotifications, dashboardNotifications, isConnected]);
+  // Separate out-of-stock notifications
+  const outOfStockNotifications = useMemo(() => {
+    const outOfStock = allNotifications.filter(n => n.isOutOfStock === true);
+    console.log('📦 [Dashboard] Out-of-stock notifications:', outOfStock.length);
+    return outOfStock;
+  }, [allNotifications]);
 
+  // Other notifications (non out-of-stock)
+  const otherNotifications = useMemo(() => {
+    return allNotifications.filter(n => !n.isOutOfStock);
+  }, [allNotifications]);
 
-// Add this function to manually check if notification ID 4 exists
-const checkSpecificNotification = async () => {
-  try {
-    console.log('🔎 [SPECIFIC CHECK] Checking for notification ID 4');
-    const allNotifications = await axiosInstance.get('/Notification/vendor');
-    console.log('🔎 [SPECIFIC CHECK] All vendor notifications:', allNotifications.data);
-    
-    if (allNotifications.data.notifications) {
-      const notification4 = allNotifications.data.notifications.find(n => n.id === 4);
-      console.log('🔎 [SPECIFIC CHECK] Notification with ID 4:', notification4);
-    }
-  } catch (error) {
-    console.error('🔎 [SPECIFIC CHECK] Error:', error);
-  }
-};
-
-// Call this after sending a notification
-  // Mark notification as read
-  const markNotificationAsRead = async (notificationId) => {
+  // Handle notification marked as read
+  const handleMarkNotificationAsRead = useCallback(async (notificationId) => {
     try {
-      await axiosInstance.put(`/Notification/mark-read/${notificationId}`);
+      console.log('📝 [Dashboard] Marking notification as read:', notificationId);
+      const success = await markNotificationAsRead(notificationId);
       
-      // Update both notification states
-      setOutOfStockNotifications(prev => 
-        prev.map(notification => 
-          notification.id === notificationId 
-            ? { ...notification, isRead: true }
-            : notification
-        )
-      );
-      
-      // Refresh main dashboard data to update regular notifications
-      if (fetchDashboardData) {
+      if (success) {
+        toast.success('Notification marked as read');
+        // Optionally refresh the dashboard data to sync with backend
         fetchDashboardData();
+      } else {
+        toast.error('Failed to mark notification as read');
       }
-      
-      toast.success('Notification marked as read');
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error('❌ [Dashboard] Error marking notification as read:', error);
       toast.error('Failed to mark notification as read');
     }
-  };
+  }, [markNotificationAsRead, fetchDashboardData]);
 
-  // Function to refresh all notifications
-  const refreshAllNotifications = useCallback(async () => {
-    console.log('Manually refreshing all notifications...');
-    await fetchOutOfStockNotifications();
-    if (fetchDashboardData) {
-      await fetchDashboardData();
+ // Refresh all notifications
+const handleRefreshNotifications = useCallback(async () => {
+  console.log('🔄 [Dashboard] Refreshing notifications...');
+  
+  // Try SignalR first, then fallback to API
+  if (isConnected) {
+    const signalRSuccess = await refreshNotifications();
+    if (signalRSuccess) {
+      toast.success('Notifications refreshed');
+      return;
     }
-  }, [fetchOutOfStockNotifications, fetchDashboardData]);
-
-  // Pass this function to child components
-  const refreshNotifications = useCallback(async () => {
-    await refreshAllNotifications();
-  }, [refreshAllNotifications]);
-
-  // Fetch notifications when vendor data is available
-  useEffect(() => {
-    if (vendorData?.id) {
-      console.log('Vendor data available, setting up notification polling');
-      fetchOutOfStockNotifications();
-      
-      // Set up polling for new notifications (every 15 seconds)
-      const interval = setInterval(() => {
-        console.log('Polling for new notifications...');
-        fetchOutOfStockNotifications();
-      }, 15000);
-      
-      return () => {
-        console.log('Cleaning up notification polling');
-        clearInterval(interval);
-      };
-    }
-  }, [vendorData?.id, fetchOutOfStockNotifications]);
+  }
+  
+  // Fallback to API refresh
+  await fetchDashboardData();
+  toast.success('Notifications refreshed');
+}, [refreshNotifications, fetchDashboardData, isConnected]);
 
   // Load data on mount
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  // Show connection status
+  useEffect(() => {
+    console.log('🔌 [Dashboard] SignalR Connection Status:', connectionStatus);
+    console.log('   Connected:', isConnected);
+    console.log('   Unread Count:', unreadCount);
+    
+    if (isConnected) {
+      console.log('✅ [Dashboard] Real-time notifications enabled');
+    }
+  }, [connectionStatus, isConnected, unreadCount]);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -236,40 +171,11 @@ const checkSpecificNotification = async () => {
     navigate('/login');
   };
 
-  // Handle backdrop click for modals
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
       setShowProfile(false);
     }
   };
-
- // ALTERNATIVE: Keep notifications completely separate
-const allNotifications = React.useMemo(() => {
-  console.log('🔔 [Dashboard] Regular notifications:', notifications);
-  console.log('🔔 [Dashboard] Out-of-stock notifications:', outOfStockNotifications);
-
-  // Use ONLY the out-of-stock notifications from the API for out-of-stock
-  // Use regular notifications for everything else
-  const realOutOfStockNotifications = outOfStockNotifications || [];
-  
-  const otherNotifications = (notifications || []).filter(n => 
-    n.type !== 'OUT_OF_STOCK' // Remove any fake out-of-stock notifications
-  );
-
-  const combined = [
-    ...otherNotifications.map(n => ({ ...n, isOutOfStock: false })),
-    ...realOutOfStockNotifications.map(n => ({ ...n, isOutOfStock: true }))
-  ];
-
-  console.log('🔔 [Dashboard] Final combined:', combined);
-  return combined;
-}, [notifications, outOfStockNotifications]);
-  // Debug: Log notification changes
-  useEffect(() => {
-    console.log('All combined notifications:', allNotifications);
-    console.log('Out of stock count:', allNotifications.filter(n => n.isOutOfStock).length);
-    console.log('Unread count:', allNotifications.filter(n => !n.isRead).length);
-  }, [allNotifications]);
 
   // Loading & error states
   if (isLoading) return <LoadingState />;
@@ -278,6 +184,22 @@ const allNotifications = React.useMemo(() => {
   return (
     <div className="flex h-screen bg-gray-100">
       <ToastContainer position="top-right" autoClose={3000} />
+
+      {/* Connection Status Indicator */}
+      <div className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg text-sm font-medium z-40 ${
+        isConnected 
+          ? 'bg-green-100 text-green-800 border border-green-300' 
+          : connectionStatus === 'reconnecting'
+          ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+          : 'bg-red-100 text-red-800 border border-red-300'
+      }`}>
+        {isConnected ? '🔔 Real-time Enabled' : `🔌 ${connectionStatus}`}
+        {unreadCount > 0 && (
+          <span className="ml-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs">
+            {unreadCount}
+          </span>
+        )}
+      </div>
 
       {/* External Modals */}
       {showMessages && (
@@ -291,8 +213,12 @@ const allNotifications = React.useMemo(() => {
         <NotificationsModal
           setShowNotifications={setShowNotifications}
           notifications={allNotifications}
-          markNotificationAsRead={markNotificationAsRead}
-          fetchNotifications={refreshNotifications}
+          outOfStockNotifications={outOfStockNotifications}
+          otherNotifications={otherNotifications}
+          markNotificationAsRead={handleMarkNotificationAsRead}
+          refreshNotifications={handleRefreshNotifications}
+          unreadCount={unreadCount}
+          isConnected={isConnected}
         />
       )}
 
@@ -329,6 +255,9 @@ const allNotifications = React.useMemo(() => {
           handleRemoveProfileImage={handleRemoveProfileImage}
           profileInputRef={profileInputRef}
           handleBackdropClick={handleBackdropClick}
+          unreadCount={unreadCount}
+          connectionStatus={connectionStatus}
+          outOfStockCount={outOfStockNotifications.length}
         />
 
         {/* Main Dashboard Content */}
@@ -341,33 +270,12 @@ const allNotifications = React.useMemo(() => {
           messageThreads={messageThreads}
           notifications={allNotifications}
           outOfStockNotifications={outOfStockNotifications}
-          refreshNotifications={refreshNotifications}
+          otherNotifications={otherNotifications}
+          refreshNotifications={handleRefreshNotifications}
+          unreadCount={unreadCount}
+          isConnected={isConnected}
         />
       </div>
-{/* 
-      // Add these debug buttons to your Dashboard temporarily
-{process.env.NODE_ENV === 'development' && (
-  <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-50">
-    <button
-      onClick={testNotificationEndpoint}
-      className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-lg"
-    >
-      🧪 Test API
-    </button>
-    <button
-      onClick={checkSpecificNotification}
-      className="px-4 py-2 bg-green-500 text-white rounded-lg shadow-lg"
-    >
-      🔎 Check ID 4
-    </button>
-    <button
-      onClick={refreshAllNotifications}
-      className="px-4 py-2 bg-purple-500 text-white rounded-lg shadow-lg"
-    >
-      🔄 Refresh All
-    </button>
-  </div>
-)} */}
     </div>
   );
 };
