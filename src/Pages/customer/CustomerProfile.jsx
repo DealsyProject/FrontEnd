@@ -20,12 +20,12 @@ export default function ProfilePage() {
         setLoading(true);
 
         const profileRes = await axiosInstance.get(
-          "/api/CustomerViewDetails/profile"
+          "/CustomerViewDetails/profile"
         );
         setProfile(profileRes.data);
 
         // ✅ Fetch photo as JSON
-        const photoRes = await axiosInstance.get("/api/CustomerPicture/photoView");
+        const photoRes = await axiosInstance.get("/CustomerPicture/photoView");
         if (photoRes.data && photoRes.data.imageUrl) {
           setPhotoUrl(photoRes.data.imageUrl);
         }
@@ -56,7 +56,7 @@ export default function ProfilePage() {
       
       try {
         // ✅ Send base64 image in JSON payload
-        await axiosInstance.put("/api/CustomerPicture/photoUpdate", {
+        await axiosInstance.put("/CustomerPicture/photoUpdate", {
           photo: base64Image
         });
         
@@ -77,7 +77,7 @@ export default function ProfilePage() {
       return;
 
     try {
-      await axiosInstance.delete("/api/CustomerPicture/photoDelete");
+      await axiosInstance.delete("/CustomerPicture/photoDelete");
       setPhotoUrl(null);
       alert("Profile picture deleted successfully!");
     } catch (err) {

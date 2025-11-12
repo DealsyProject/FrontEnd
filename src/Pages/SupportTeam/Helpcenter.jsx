@@ -1,16 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
-  Mail,
   MessageCircle,
-  Bell,
-  Search,
-  Calendar,
   X,
   Send,
-} from 'lucide-react';
+} 
+from 'lucide-react';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { useForm } from 'react-hook-form';
-import { toast } from 'react-hot-toast';
 import NavbarSupport from '../../Components/SupportTeam/NavbarSupport';
 
 function Helpcenter() {
@@ -24,15 +19,13 @@ function Helpcenter() {
   const [connection, setConnection] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll to bottom when new message comes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Initialize SignalR connection once
   useEffect(() => {
     const newConnection = new HubConnectionBuilder()
-      .withUrl('https://localhost:5001/chatHub') // 🔹 your backend hub URL
+      .withUrl('https://localhost:5001/chatHub') 
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build();
@@ -40,7 +33,6 @@ function Helpcenter() {
     setConnection(newConnection);
   }, []);
 
-  // Start connection
   useEffect(() => {
     if (connection) {
       connection

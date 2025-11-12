@@ -9,10 +9,12 @@ export default function CustomerProductView() {
     "https://plus.unsplash.com/premium_photo-1719289718424-0f5071da5a3a?ixlib=rb-4.1.0&auto=format&fit=crop&q=80&w=2070"
   );
 
+  // ✅ Main Product
   const mainProduct = {
     name: "Eco-Friendly Ceramic Mug",
     subheading: "Sustainable everyday use",
     price: "₹499",
+    stock: 8, // ✅ Added stock count
     description:
       "This handcrafted ceramic mug is perfect for your daily coffee or tea. Made with eco-friendly materials and a smooth matte finish for a premium feel.",
     images: [
@@ -22,6 +24,7 @@ export default function CustomerProductView() {
     ],
   };
 
+  // ✅ Related Products
   const relatedProducts = [
     {
       name: "Blue Coffee Cup",
@@ -36,7 +39,7 @@ export default function CustomerProductView() {
       img: "https://images.unsplash.com/photo-1633677491302-db7fc823561b?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
     },
     {
-      name: "yellow coffee cup",
+      name: "Yellow coffee cup",
       desc: "Sustainable everyday use",
       price: "₹399",
       img: "https://images.unsplash.com/photo-1685384338018-1774719d5b69?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=687",
@@ -98,9 +101,28 @@ export default function CustomerProductView() {
                 {mainProduct.name}
               </h1>
               <p className="text-gray-500 mb-4">{mainProduct.subheading}</p>
+
               <p className="text-2xl font-semibold text-[#3b450d] mb-4">
                 {mainProduct.price}
               </p>
+
+              {/* ✅ Stock count display */}
+              <p
+                className={`mb-4 text-sm font-medium ${
+                  mainProduct.stock > 10
+                    ? "text-green-600"
+                    : mainProduct.stock > 0
+                    ? "text-orange-500"
+                    : "text-red-500"
+                }`}
+              >
+                {mainProduct.stock > 0
+                  ? `In Stock: ${mainProduct.stock} item${
+                      mainProduct.stock > 1 ? "s" : ""
+                    }`
+                  : "Out of Stock"}
+              </p>
+
               <p className="text-gray-600 mb-6">{mainProduct.description}</p>
 
               {/* Wishlist + Buy Now Buttons */}
@@ -115,8 +137,17 @@ export default function CustomerProductView() {
                 >
                   {wishlist ? "Added to Wishlist ❤️" : "Add to Wishlist"}
                 </button>
-                <button className="flex-1 bg-[#3b450d] text-white px-6 py-2 rounded-md hover:bg-[#2e350b] transition">
-                  Buy Now
+
+                {/* ✅ Disable Buy Now if out of stock */}
+                <button
+                  disabled={mainProduct.stock === 0}
+                  className={`flex-1 px-6 py-2 rounded-md transition font-medium ${
+                    mainProduct.stock === 0
+                      ? "bg-gray-400 text-gray-100 cursor-not-allowed"
+                      : "bg-[#3b450d] text-white hover:bg-[#2e350b]"
+                  }`}
+                >
+                  {mainProduct.stock === 0 ? "Out of Stock" : "Buy Now"}
                 </button>
               </div>
 
