@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Navbar from "../../Components/customer/Common/Navbar";
 import Footer from "../../Components/customer/Common/Footer";
 import CustomerProductCard from "../../Components/customer/Product/CustomerProductCard";
-import axiosInstance from '../../Components/utils/axiosInstance';
+import axiosInstance from "../../Components/utils/axiosInstance";
 
 export default function CustomerProducts() {
   const [products, setProducts] = useState([]);
@@ -13,12 +13,12 @@ export default function CustomerProducts() {
       try {
         const response = await axiosInstance.get("/Product/all");
 
-        // ✅ Extract correct array from your API
+        // ✅ Extract array safely
         const data = response.data.products || [];
 
-        // ✅ Transform data for frontend display
+        // ✅ Transform for display
         const formatted = data.map((p) => {
-          const primaryImage = p.images?.[0]; // assuming first image is primary
+          const primaryImage = p.images?.[0];
           return {
             id: p.id,
             name: p.productName,
@@ -26,9 +26,9 @@ export default function CustomerProducts() {
             price: `₹${p.price ?? 0}`,
             category: p.productCategory || "General",
             rating: p.rating ?? 0,
-            image: primaryImage?.imageData
-              ? primaryImage.imageData
-              : "https://via.placeholder.com/400x300?text=No+Image",
+            image:
+              primaryImage?.imageData ||
+              "https://via.placeholder.com/400x300?text=No+Image",
           };
         });
 
@@ -54,6 +54,7 @@ export default function CustomerProducts() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       <Navbar />
+
       <main className="flex-grow px-8 py-10">
         <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
           Our Products
@@ -69,6 +70,7 @@ export default function CustomerProducts() {
           </div>
         )}
       </main>
+
       <Footer />
     </div>
   );
