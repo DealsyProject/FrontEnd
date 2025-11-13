@@ -1,36 +1,46 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../../Components/customer/Common/Navbar";
 import Footer from "../../Components/customer/Common/Footer";
 import { Trash2 } from "lucide-react";
+import axiosInstance from "../../Components/utils/axiosInstance";
 
 export default function WishlistPage() {
-  const [wishlist, setWishlist] = useState([
-    {
-      id: 1,
-      name: "Plant & Pot",
-      price: 681,
-      img: "https://images.unsplash.com/photo-1616627452104-6fe055a451db?auto=format&fit=crop&w=400&q=80",
-      desc: "Showcasing plant and pot",
-    },
-    {
-      id: 2,
-      name: "Hot Wheels",
-      price: 681,
-      img: "https://images.unsplash.com/photo-1606813909365-7b7c184f2b7b?auto=format&fit=crop&w=400&q=80",
-      desc: "Muscle car blue",
-    },
-    {
-      id: 3,
-      name: "Nike Sneaker",
-      price: 681,
-      img: "https://images.unsplash.com/photo-1600180758890-6b94519a8ba8?auto=format&fit=crop&w=400&q=80",
-      desc: "Orange & white sneaker",
-    },
-  ]);
+  const [wishlist, setWishlist] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const customerId = localStorage.getItem("customerId"); // assuming it's stored after login
 
-  const removeFromWishlist = (id) => {
-    setWishlist(wishlist.filter((item) => item.id !== id));
+  // ✅ Fetch wishlist from backend
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      try {
+        const response = await axiosInstance.get(`/Wishlist/${customerId}`);
+        setWishlist(response.data);
+      } catch (error) {
+        console.error("Error fetching wishlist:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (customerId) fetchWishlist();
+  }, [customerId]);
+
+  // ✅ Remove product from wishlist
+  const removeFromWishlist = async (wishlistId) => {
+    try {
+      await axiosInstance.delete(`/Wishlist/${wishlistId}`);
+      setWishlist((prev) => prev.filter((item) => item.wishlistId !== wishlistId));
+    } catch (error) {
+      console.error("Error removing item from wishlist:", error);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-pink-50">
+        <p className="text-gray-700 text-lg">Loading your wishlist...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-pink-50">
@@ -48,22 +58,26 @@ export default function WishlistPage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {wishlist.map((item) => (
                 <div
-                  key={item.id}
+                  key={item.wishlistId}
                   className="bg-white border rounded-xl shadow-sm hover:shadow-md transition p-4 flex flex-col"
                 >
                   <img
-                    src={item.img}
-                    alt={item.name}
+                    src={item.productImage || "https://via.placeholder.com/300"}
+                    alt={item.productName}
                     className="w-full h-48 object-cover rounded-lg mb-3"
                   />
                   <h3 className="font-semibold text-gray-800 text-lg">
-                    {item.name}
+                    {item.productName}
                   </h3>
-                  <p className="text-gray-500 text-sm mb-2">{item.desc}</p>
+                  <p className="text-gray-500 text-sm mb-2">
+                    {item.productDescription || "No description available"}
+                  </p>
                   <div className="flex justify-between items-center mt-auto">
-                    <span className="font-semibold text-gray-900">₹{item.price}</span>
+                    <span className="font-semibold text-gray-900">
+                      ₹{item.price || "—"}
+                    </span>
                     <button
-                      onClick={() => removeFromWishlist(item.id)}
+                      onClick={() => removeFromWishlist(item.wishlistId)}
                       className="text-gray-500 hover:text-red-500 transition"
                       title="Remove from wishlist"
                     >
