@@ -25,13 +25,8 @@ export default function CustomerProductView() {
         setProduct(data);
         setLoading(false);
 
-        // Notify vendor if out of stock
-        if (data.quantity === 0) {
-          await axiosInstance.post(`/Notification/vendor-out-of-stock`, {
-            productId: data.id,
-            vendorId: data.vendorId,
-          });
-        }
+        // Check if product is in wishlist
+        await checkWishlistStatus(data.id);
       } catch (error) {
         console.error("❌ Error fetching product:", error);
         setLoading(false);
@@ -40,11 +35,20 @@ export default function CustomerProductView() {
     fetchProduct();
   }, [id]);
 
+  const checkWishlistStatus = async (productId) => {
+    try {
+      const response = await axiosInstance.get(`/Wishlist`);
+      const wishlistItems = response.data;
+      const isInWishlist = wishlistItems.some(item => item.productId === productId);
+      setWishlist(isInWishlist);
+    } catch (error) {
+      console.error("❌ Error checking wishlist status:", error);
+    }
+  };
+
   const handleAddToCart = async () => {
     try {
-      const customerId = localStorage.getItem("userId");
       await axiosInstance.post(`/Cart`, {
-        customerId,
         productId: product.id,
         quantity: 1,
       });
@@ -57,16 +61,18 @@ export default function CustomerProductView() {
 
   const handleWishlist = async () => {
     try {
-      const customerId = localStorage.getItem("userId");
       if (!wishlist) {
         await axiosInstance.post(`/Wishlist`, {
-          customerId,
           productId: product.id,
         });
+        setWishlist(true);
+        alert("✅ Added to wishlist!");
       } else {
-        // remove from wishlist — backend handles this too
+        // Remove from wishlist - you'll need to implement this endpoint
+        // await axiosInstance.delete(`/Wishlist`, { data: { productId: product.id } });
+        // setWishlist(false);
+        alert("Remove from wishlist feature coming soon!");
       }
-      setWishlist(!wishlist);
     } catch (error) {
       console.error("❌ Wishlist update failed:", error);
     }
