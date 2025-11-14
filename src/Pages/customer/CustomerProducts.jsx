@@ -13,8 +13,15 @@ export default function CustomerProducts() {
       try {
         const response = await axiosInstance.get("/Product/all");
 
-        // ✅ Extract array safely
-        const data = response.data.products || [];
+        // ✅ Extract array safely - handle different response formats
+        let data = [];
+        if (Array.isArray(response.data)) {
+          data = response.data;
+        } else if (response.data.products && Array.isArray(response.data.products)) {
+          data = response.data.products;
+        } else if (Array.isArray(response.data.$values)) {
+          data = response.data.$values;
+        }
 
         // ✅ Transform for display
         const formatted = data.map((p) => {
@@ -23,12 +30,14 @@ export default function CustomerProducts() {
             id: p.id,
             name: p.productName,
             description: p.description || "No description available",
-            price: `₹${p.price ?? 0}`,
+            price: p.price ?? 0, // Keep as number for calculations
             category: p.productCategory || "General",
             rating: p.rating ?? 0,
             image:
               primaryImage?.imageData ||
               "https://via.placeholder.com/400x300?text=No+Image",
+            vendorName: p.vendorName || "Unknown Vendor",
+            quantity: p.quantity || 0
           };
         });
 
@@ -63,7 +72,7 @@ export default function CustomerProducts() {
         {products.length === 0 ? (
           <p className="text-center text-gray-500">No products available</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {products.map((product) => (
               <CustomerProductCard key={product.id} product={product} />
             ))}
