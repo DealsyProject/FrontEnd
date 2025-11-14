@@ -1,224 +1,310 @@
-import React, { useState } from "react";
-import { Search, Phone, MoreVertical, Send } from "lucide-react";
-import Navbar from "../../Components/customer/Common/Navbar";
+import React, { useEffect, useState, useRef } from "react";
+import * as signalR from "@microsoft/signalr";
+import { jwtDecode } from "jwt-decode";
 
-export default function SupportChatAccess() {
-  const [activeTab, setActiveTab] = useState("active");
-  const [selectedChat, setSelectedChat] = useState(0);
-  const [messageInput, setMessageInput] = useState("");
+function CustomerChat() {
+  const [connection, setConnection] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [message, setMessage] = useState("");
+  const [userId, setUserId] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState("Disconnected");
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const chatEndRef = useRef(null);
 
-  const chatsData = [
-    {
-      id: 0,
-      orderId: "Order #12345 - Inquiry",
-      customer: "Alex",
-      vendor: "Tech",
-      status: "active",
-      messages: [
-        { sender: "customer", text: "Hi, I have a question about my order.", time: "10:30 AM", avatar: "A" },
-        { sender: "support", text: "Hello Alex, can you provide your order number?", time: "10:33 AM", avatar: "S" },
-        { sender: "customer", text: "Sure, it's #12345.", time: "10:34 AM", avatar: "A" },
-      ],
-      avatar: "A",
-    },
-    {
-      id: 1,
-      orderId: "Product Return",
-      customer: "Sarah",
-      vendor: "Home Decor",
-      status: "closed",
-      messages: [
-        { sender: "customer", text: "I want to return a product.", time: "09:15 AM", avatar: "S" },
-        { sender: "support", text: "Sure, please provide the order number.", time: "09:17 AM", avatar: "H" },
-      ],
-      avatar: "S",
-    },
-    {
-      id: 2,
-      orderId: "Shipping Delay",
-      customer: "Mike",
-      vendor: "Outdoor Gear",
-      status: "active",
-      messages: [
-        { sender: "customer", text: "My order is delayed.", time: "08:00 AM", avatar: "M" },
-        { sender: "support", text: "We are checking on that.", time: "08:05 AM", avatar: "O" },
-      ],
-      avatar: "M",
-    },
-  ];
+  // --------------------------------------------------------------
+  // 1. Connect + auth
+  // --------------------------------------------------------------
+  useEffect(() => {
+    const connect = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          alert("Please login first");
+          return;
+        }
 
-  const [chats, setChats] = useState(chatsData);
-  const [search, setSearch] = useState("");
+        const decoded = jwtDecode(token);
+        const uid =
+          decoded.nameid ||
+          decoded.sub ||
+          decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/nameidentifier"];
+        const role =
+          decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+          decoded.role ||
+          decoded["role"];
 
-  const filteredChats = chats.filter((chat) => {
-    const matchesTab = activeTab === "all" || chat.status === activeTab;
-    const matchesSearch =
-      chat.customer.toLowerCase().includes(search.toLowerCase()) ||
-      chat.orderId.toLowerCase().includes(search.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
+        const isCustomer = role === "Customer" || role === "3" || Number(role) === 3;
+        if (!isCustomer) {
+          alert("Access denied. Customers only.");
+          return;
+        }
 
-  const handleSendMessage = () => {
-    if (!messageInput.trim()) return;
-    const updatedChats = chats.map((chat) => {
-      if (chat.id === selectedChat) {
-        return {
-          ...chat,
-          messages: [...chat.messages, { sender: "support", text: messageInput, time: "Now", avatar: "S" }],
-        };
+        setUserId(uid);
+        setIsAuthorized(true);
+        setIsConnecting(true);
+        setConnectionStatus("Connecting...");
+
+        const hubUrl = `https://localhost:7001/chatHub?access_token=${encodeURIComponent(token)}`;
+
+        const conn = new signalR.HubConnectionBuilder()
+          .withUrl(hubUrl)
+          .withAutomaticReconnect([0, 1000, 3000, 5000, 10000, 15000, 30000])
+          .configureLogging(signalR.LogLevel.Information)
+          .build();
+
+        conn.onreconnecting(() => setConnectionStatus("Reconnecting..."));
+        conn.onreconnected(() => setConnectionStatus("Connected"));
+        conn.onclose(() => {
+          setConnectionStatus("Disconnected");
+          setIsConnecting(false);
+        });
+
+        conn.on("ReceiveMessage", (from, msg) => {
+          setMessages(prev => [
+            ...prev,
+            {
+              fromUserId: from,
+              msg,
+              isCustomer: from === uid,
+              timestamp: new Date(),
+              id: Date.now() + Math.random()
+            }
+          ]);
+        });
+
+        await conn.start();
+        setConnection(conn);
+        setConnectionStatus("Connected");
+        setIsConnecting(false);
+
+        await conn.invoke("CheckPendingMessages");
+      } catch (e) {
+        console.error(e);
+        setConnectionStatus("Failed");
+        setIsConnecting(false);
+        alert("Chat connection failed");
       }
-      return chat;
-    });
-    setChats(updatedChats);
-    setMessageInput("");
+    };
+
+    connect();
+
+    return () => connection?.stop();
+  }, []);
+
+  // --------------------------------------------------------------
+  // 2. Send message
+  // --------------------------------------------------------------
+  const sendMessage = async () => {
+    if (!connection || !message.trim()) return;
+    const txt = message.trim();
+    setMessage("");
+
+    try {
+      await connection.invoke("SendPrivateMessage", "support", txt);
+      setMessages(prev => [
+        ...prev,
+        {
+          fromUserId: userId,
+          msg: txt,
+          isCustomer: true,
+          timestamp: new Date(),
+          id: Date.now() + Math.random(),
+          status: "sent"
+        }
+      ]);
+    } catch (e) {
+      console.error(e);
+      setMessage(txt);
+      setMessages(prev => [
+        ...prev,
+        {
+          fromUserId: "system",
+          msg: "Failed to send. Try again.",
+          isCustomer: false,
+          timestamp: new Date(),
+          honour: Date.now() + Math.random(),
+          isError: true
+        }
+      ]);
+    }
   };
 
-  const activeMessages = chats.find((chat) => chat.id === selectedChat)?.messages || [];
+  const handleKeyPress = e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
 
+  // --------------------------------------------------------------
+  // 3. Auto-scroll
+  // --------------------------------------------------------------
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [messages]);
+
+  const formatTime = ts =>
+    new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  // --------------------------------------------------------------
+  // 4. UI guards
+  // --------------------------------------------------------------
+  if (!isAuthorized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="text-red-600 text-xl font-semibold mb-2">Access Denied</div>
+          <div className="text-gray-600">This chat is for customers only.</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isConnecting) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+          <div className="text-gray-600">Connecting to chat service...</div>
+          <div className="text-sm text-gray-500 mt-2">{connectionStatus}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // --------------------------------------------------------------
+  // 5. Main UI
+  // --------------------------------------------------------------
   return (
-    <div className="min-h-screen w-full bg-gray-50 text-gray-900">
-      <main className=" pb-8">
-        <Navbar/>
-        <div className="h-[calc(100vh-8rem)] flex rounded-lg overflow-hidden shadow-sm border border-gray-200 bg-white">
-          {/* Left Sidebar */}
-          <div className="w-96 bg-gray-100 border-r border-gray-200 flex flex-col">
-            <div className="p-4 border-b border-gray-200">
-            
-
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search chats"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#586330]/40"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                {["all", "active", "closed"].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                      activeTab === tab
-                        ? "bg-[#586330] text-white"
-                        : "text-gray-600 hover:bg-[#586330] hover:text-white"
-                    }`}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              {filteredChats.map((chat) => (
-                <div
-                  key={chat.id}
-                  onClick={() => setSelectedChat(chat.id)}
-                  className={`p-4 border-b border-gray-200 cursor-pointer transition ${
-                    selectedChat === chat.id ? "bg-[#586330]/20" : "hover:bg-gray-100"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#586330]/10 text-[#586330] flex items-center justify-center font-medium">
-                      {chat.avatar}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-medium text-gray-800 truncate">Support Team</h3>
-                        <span className="text-xs text-gray-400">{chat.messages.slice(-1)[0]?.time}</span>
-                      </div>
-                      <p className="text-xs text-gray-500 truncate">
-                        {chat.messages.slice(-1)[0]?.text}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+    <div className="p-4 bg-gray-50 min-h-screen flex flex-col max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="bg-white rounded-lg shadow-sm border p-4 mb-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Support Chat</h2>
+            <p className="text-gray-600">Get help from our support team</p>
           </div>
+          <div className="text-right">
+            <div
+              className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                connectionStatus === "Connected"
+                  ? "bg-green-100 text-green-800"
+                  : connectionStatus.includes("Reconnecting") || connectionStatus === "Connecting"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full mr-2 ${
+                  connectionStatus === "Connected"
+                    ? "bg-green-500"
+                    : connectionStatus.includes("Reconnecting") || connectionStatus === "Connecting"
+                    ? "bg-yellow-500"
+                    : "bg-red-500"
+                }`}
+              />
+              {connectionStatus}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">User ID: {userId}</div>
+          </div>
+        </div>
+      </div>
 
-          {/* Right Panel */}
-          <div className="flex-1 flex flex-col bg-white">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
-              <div>
-                <h2 className="text-lg font-semibold text-[#586330]">
-                  Chat with Support Team
-                </h2>
-                
-              </div>
-              <div className="flex items-center gap-2">
-                
-                <div className="w-10 h-10 rounded-full bg-[#586330]/10 text-[#586330] flex items-center justify-center ml-2">
-                  {chats[selectedChat].avatar}
-                </div>
-              </div>
-            </div> 
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
-              {activeMessages.map((message, index) => (
+      {/* Messages */}
+      <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+          {messages.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 text-6xl mb-4">Chat Bubble</div>
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">No messages yet</h3>
+              <p className="text-gray-500">Start a conversation with our support team!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map(m => (
                 <div
-                  key={index}
-                  className={`flex items-start gap-3 ${
-                    message.sender === "support" ? "flex-row-reverse" : ""
+                  key={m.id}
+                  className={`flex ${m.isCustomer ? "justify-end" : "justify-start"} ${
+                    m.isError ? "animate-pulse" : ""
                   }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      message.sender === "support"
-                        ? "bg-[#586330] text-white"
-                        : "bg-gray-200 text-gray-700"
-                    }`}
-                  >
-                    {message.avatar}
-                  </div>
-                  <div
-                    className={`flex flex-col ${
-                      message.sender === "support" ? "items-end" : "items-start"
+                    className={`max-w-xs lg:max-w-md xl:max-w-lg ${
+                      m.fromUserId === "system" ? "w-full text-center" : ""
                     }`}
                   >
                     <div
-                      className={`max-w-md px-4 py-3 rounded-2xl ${
-                        message.sender === "support"
-                          ? "bg-[#586330]/80 text-white rounded-tr-none"
-                          : "bg-white border border-gray-200 text-gray-800 rounded-tl-none"
+                      className={`rounded-2xl px-4 py-3 ${
+                        m.isError
+                          ? "bg-red-100 text-red-800 border border-red-200"
+                          : m.isCustomer
+                          ? "bg-blue-500 text-white rounded-br-none"
+                          : m.fromUserId === "system"
+                          ? "bg-yellow-100 text-yellow-800 text-center"
+                          : "bg-gray-200 text-gray-900 rounded-bl-none"
                       }`}
                     >
-                      <p className="text-sm">{message.text}</p>
+                      <div className="break-words">{m.msg}</div>
+                      {!m.isError && m.fromUserId !== "system" && (
+                        <div
+                          className={`text-xs mt-1 ${m.isCustomer ? "text-blue-100" : "text-gray-500"}`}
+                        >
+                          {formatTime(m.timestamp)}
+                        </div>
+                      )}
                     </div>
-                    <span className="text-xs text-gray-400 mt-1">
-                      {message.sender === "support" ? "Support" : chats[selectedChat].customer} •{" "}
-                      {message.time}
-                    </span>
+                    {m.status === "sending" && (
+                      <div className="text-xs text-gray-500 text-right mt-1">Sending...</div>
+                    )}
                   </div>
                 </div>
               ))}
+              <div ref={chatEndRef} />
             </div>
+          )}
+        </div>
 
-            <div className="p-6 border-t border-gray-200 bg-white">
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  placeholder="Type a message..."
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  className="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-emerald-400"
-                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                />
-                <button
-                  onClick={handleSendMessage}
-                  className="p-3 bg-[#586330]/80 hover:bg-[#586330] text-white rounded-lg transition"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
+        {/* Input */}
+        <div className="border-t bg-white p-4">
+          <div className="flex space-x-2">
+            <div className="flex-1">
+              <input
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Type your message here... (Enter to send)"
+                disabled={connectionStatus !== "Connected"}
+                maxLength={500}
+              />
+              <div className="text-xs text-gray-500 mt-1 flex justify-between">
+                <span>
+                  {connectionStatus === "Connected" ? "Connected to support" : "Connecting..."}
+                </span>
+                <span>{message.length}/500</span>
               </div>
             </div>
+            <button
+              onClick={sendMessage}
+              disabled={!message.trim() || connectionStatus !== "Connected"}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-semibold min-w-20"
+            >
+              Send
+            </button>
+          </div>
+          <div className="text-xs text-gray-500 mt-3">
+            Tip: Describe your issue clearly for faster support
           </div>
         </div>
-      </main>
+      </div>
+
+      {/* Footer */}
+      <div className="text-center text-gray-500 text-xs mt-4">
+        Support hours: 24/7 • Average response time: 5-10 minutes
+      </div>
     </div>
   );
 }
+
+export default CustomerChat;

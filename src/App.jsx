@@ -50,7 +50,7 @@ import Payments from './Pages/Vendor/Dashboard/Payments';
 // Support Team 
 import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
 import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
-import Helpcenter from './Pages/SupportTeam/Helpcenter.jsx';
+import Chatcenter from './Pages/SupportTeam/SupportChat.jsx';
 
 
 
@@ -104,7 +104,7 @@ function App() {
 
 
         {/* Support Team */}
-        <Route path="/support-helpcenter" element={<Helpcenter />} />
+        <Route path="/support-chatcenter" element={<Chatcenter />} />
         <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails />} />
         <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker />} />
 
