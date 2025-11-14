@@ -3,8 +3,7 @@ import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Search, RefreshCw, Download, Plus, Package, DollarSign, Calendar,
   CheckCircle, Clock, AlertCircle, XCircle, CreditCard, Mail, Phone,
-  Filter, TrendingUp, ArrowUpRight, ArrowDownRight, ChevronRight,
-  Moon, Sun, MoreVertical, MessageCircle, Users, BarChart3, ShoppingBag,
+  Filter, Moon, Sun, MoreVertical, MessageCircle, Users, BarChart3, ShoppingBag,
   Truck, ShieldCheck, MessageSquare, Star, Zap, Bell, Settings,
   ChevronLeft, ChevronDown, Upload, Eye, Edit, Trash2, Copy
 } from "lucide-react";
