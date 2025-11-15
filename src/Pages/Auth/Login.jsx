@@ -77,7 +77,7 @@ const Login = () => {
               navigate('/customer-register', { replace: true });
             }
           } else if (role === 'supportteam') {
-            navigate('/support-helpcenter', { replace: true });
+            navigate('/support-chatcenter', { replace: true });
           } else if (role === 'admin') {
             navigate('/admin', { replace: true });
           } else {

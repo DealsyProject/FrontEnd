@@ -74,9 +74,7 @@ function SupportChat() {
           }
         });
 
-        // ReceiveMessage handler
         conn.on("ReceiveMessage", (fromUserId, msg) => {
-          // push message into chatHistory for that user
           setChatHistory(prev => {
             const list = prev[fromUserId] ? [...prev[fromUserId]] : [];
             list.push({ fromUserId, msg, isSupport: false, timestamp: new Date() });
@@ -92,7 +90,6 @@ function SupportChat() {
         setConnection(conn);
         setConnectionStatus("Connected");
 
-        // initial fetch of all customers (server method)
         try {
           const all = await conn.invoke("GetAllCustomers");
           if (isMounted.current && Array.isArray(all)) {
@@ -113,25 +110,21 @@ function SupportChat() {
 
     return () => {
       isMounted.current = false;
-      // stop the exact connection created
+ 
       if (connRef.current) {
         connRef.current.stop().catch(() => {});
         connRef.current = null;
       }
     };
-  }, []); // run once
+  }, []); 
 
-  // --------------------------------------------------------------
-  // 2. Auto-scroll — keep this declared before any early return
-  // --------------------------------------------------------------
+
   const messages = selectedUser ? chatHistory[selectedUser] || [] : [];
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // --------------------------------------------------------------
-  // 3. Send message
-  // --------------------------------------------------------------
+
   const sendMessage = async () => {
     if (!connRef.current || !selectedUser || !message.trim()) return;
     try {
@@ -161,9 +154,6 @@ function SupportChat() {
     }
   };
 
-  // --------------------------------------------------------------
-  // 4. UI guard (now safe because all hooks are declared above)
-  // --------------------------------------------------------------
   if (!isAuthorized) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -172,12 +162,11 @@ function SupportChat() {
     );
   }
 
-  // --------------------------------------------------------------
-  // 5. Render
-  // --------------------------------------------------------------
+
   return (
     <div className="flex h-screen">
       {/* Customer list */}
+       
       <div className="w-1/4 border-r bg-gray-100 p-4 overflow-y-auto">
         <h3 className="font-bold mb-3 flex justify-between items-center">
           Customers ({customers.length})
@@ -254,4 +243,4 @@ function SupportChat() {
 }
 
 export default SupportChat;
-//sss
+//sss                              
