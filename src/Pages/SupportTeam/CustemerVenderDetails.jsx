@@ -286,9 +286,9 @@ export default function CustomerVendorDetails() {
                       <th className="p-4 text-left text-sm font-semibold text-gray-600">
                         Location
                       </th>
-                      <th className="p-4 text-left text-sm font-semibold text-gray-600">
+                      {/* <th className="p-4 text-left text-sm font-semibold text-gray-600">
                         Status
-                      </th>
+                      </th> */}
                       <th className="p-4 text-left text-sm font-semibold text-gray-600">
                         Actions
                       </th>
@@ -365,7 +365,7 @@ export default function CustomerVendorDetails() {
                             {row.location}
                           </div>
                         </td>
-                        <td className="p-4">
+                        {/* <td className="p-4">
                           {row.active ? (
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                               Active
@@ -375,7 +375,7 @@ export default function CustomerVendorDetails() {
                               Inactive
                             </span>
                           )}
-                        </td>
+                        </td> */}
                         <td className="p-4">
                           <div className="flex gap-2">
                             <button
