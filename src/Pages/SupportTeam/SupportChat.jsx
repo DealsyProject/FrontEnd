@@ -166,7 +166,7 @@ function SupportChat() {
   return (
     <div className="flex h-screen">
       {/* Customer list */}
-       
+        {/* <NavbarSupport /> */}
       <div className="w-1/4 border-r bg-gray-100 p-4 overflow-y-auto">
         <h3 className="font-bold mb-3 flex justify-between items-center">
           Customers ({customers.length})
@@ -183,7 +183,7 @@ function SupportChat() {
             onClick={() => setSelectedUser(id)}
             className={`p-3 cursor-pointer rounded mb-2 ${id === selectedUser ? "bg-green-500 text-white" : "bg-white hover:bg-gray-200 border"}`}
           >
-            <div className="font-medium">Customer ID: {id}</div>
+            <div className="font-medium">Customer  {i.fullName}</div>
             <div className="text-sm text-gray-600">
               {chatHistory[id]?.length > 0 ? `${chatHistory[id].length} messages` : "No messages"}
             </div>
