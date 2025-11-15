@@ -23,52 +23,56 @@ export default function CustomerCart() {
     }
   };
 
-  const increaseQty = async (cartItemId, currentQty) => {
-    try {
-      // Update quantity by adding a new item with increased quantity
-      const productId = cart.find(item => item.id === cartItemId)?.productId;
-      if (!productId) return;
+  // In the increaseQty and decreaseQty functions, ensure you're using the correct properties:
 
-      await axiosInstance.post(`/Cart`, {
-        productId: productId,
-        quantity: currentQty + 1
-      });
-      
-      // Refresh cart to get updated data
-      fetchCart();
-    } catch (error) {
-      console.error("❌ Error increasing quantity:", error);
+const increaseQty = async (cartItemId, currentQty) => {
+  try {
+    // CORRECTED: Find the cart item and use ProductId
+    const cartItem = cart.find(item => item.Id === cartItemId);
+    if (!cartItem) return;
+
+    const productId = cartItem.ProductId;
+    if (!productId) return;
+
+    await axiosInstance.post(`/Cart`, {
+      productId: productId,
+      quantity: currentQty + 1
+    });
+    
+    fetchCart(); // Refresh cart
+  } catch (error) {
+    console.error("❌ Error increasing quantity:", error);
+  }
+};
+
+// Similar fix for decreaseQty
+const decreaseQty = async (cartItemId, currentQty) => {
+  try {
+    const cartItem = cart.find(item => item.Id === cartItemId);
+    if (!cartItem) return;
+
+    if (currentQty <= 1) {
+      await removeItem(cartItemId);
+      return;
     }
-  };
 
-  const decreaseQty = async (cartItemId, currentQty) => {
-    try {
-      if (currentQty <= 1) {
-        // If quantity is 1, remove the item entirely
-        await removeItem(cartItemId);
-        return;
-      }
+    const productId = cartItem.ProductId;
+    if (!productId) return;
 
-      // Update quantity by adding a new item with decreased quantity
-      const productId = cart.find(item => item.id === cartItemId)?.productId;
-      if (!productId) return;
-
-      await axiosInstance.post(`/Cart`, {
-        productId: productId,
-        quantity: currentQty - 1
-      });
-      
-      // Refresh cart to get updated data
-      fetchCart();
-    } catch (error) {
-      console.error("❌ Error decreasing quantity:", error);
-    }
-  };
-
+    await axiosInstance.post(`/Cart`, {
+      productId: productId,
+      quantity: currentQty - 1
+    });
+    
+    fetchCart(); // Refresh cart
+  } catch (error) {
+    console.error("❌ Error decreasing quantity:", error);
+  }
+};
   const removeItem = async (cartItemId) => {
     try {
       await axiosInstance.delete(`/Cart/${cartItemId}`);
-      setCart((prev) => prev.filter((i) => i.id !== cartItemId));
+      setCart((prev) => prev.filter((i) => i.Id !== cartItemId)); // Use Id instead of id
     } catch (error) {
       console.error("❌ Error removing item:", error);
     }
@@ -83,7 +87,7 @@ export default function CustomerCart() {
     }
   };
 
-  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0); // Use Price and Quantity
   const shippingFee = 49;
   const finalTotal = total + shippingFee;
 
@@ -130,38 +134,39 @@ export default function CustomerCart() {
                 </div>
               ) : (
                 cart.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-4 shadow-sm">
+                  <div key={item.Id} className="flex items-center justify-between bg-gray-50 rounded-lg p-4 shadow-sm"> {/* Use Id */}
                     <div className="flex items-center gap-4">
+                      {/* CORRECTED: Use PascalCase properties */}
                       <img 
-                        src={item.product?.images?.[0]?.imageData || "https://via.placeholder.com/400x300?text=No+Image"} 
-                        alt={item.productName} 
+                        src={item.Product?.Images?.[0]?.ImageData || "https://via.placeholder.com/400x300?text=No+Image"} 
+                        alt={item.ProductName} 
                         className="w-16 h-16 object-cover rounded-md" 
                       />
                       <div>
-                        <h3 className="font-semibold text-gray-800">{item.product?.productName || item.productName}</h3>
-                        <p className="text-sm text-gray-500">{item.product?.productCategory || "General"}</p>
+                        <h3 className="font-semibold text-gray-800">{item.Product?.ProductName || item.ProductName}</h3>
+                        <p className="text-sm text-gray-500">{item.Product?.ProductCategory || "General"}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-6">
                       <div className="flex items-center border rounded-md">
                         <button 
-                          onClick={() => decreaseQty(item.id, item.quantity)} 
+                          onClick={() => decreaseQty(item.Id, item.Quantity)} 
                           className="px-2 py-1 hover:bg-gray-200"
                         >
-                          −
+                         
                         </button>
-                        <span className="px-3">{item.quantity}</span>
+                        <span className="px-3">{item.Quantity}</span> 
                         <button 
-                          onClick={() => increaseQty(item.id, item.quantity)} 
+                          onClick={() => increaseQty(item.Id, item.Quantity)} 
                           className="px-2 py-1 hover:bg-gray-200"
                         >
                           +
                         </button>
                       </div>
-                      <p className="text-gray-800 font-medium">₹{item.price}</p>
+                      <p className="text-gray-800 font-medium">₹{item.Price}</p> 
                       <button 
-                        onClick={() => removeItem(item.id)} 
+                        onClick={() => removeItem(item.Id)} 
                         className="text-gray-400 hover:text-red-500"
                       >
                         <FaTrashAlt />
