@@ -163,84 +163,141 @@ function SupportChat() {
   }
 
 
-  return (
-    <div className="flex h-screen">
-      {/* Customer list */}
-        {/* <NavbarSupport /> */}
-      <div className="w-1/4 border-r bg-gray-100 p-4 overflow-y-auto">
-        <h3 className="font-bold mb-3 flex justify-between items-center">
-          Customers ({customers.length})
-          <span className={`ml-2 text-sm ${connectionStatus === "Connected" ? "text-green-600" : "text-red-600"}`}>
-            {connectionStatus}
-          </span>
-        </h3>
+return (
+  <div className="flex h-screen bg-[#f0f2f5]">
 
-        {customers.length === 0 && <p className="text-gray-500 text-sm italic">No customers found</p>}
+    {/* LEFT — User List */}
+    <div className="w-80 bg-white border-r shadow-md flex flex-col">
+
+      {/* Header */}
+      <div className="px-4 py-4 bg-[#0084ff] text-white flex items-center justify-between shadow">
+        <h2 className="text-lg font-semibold">Support Panel</h2>
+        <span className="text-sm opacity-90">
+          {connectionStatus === "Connected" ? "🟢 Online" : "🔴 Offline"}
+        </span>
+      </div>
+
+      {/* Customer List */}
+      <div className="flex-1 overflow-y-auto p-3">
+        {customers.length === 0 && (
+          <p className="text-gray-500 text-center mt-10 text-sm">No customers yet</p>
+        )}
 
         {customers.map((id, i) => (
           <div
-            key={`${id}-${i}`}
+            key={id}
             onClick={() => setSelectedUser(id)}
-            className={`p-3 cursor-pointer rounded mb-2 ${id === selectedUser ? "bg-green-500 text-white" : "bg-white hover:bg-gray-200 border"}`}
+            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer mb-2 transition ${
+              selectedUser === id
+                ? "bg-[#e7f3ff]"
+                : "hover:bg-gray-100"
+            }`}
           >
-            <div className="font-medium">Customer  {i.fullName}</div>
-            <div className="text-sm text-gray-600">
-              {chatHistory[id]?.length > 0 ? `${chatHistory[id].length} messages` : "No messages"}
+            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold">
+              {id.toString().substring(0, 2)}
+            </div>
+            <div>
+              <div className="font-semibold">Customer {i + 1}</div>
+              <div className="text-xs text-gray-500">
+                {chatHistory[id]?.length || 0} messages
+              </div>
             </div>
           </div>
         ))}
       </div>
-
-      {/* Chat area */}
-      <div className="flex-1 flex flex-col p-4">
-        {selectedUser ? (
-          <>
-            <div className="border-b pb-2 mb-3">
-              <h3 className="font-semibold">Chat with Customer: {selectedUser}</h3>
-            </div>
-
-            <div className="flex-1 overflow-y-auto border rounded-lg p-3 bg-white">
-              {messages.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No messages yet. Start a conversation!</p>
-              ) : (
-                messages.map((m, i) => (
-                  <div key={`${selectedUser}-${i}`} className={`my-2 flex ${m.isSupport ? "justify-end" : "justify-start"}`}>
-                    <div className={`inline-block px-4 py-2 rounded-lg max-w-md break-words ${m.isSupport ? "bg-green-500 text-white" : "bg-blue-100 text-gray-900"}`}>
-                      {m.msg}
-                      {m.error && <div className="text-xs text-red-600 mt-1">Failed to deliver</div>}
-                    </div>
-                  </div>
-                ))
-              )}
-              <div ref={chatEndRef} />
-            </div>
-
-            <div className="flex mt-3">
-              <input
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && sendMessage()}
-                className="flex-1 border rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="Type your message..."
-              />
-              <button
-                onClick={sendMessage}
-                disabled={!message.trim()}
-                className="bg-green-600 text-white px-6 rounded-r-lg hover:bg-green-700 disabled:bg-gray-400"
-              >
-                Send
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-gray-500 text-lg">Select a customer to start chatting</p>
-          </div>
-        )}
-      </div>
     </div>
-  );
+
+    {/* RIGHT — Chat Area */}
+    <div className="flex-1 flex flex-col">
+
+      {selectedUser ? (
+        <>
+          {/* Chat Header */}
+          <div className="px-5 py-4 bg-white shadow flex items-center gap-3 border-b">
+            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold">
+              {selectedUser.toString().substring(0, 2)}
+            </div>
+            <div>
+              <h3 className="font-medium">Customer {selectedUser}</h3>
+              <p className="text-xs text-gray-500">Active now</p>
+            </div>
+          </div>
+
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-[#eef1f4]">
+
+            {messages.length === 0 ? (
+              <p className="text-center text-gray-500 mt-10">
+                No messages yet. Say hello 👋
+              </p>
+            ) : (
+              messages.map((m, index) => (
+                <div
+                  key={index}
+                  className={`flex items-end ${
+                    m.isSupport ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {!m.isSupport && (
+                    <div className="w-9 h-9 rounded-full bg-gray-300 mr-2"></div>
+                  )}
+
+                  <div
+                    className={`max-w-xs px-4 py-2 rounded-2xl text-sm shadow ${
+                      m.isSupport
+                        ? "bg-[#0084ff] text-white rounded-br-none"
+                        : "bg-white text-gray-800 rounded-bl-none"
+                    }`}
+                  >
+                    {m.msg}
+                    {m.error && (
+                      <p className="text-xs text-red-600 mt-1">Failed</p>
+                    )}
+                  </div>
+
+                  {m.isSupport && (
+                    <div className="w-9 h-9 rounded-full bg-[#0084ff] ml-2 flex items-center justify-center text-white font-bold text-xs">
+                      S
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+
+            <div ref={chatEndRef}></div>
+          </div>
+
+          {/* Input Box */}
+          <div className="p-4 bg-white border-t flex items-center gap-3">
+            <input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              className="flex-1 px-4 py-3 rounded-full border bg-gray-50 shadow-sm focus:ring-2 focus:ring-[#0084ff]"
+              placeholder="Type a message..."
+            />
+
+            <button
+              onClick={sendMessage}
+              disabled={!message.trim()}
+              className="bg-[#0084ff] text-white px-6 py-3 rounded-full shadow hover:bg-[#006fe0] disabled:bg-gray-400"
+            >
+              Send
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 flex items-center justify-center text-gray-500 text-lg">
+          Select a customer to start messaging 💬
+        </div>
+      )}
+
+    </div>
+  </div>
+);
+
+
 }
 
 export default SupportChat;
-//sss                              
+                             

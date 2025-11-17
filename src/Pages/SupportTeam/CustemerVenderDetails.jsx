@@ -42,7 +42,7 @@ export default function CustomerVendorDetails() {
           : u.customerDetails
           ? u.customerDetails.address
           : "N/A",
-         active: !u.isBlocked, // 🔥 NOW IT SHOWS ACTIVE / INACTIVE CORRECTLY
+        active: !u.isBlocked, // 🔥 NOW IT SHOWS ACTIVE / INACTIVE CORRECTLY
         avatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(
           u.fullName || "User"
         )}`,
@@ -389,35 +389,66 @@ export default function CustomerVendorDetails() {
                             <button onClick={() => setModalData(row)}>
                               <Eye size={12} /> View
                             </button>
-
                             {modalData && (
-                              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                                <div className="bg-white rounded-xl p-6 max-w-md w-full">
-                                  <h2 className="text-xl font-bold mb-4">
-                                    {modalData.name} Details
-                                  </h2>
-                                  <p>
-                                    <strong>Role:</strong> {modalData.role}
-                                  </p>
-                                  <p>
-                                    <strong>Team:</strong> {modalData.team}
-                                  </p>
-                                  <p>
-                                    <strong>Email:</strong> {modalData.email}
-                                  </p>
-                                  <p>
-                                    <strong>Phone:</strong> {modalData.phone}
-                                  </p>
-                                  <p>
-                                    <strong>Location:</strong>{" "}
-                                    {modalData.location}
-                                  </p>
+                              <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn">
+                                <div className="relative bg-white/80 backdrop-blur-xl shadow-2xl rounded-3xl w-full max-w-md p-6 animate-scaleIn border border-white/40">
+                                  {/* Close Button */}
                                   <button
                                     onClick={() => setModalData(null)}
-                                    className="mt-4 px-4 py-2 bg-[#586330] text-white rounded-lg"
+                                    className="absolute top-4 right-4 text-gray-700 hover:text-black transition text-2xl"
                                   >
-                                    Close
+                                    ✕
                                   </button>
+
+                                  {/* Avatar + Name Section */}
+                                  <div className="flex flex-col items-center text-center">
+                                    <img
+                                      src={modalData.avatar}
+                                      className="w-24 h-24 rounded-full shadow-md border-4 border-white"
+                                      alt="profile"
+                                    />
+                                    <h2 className="text-2xl font-bold mt-4">
+                                      {modalData.name}
+                                    </h2>
+                                    <p className="text-gray-600">
+                                      {modalData.role}
+                                    </p>
+                                  </div>
+
+                                  {/* Details */}
+                                  <div className="mt-6 space-y-4">
+                                    <div className="flex justify-between bg-white/60 p-3 rounded-xl shadow-sm">
+                                      <span className="font-medium">Team</span>
+                                      <span>{modalData.team}</span>
+                                    </div>
+
+                                    <div className="flex justify-between bg-white/60 p-3 rounded-xl shadow-sm">
+                                      <span className="font-medium">Email</span>
+                                      <span>{modalData.email}</span>
+                                    </div>
+
+                                    <div className="flex justify-between bg-white/60 p-3 rounded-xl shadow-sm">
+                                      <span className="font-medium">Phone</span>
+                                      <span>{modalData.phone}</span>
+                                    </div>
+
+                                    <div className="flex justify-between bg-white/60 p-3 rounded-xl shadow-sm">
+                                      <span className="font-medium">
+                                        Location
+                                      </span>
+                                      <span>{modalData.location}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Footer */}
+                                  <div className="mt-6 flex justify-center">
+                                    <button
+                                      onClick={() => setModalData(null)}
+                                      className="px-6 py-2.5 rounded-full bg-[#586330] text-white shadow-md hover:bg-[#485327] transition"
+                                    >
+                                      Close
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             )}
