@@ -16,6 +16,7 @@ function SupportChat() {
   const connRef = useRef(null); // stable ref to current HubConnection
   const isMounted = useRef(true);
 
+
   // --------------------------------------------------------------
   // 1. Connect + auth
   // --------------------------------------------------------------
