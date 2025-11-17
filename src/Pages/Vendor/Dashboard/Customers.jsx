@@ -13,7 +13,6 @@ const Customers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerStats, setCustomerStats] = useState(null);
   
-  // Add logout function
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
@@ -23,21 +22,21 @@ const Customers = () => {
 
   const activeView = 'customers';
 
-  // Fetch customers from API
+  // Fetch customers who ordered vendor's products
   useEffect(() => {
-    fetchCustomers();
+    fetchVendorCustomers();
   }, []);
 
-  const fetchCustomers = async () => {
+  const fetchVendorCustomers = async () => {
     try {
       setLoading(true);
-      // CORRECTED: Use the correct UserManagement endpoint
-      const response = await axiosInstance.get('/UserManagement/customers');
-      console.log('API Response:', response.data); // Debug log
+      // CORRECTED: Fetch only customers who ordered THIS vendor's products
+      const response = await axiosInstance.get('/Vendor/customers-with-orders');
+      console.log('Vendor Customers API Response:', response.data);
       
-      // CORRECTED: Map the API response to match your component's expected structure
+      // Map the API response
       const customersData = response.data.Customers?.map(customer => ({
-        id: customer.CustomerId, // Map CustomerId to id
+        id: customer.CustomerId,
         customerId: customer.CustomerId,
         userId: customer.UserId,
         fullName: customer.FullName,
@@ -47,17 +46,20 @@ const Customers = () => {
         pincode: customer.Pincode,
         role: customer.Role,
         isBlocked: customer.IsBlocked,
-        joinDate: customer.CreatedOn, // Map CreatedOn to joinDate
+        joinDate: customer.CreatedOn,
         isRegistrationComplete: customer.IsRegistrationComplete,
-        // Initialize empty arrays for orders, invoices, payments
-        orders: [],
-        invoices: [],
-        payments: []
+        // Include order statistics from vendor's products
+        totalOrders: customer.TotalOrders || 0,
+        totalSpent: customer.TotalSpent || 0,
+        lastOrderDate: customer.LastOrderDate,
+        orders: customer.Orders || [],
+        invoices: customer.Invoices || [],
+        payments: customer.Payments || []
       })) || [];
       
       setCustomers(customersData);
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      console.error('Error fetching vendor customers:', error);
       toast.error('Failed to load customers');
       setCustomers([]);
     } finally {
@@ -65,15 +67,14 @@ const Customers = () => {
     }
   };
 
-  // Fetch customer details
+  // Fetch customer details with vendor-specific orders
   const fetchCustomerDetails = async (customerId) => {
     try {
-      // CORRECTED: Use the correct endpoint for customer details
-      const response = await axiosInstance.get(`/UserManagement/customers/${customerId}`);
-      console.log('Customer details response:', response.data); // Debug log
+      // CORRECTED: Fetch customer details with only THIS vendor's orders
+      const response = await axiosInstance.get(`/Vendor/customers/${customerId}/details`);
+      console.log('Customer details response:', response.data);
       
       const customerData = response.data;
-      // Map the API response to match your component's expected structure
       const mappedCustomer = {
         id: customerData.CustomerId,
         customerId: customerData.CustomerId,
@@ -87,71 +88,64 @@ const Customers = () => {
         isBlocked: customerData.IsBlocked,
         joinDate: customerData.CreatedOn,
         isRegistrationComplete: customerData.IsRegistrationComplete,
-        // Initialize empty arrays since your API might not return these
-        orders: [],
-        invoices: [],
-        payments: []
+        // Include vendor-specific order data
+        orders: customerData.Orders || [],
+        invoices: customerData.Invoices || [],
+        payments: customerData.Payments || []
       };
       
       setSelectedCustomer(mappedCustomer);
       
-      // Fetch customer statistics if endpoint exists
-      try {
-        // NOTE: You'll need to create this endpoint in your backend
-        // For now, we'll create mock stats
-        const mockStats = {
-          totalOrders: 0,
-          completedOrders: 0,
-          pendingOrders: 0,
-          totalSpent: 0,
-          averageOrderValue: 0
-        };
-        setCustomerStats(mockStats);
-        
-        // Uncomment when you have the actual endpoint:
-        // const statsResponse = await axiosInstance.get(`/UserManagement/customers/${customerId}/statistics`);
-        // setCustomerStats(statsResponse.data);
-      } catch (statsError) {
-        console.error('Error fetching customer statistics:', statsError);
-        // Create mock stats for demo
-        const mockStats = {
-          totalOrders: 0,
-          completedOrders: 0,
-          pendingOrders: 0,
-          totalSpent: 0,
-          averageOrderValue: 0
-        };
-        setCustomerStats(mockStats);
-      }
+      // Calculate statistics from vendor-specific orders
+      const stats = {
+        totalOrders: customerData.Orders?.length || 0,
+        completedOrders: customerData.Orders?.filter(o => o.Status === 'Completed').length || 0,
+        pendingOrders: customerData.Orders?.filter(o => o.Status === 'Pending' || o.Status === 'Processing').length || 0,
+        totalSpent: customerData.Orders?.reduce((sum, order) => sum + (order.TotalAmount || 0), 0) || 0,
+        averageOrderValue: customerData.Orders?.length > 0 
+          ? customerData.Orders.reduce((sum, order) => sum + (order.TotalAmount || 0), 0) / customerData.Orders.length 
+          : 0
+      };
+      setCustomerStats(stats);
+      
     } catch (error) {
       console.error('Error fetching customer details:', error);
       toast.error('Failed to load customer details');
     }
   };
 
-  // Search customers
+  // Search customers (only among those who ordered vendor's products)
   const searchCustomers = async () => {
     if (!searchTerm.trim()) {
-      fetchCustomers();
+      fetchVendorCustomers();
       return;
     }
 
     try {
       setLoading(true);
-      // CORRECTED: Use local filtering instead of API search for now
-      // Since your backend might not have search implemented yet
-      const filtered = customers.filter(customer =>
-        customer.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.phoneNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.pincode?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setCustomers(filtered);
+      // CORRECTED: Search only within vendor's customers
+      const response = await axiosInstance.get(`/Vendor/customers-with-orders/search?searchTerm=${encodeURIComponent(searchTerm)}`);
       
-      // Uncomment when you have search endpoint:
-      // const response = await axiosInstance.get(`/UserManagement/customers/search?searchTerm=${encodeURIComponent(searchTerm)}`);
-      // setCustomers(response.data.Customers || []);
+      const customersData = response.data.Customers?.map(customer => ({
+        id: customer.CustomerId,
+        customerId: customer.CustomerId,
+        userId: customer.UserId,
+        fullName: customer.FullName,
+        email: customer.Email,
+        phoneNumber: customer.PhoneNumber,
+        address: customer.Address,
+        pincode: customer.Pincode,
+        role: customer.Role,
+        isBlocked: customer.IsBlocked,
+        joinDate: customer.CreatedOn,
+        isRegistrationComplete: customer.IsRegistrationComplete,
+        totalOrders: customer.TotalOrders || 0,
+        totalSpent: customer.TotalSpent || 0,
+        lastOrderDate: customer.LastOrderDate,
+        orders: customer.Orders || []
+      })) || [];
+      
+      setCustomers(customersData);
     } catch (error) {
       console.error('Error searching customers:', error);
       toast.error('Failed to search customers');
@@ -160,14 +154,12 @@ const Customers = () => {
     }
   };
 
-  // Handle customer selection
   const handleCustomerSelect = async (customer) => {
-    setSelectedCustomer(null); // Clear previous selection
-    setCustomerStats(null); // Clear previous stats
-    await fetchCustomerDetails(customer.customerId); // Use customerId instead of id
+    setSelectedCustomer(null);
+    setCustomerStats(null);
+    await fetchCustomerDetails(customer.customerId);
   };
 
-  // Render star rating
   const renderRating = (rating) => {
     return (
       <div className="flex items-center space-x-1">
@@ -186,7 +178,6 @@ const Customers = () => {
     );
   };
 
-  // Format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -195,7 +186,6 @@ const Customers = () => {
     });
   };
 
-  // Format currency
   const formatCurrency = (amount) => {
     return `₹${amount?.toLocaleString('en-IN') || '0'}`;
   };
@@ -209,27 +199,23 @@ const Customers = () => {
     customer.pincode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Handle search input change
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
     
-    // If search term is empty, reset to all products
     if (!value.trim()) {
-      fetchCustomers();
+      fetchVendorCustomers();
     }
   };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar */}
       <Sidebar handleLogout={handleLogout} activeView={activeView} />
 
-      {/* Main Content */}
       <div className="flex-1 p-6 text-black">
         <header className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Customers</h1>
-          <p className="text-gray-600 mt-2">Manage and view customer information</p>
+          <h1 className="text-3xl font-bold text-gray-800">My Customers</h1>
+          <p className="text-gray-600 mt-2">Customers who ordered your products</p>
         </header>
 
         {/* Search Bar */}
@@ -237,7 +223,7 @@ const Customers = () => {
           <div className="flex gap-4">
             <input
               type="text"
-              placeholder="Search customers by name, email, phone, address, or pincode..."
+              placeholder="Search your customers by name, email, phone, address, or pincode..."
               value={searchTerm}
               onChange={handleSearchChange}
               onKeyPress={(e) => e.key === 'Enter' && searchCustomers()}
@@ -248,12 +234,6 @@ const Customers = () => {
               className="px-6 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/80 transition font-medium"
             >
               Search
-            </button>
-            <button
-              onClick={fetchCustomers}
-              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium"
-            >
-              Reset
             </button>
           </div>
         </div>
@@ -306,9 +286,14 @@ const Customers = () => {
                     <div className="mt-2 text-xs text-gray-600">
                       <p>{customer.address}, {customer.pincode}</p>
                     </div>
-                    {customer.isRegistrationComplete && (
-                      <div className="mt-1 text-xs text-green-600">
-                        ✓ Registration Complete
+                    {customer.totalOrders > 0 && (
+                      <div className="mt-2 flex gap-2 text-xs">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {customer.totalOrders} orders
+                        </span>
+                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                          {formatCurrency(customer.totalSpent)}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -321,7 +306,6 @@ const Customers = () => {
           <div className="lg:col-span-2">
             {selectedCustomer ? (
               <div className="bg-white rounded-xl shadow-md p-6">
-                {/* Customer Header with Stats */}
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex-1">
                     <h2 className="text-2xl font-bold text-gray-800">{selectedCustomer.fullName}</h2>
@@ -341,26 +325,20 @@ const Customers = () => {
                       }`}>
                         {selectedCustomer.isBlocked ? 'Account Blocked' : 'Account Active'}
                       </span>
-                      {selectedCustomer.isRegistrationComplete && (
-                        <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                          Registration Complete
-                        </span>
-                      )}
                     </div>
                   </div>
                   <div className="text-right">
                     <span className="bg-[#586330]/20 text-[#586330]/80 px-3 py-1 rounded-full text-sm font-medium">
                       Customer ID: {selectedCustomer.customerId}
                     </span>
-                   
                   </div>
                 </div>
 
-                {/* Customer Statistics */}
+                {/* Customer Statistics (Vendor-specific) */}
                 {customerStats && (
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Customer Statistics</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Order Statistics (Your Products)</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                       <div className="bg-blue-50 p-3 rounded-lg text-center">
                         <div className="text-lg font-bold text-blue-600">{customerStats.totalOrders}</div>
                         <div className="text-xs text-blue-800">Total Orders</div>
@@ -374,53 +352,73 @@ const Customers = () => {
                         <div className="text-xs text-yellow-800">Pending</div>
                       </div>
                       <div className="bg-purple-50 p-3 rounded-lg text-center">
-                        <div className="text-lg font-bold text-purple-600">{formatCurrency(customerStats.averageOrderValue)}</div>
-                        <div className="text-xs text-purple-800">Avg Order</div>
+                        <div className="text-lg font-bold text-purple-600">{formatCurrency(customerStats.totalSpent)}</div>
+                        <div className="text-xs text-purple-800">Total Spent</div>
+                      </div>
+                      <div className="bg-indigo-50 p-3 rounded-lg text-center">
+                        <div className="text-lg font-bold text-indigo-600">{formatCurrency(customerStats.averageOrderValue)}</div>
+                        <div className="text-xs text-indigo-800">Avg Order</div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                
-
-                {/* Placeholder for Future Features */}
-                <div className="mt-6 text-center py-8 bg-gray-50 rounded-lg">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl">🚀</span>
+                {/* Order History */}
+                {selectedCustomer.orders && selectedCustomer.orders.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Order History</h3>
+                    <div className="space-y-3">
+                      {selectedCustomer.orders.map((order) => (
+                        <div key={order.OrderId} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-semibold">Order #{order.OrderId}</p>
+                              <p className="text-sm text-gray-600">{formatDate(order.OrderDate)}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-[#586330]">{formatCurrency(order.TotalAmount)}</p>
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                order.Status === 'Completed' ? 'bg-green-100 text-green-800' :
+                                order.Status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {order.Status}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">More Features Coming Soon</h3>
-                  <p className="text-gray-500">
-                    Order history, reviews, and analytics will be available in future updates
-                  </p>
-                </div>
+                )}
+
+                {(!selectedCustomer.orders || selectedCustomer.orders.length === 0) && (
+                  <div className="mt-6 text-center py-8 bg-gray-50 rounded-lg">
+                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">📦</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">No Orders Yet</h3>
+                    <p className="text-gray-500">
+                      This customer hasn't placed any orders for your products
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
-              // Empty State
               <div className="bg-white rounded-xl shadow-md p-12 text-center">
                 <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-3xl">👥</span>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-600 mb-2">Select a Customer</h3>
                 <p className="text-gray-500">
-                  Choose a customer from the list to view their details
+                  Choose a customer from the list to view their order details
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Empty State for No Customers */}
-        {!loading && filteredCustomers.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-xl shadow-md">
-            <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">👥</span>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">No customers found</h3>
-            <p className="text-gray-500">
-              {searchTerm ? 'Try adjusting your search terms' : 'No customers in the system yet'}
-            </p>
-          </div>
-        )}
+        
 
         <ToastContainer position="top-right" autoClose={3000} />
       </div>

@@ -393,13 +393,7 @@ const Products = () => {
     );
   };
 
-  const handleResetFilters = () => {
-    setSearchTerm('');
-    setActiveCategory('all');
-    setVisibleProducts(6);
-    fetchProducts();
-  };
-
+ 
   const ProductCard = ({ product }) => {
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     
@@ -595,12 +589,7 @@ const Products = () => {
             >
               Search
             </button>
-            <button
-              onClick={handleResetFilters}
-              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium"
-            >
-              Reset
-            </button>
+          
           </div>
         </div>
 
