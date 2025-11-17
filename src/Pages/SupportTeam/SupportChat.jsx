@@ -234,7 +234,7 @@ function SupportChat() {
                   {chatHistory[customer.userId]?.length || 0} messages
                 </div>
               </div>
-            </div>
+            </div>//
           ))}
         </div>
       </div>
