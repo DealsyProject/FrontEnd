@@ -42,7 +42,7 @@ export default function CustomerVendorDetails() {
           : u.customerDetails
           ? u.customerDetails.address
           : "N/A",
-        active: true,
+         active: !u.isBlocked, // 🔥 NOW IT SHOWS ACTIVE / INACTIVE CORRECTLY
         avatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(
           u.fullName || "User"
         )}`,
@@ -365,7 +365,7 @@ export default function CustomerVendorDetails() {
                             {row.location}
                           </div>
                         </td>
-                        {/* <td className="p-4">
+                        <td className="p-4">
                           {row.active ? (
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                               Active
@@ -375,7 +375,7 @@ export default function CustomerVendorDetails() {
                               Inactive
                             </span>
                           )}
-                        </td> */}
+                        </td>
                         <td className="p-4">
                           <div className="flex gap-2">
                             <button
