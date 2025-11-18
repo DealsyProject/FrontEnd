@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import * as signalR from "@microsoft/signalr";
 import { jwtDecode } from "jwt-decode";
-
+import { Canvas } from '@react-three/fiber'
+import { OrbitControls, Float, Text3D, Center } from '@react-three/drei'
 function SupportChat() {
-  // --- hooks (ALL hooks must be here, before any return) ---
+  // --- hooks ---
   const [connection, setConnection] = useState(null);
-  const [customers, setCustomers] = useState([]);
+  const [customers, setCustomers] = useState([]); // Now will store objects with id, fullName, email
   const [selectedUser, setSelectedUser] = useState(null);
   const [chatHistory, setChatHistory] = useState({});
   const [message, setMessage] = useState("");
@@ -13,13 +14,10 @@ function SupportChat() {
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   const chatEndRef = useRef(null);
-  const connRef = useRef(null); // stable ref to current HubConnection
+  const connRef = useRef(null);
   const isMounted = useRef(true);
 
 
-  // --------------------------------------------------------------
-  // 1. Connect + auth
-  // --------------------------------------------------------------
   useEffect(() => {
     isMounted.current = true;
     const startConnection = async () => {
@@ -27,7 +25,6 @@ function SupportChat() {
       try {
         const token = localStorage.getItem("authToken");
         if (!token) {
-          // don't early-return the component (hooks must remain consistent)
           setConnectionStatus("No token");
           console.warn("Please login first: no authToken in localStorage.");
           return;
@@ -56,7 +53,6 @@ function SupportChat() {
           .configureLogging(signalR.LogLevel.Information)
           .build();
 
-        // store ref immediately so cleanup has the correct instance
         connRef.current = conn;
 
         conn.onreconnecting(err => {
@@ -82,7 +78,18 @@ function SupportChat() {
             return { ...prev, [fromUserId]: list };
           });
 
-          setCustomers(prev => (prev.includes(fromUserId) ? prev : [...prev, fromUserId]));
+          // Check if we already have this customer in our list
+          setCustomers(prev => {
+            const exists = prev.some(customer => customer.userId === fromUserId);
+            if (exists) return prev;
+            
+            // If not, add a placeholder customer object
+            return [...prev, { 
+              userId: fromUserId, 
+              fullName: `Customer ${fromUserId.substring(0, 8)}...`,
+              email: '' 
+            }];
+          });
         });
 
         await conn.start();
@@ -92,9 +99,19 @@ function SupportChat() {
         setConnectionStatus("Connected");
 
         try {
-          const all = await conn.invoke("GetAllCustomers");
-          if (isMounted.current && Array.isArray(all)) {
-            setCustomers(prev => [...new Set([...prev, ...all])]);
+          // This will now return an array of customer objects with names
+          const allCustomers = await conn.invoke("GetAllCustomers");
+          if (isMounted.current && Array.isArray(allCustomers)) {
+            setCustomers(prev => {
+              // Merge existing customers with new ones, avoiding duplicates
+              const merged = [...prev];
+              allCustomers.forEach(newCustomer => {
+                if (!merged.some(existing => existing.userId === newCustomer.userId)) {
+                  merged.push(newCustomer);
+                }
+              });
+              return merged;
+            });
           }
         } catch (invokeErr) {
           console.warn("GetAllCustomers failed", invokeErr);
@@ -111,25 +128,21 @@ function SupportChat() {
 
     return () => {
       isMounted.current = false;
- 
       if (connRef.current) {
         connRef.current.stop().catch(() => {});
         connRef.current = null;
       }
     };
-  }, []); 
-
+  }, []);
 
   const messages = selectedUser ? chatHistory[selectedUser] || [] : [];
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-
   const sendMessage = async () => {
     if (!connRef.current || !selectedUser || !message.trim()) return;
     try {
-      // optimistic UI push
       setChatHistory(prev => ({
         ...prev,
         [selectedUser]: [
@@ -142,7 +155,6 @@ function SupportChat() {
       await connRef.current.invoke("SendPrivateMessage", selectedUser, txt);
     } catch (e) {
       console.error("Failed to send:", e);
-      // mark the last message as failed (simple fallback)
       setChatHistory(prev => {
         const list = [...(prev[selectedUser] || [])];
         if (list.length) {
@@ -155,87 +167,186 @@ function SupportChat() {
     }
   };
 
-  if (!isAuthorized) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-red-600 text-xl">Access Denied. Support Team Only.</div>
-      </div>
-    );
-  }
+  // Helper function to get display name for a user
+  const getDisplayName = (customer) => {
+    if (customer.fullName && customer.fullName !== "Unknown Customer") {
+      return customer.fullName;
+    }
+    return `Customer ${customer.userId.substring(0, 8)}...`;
+  };
+
+  // Helper function to get initials for avatar
+  const getInitials = (customer) => {
+    if (customer.fullName && customer.fullName !== "Unknown Customer") {
+      return customer.fullName
+        .split(' ')
+        .map(word => word[0])
+        .join('')
+        .toUpperCase()
+        .substring(0, 2);
+    }
+    return customer.userId.substring(0, 2).toUpperCase();
+  };
 
 
+
+
+
+if (!isAuthorized) {
   return (
-    <div className="flex h-screen">
-      {/* Customer list */}
-        {/* <NavbarSupport /> */}
-      <div className="w-1/4 border-r bg-gray-100 p-4 overflow-y-auto">
-        <h3 className="font-bold mb-3 flex justify-between items-center">
-          Customers ({customers.length})
-          <span className={`ml-2 text-sm ${connectionStatus === "Connected" ? "text-green-600" : "text-red-600"}`}>
-            {connectionStatus}
-          </span>
-        </h3>
-
-        {customers.length === 0 && <p className="text-gray-500 text-sm italic">No customers found</p>}
-
-        {customers.map((id, i) => (
-          <div
-            key={`${id}-${i}`}
-            onClick={() => setSelectedUser(id)}
-            className={`p-3 cursor-pointer rounded mb-2 ${id === selectedUser ? "bg-green-500 text-white" : "bg-white hover:bg-gray-200 border"}`}
-          >
-            <div className="font-medium">Customer  {i.fullName}</div>
-            <div className="text-sm text-gray-600">
-              {chatHistory[id]?.length > 0 ? `${chatHistory[id].length} messages` : "No messages"}
-            </div>
-          </div>
+    <div className="flex items-center justify-center h-screen bg-black relative overflow-hidden">
+      {/* Animated background particles */}
+      <div className="absolute inset-0 opacity-30">
+        {[...Array(20)].map((_, i) => (
+          <div key={i} 
+               className={`absolute w-1 h-1 bg-green-400 rounded-full animate-pulse`}
+               style={{
+                 left: `${Math.random() * 100}%`,
+                 top: `${Math.random() * 100}%`,
+                 animationDelay: `${Math.random() * 2}s`,
+                 animationDuration: `${1 + Math.random() * 2}s`
+               }}></div>
         ))}
       </div>
+      
+      <div className="animate-glitch text-red-400 font-mono text-xl font-bold 
+                     border border-green-400/30 bg-black/80 backdrop-blur-lg
+                     px-8 py-6 relative group hover:border-red-400/50 transition-all duration-500">
+        <div className="animate-ping-slow absolute -inset-1 bg-red-400/20 rounded-lg blur-sm"></div>
+        <span className="relative z-10">🚫 ACCESS DENIED. AUTHORIZED PERSONNEL ONLY.</span>
+      </div>
+    </div>
+  );
+}
+  return (
+    <div className="flex h-screen bg-[#f0f2f5]">
+      {/* LEFT — User List */}
+      <div className="w-80 bg-white border-r shadow-md flex flex-col">
+        {/* Header */}
+        <div className="px-4 py-4 bg-[#0084ff] text-white flex items-center justify-between shadow">
+          <h2 className="text-lg font-semibold">Support Panel</h2>
+          <span className="text-sm opacity-90">
+            {connectionStatus === "Connected" ? "🟢 Online" : "🔴 Offline"}
+          </span>
+        </div>
 
-      {/* Chat area */}
-      <div className="flex-1 flex flex-col p-4">
+        {/* Customer List */}
+        <div className="flex-1 overflow-y-auto p-3">
+          {customers.length === 0 && (
+            <p className="text-gray-500 text-center mt-10 text-sm">No customers yet</p>
+          )}
+
+          {customers.map((customer, i) => (
+            <div
+              key={customer.userId}
+              onClick={() => setSelectedUser(customer.userId)}
+              className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer mb-2 transition ${
+                selectedUser === customer.userId
+                  ? "bg-[#e7f3ff]"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold">
+                {getInitials(customer)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold truncate">{getDisplayName(customer)}</div>
+                <div className="text-xs text-gray-500 truncate">
+                  {customer.email || `ID: ${customer.userId.substring(0, 10)}...`}
+                </div>
+                <div className="text-xs text-gray-400">
+                  {chatHistory[customer.userId]?.length || 0} messages
+                </div>
+              </div>
+            </div>//
+          ))}
+        </div>
+      </div>
+
+      {/* RIGHT — Chat Area */}
+      <div className="flex-1 flex flex-col">
         {selectedUser ? (
           <>
-            <div className="border-b pb-2 mb-3">
-              <h3 className="font-semibold">Chat with Customer: {selectedUser}</h3>
+            {/* Chat Header */}
+            <div className="px-5 py-4 bg-white shadow flex items-center gap-3 border-b">
+              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold">
+                {getInitials(customers.find(c => c.userId === selectedUser) || { userId: selectedUser })}
+              </div>
+              <div>
+                <h3 className="font-medium">
+                  {getDisplayName(customers.find(c => c.userId === selectedUser) || { userId: selectedUser })}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  {customers.find(c => c.userId === selectedUser)?.email || 'Customer'}
+                </p>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto border rounded-lg p-3 bg-white">
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-[#eef1f4]">
               {messages.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No messages yet. Start a conversation!</p>
+                <p className="text-center text-gray-500 mt-10">
+                  No messages yet. Say hello 👋
+                </p>
               ) : (
-                messages.map((m, i) => (
-                  <div key={`${selectedUser}-${i}`} className={`my-2 flex ${m.isSupport ? "justify-end" : "justify-start"}`}>
-                    <div className={`inline-block px-4 py-2 rounded-lg max-w-md break-words ${m.isSupport ? "bg-green-500 text-white" : "bg-blue-100 text-gray-900"}`}>
+                messages.map((m, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-end ${
+                      m.isSupport ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    {!m.isSupport && (
+                      <div className="w-9 h-9 rounded-full bg-gray-300 mr-2 flex items-center justify-center text-xs font-bold">
+                        {getInitials(customers.find(c => c.userId === m.fromUserId) || { userId: m.fromUserId })}
+                      </div>
+                    )}
+
+                    <div
+                      className={`max-w-xs px-4 py-2 rounded-2xl text-sm shadow ${
+                        m.isSupport
+                          ? "bg-[#0084ff] text-white rounded-br-none"
+                          : "bg-white text-gray-800 rounded-bl-none"
+                      }`}
+                    >
                       {m.msg}
-                      {m.error && <div className="text-xs text-red-600 mt-1">Failed to deliver</div>}
+                      {m.error && (
+                        <p className="text-xs text-red-600 mt-1">Failed</p>
+                      )}
                     </div>
+
+                    {m.isSupport && (
+                      <div className="w-9 h-9 rounded-full bg-[#0084ff] ml-2 flex items-center justify-center text-white font-bold text-xs">
+                        S
+                      </div>
+                    )}
                   </div>
                 ))
               )}
-              <div ref={chatEndRef} />
+              <div ref={chatEndRef}></div>
             </div>
 
-            <div className="flex mt-3">
+            {/* Input Box */}
+            <div className="p-4 bg-white border-t flex items-center gap-3">
               <input
                 value={message}
-                onChange={e => setMessage(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && sendMessage()}
-                className="flex-1 border rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="Type your message..."
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                className="flex-1 px-4 py-3 rounded-full border bg-gray-50 shadow-sm focus:ring-2 focus:ring-[#0084ff]"
+                placeholder="Type a message..."
               />
               <button
                 onClick={sendMessage}
                 disabled={!message.trim()}
-                className="bg-green-600 text-white px-6 rounded-r-lg hover:bg-green-700 disabled:bg-gray-400"
+                className="bg-[#0084ff] text-white px-6 py-3 rounded-full shadow hover:bg-[#006fe0] disabled:bg-gray-400"
               >
                 Send
               </button>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-gray-500 text-lg">Select a customer to start chatting</p>
+          <div className="flex-1 flex items-center justify-center text-gray-500 text-lg">
+            Select a customer to start messaging 💬
           </div>
         )}
       </div>
@@ -244,4 +355,3 @@ function SupportChat() {
 }
 
 export default SupportChat;
-//sss                              
