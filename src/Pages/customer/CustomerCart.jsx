@@ -99,7 +99,7 @@ const decreaseQty = async (cartItemId, currentQty) => {
     }
   };
 
-  const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0); // Use Price and Quantity
+const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0); // Use Price and Quantity
   const shippingFee = 49;
   const finalTotal = total + shippingFee;
 
