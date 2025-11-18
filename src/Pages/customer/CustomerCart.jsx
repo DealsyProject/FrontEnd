@@ -9,17 +9,19 @@ export default function CustomerCart() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCart = async () => {
-      try {
-        const customerId = localStorage.getItem("userId");
-        const res = await axiosInstance.get(`/Cart/${customerId}`);
-        setCart(res.data);
-      } catch (error) {
-        console.error("❌ Error fetching cart:", error);
-      }
-    };
     fetchCart();
   }, []);
+
+  const fetchCart = async () => {
+    try {
+      const res = await axiosInstance.get(`/Cart`);
+      setCart(res.data);
+    } catch (error) {
+      console.error("❌ Error fetching cart:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // In the increaseQty and decreaseQty functions, ensure you're using the correct properties:
 
@@ -76,17 +78,28 @@ const decreaseQty = async (cartItemId, currentQty) => {
     }
   };
 
-
+  // const clearCart = async () => {
+  //   try {
+  //     await axiosInstance.delete(`/Cart/clear`);
+  //     setCart([]);
+  //   } catch (error) {
+  //     console.error("❌ Error clearing cart:", error);
+  //   }
+  // };
   const clearCart = async () => {
     try {
+      const customerId = localStorage.getItem("userId");
       await axiosInstance.delete(`/Cart/clear`);
-      setCart([]);
+
+      setCart([]); // empty the UI
+      alert("🗑️ Cart cleared!");
     } catch (error) {
       console.error("❌ Error clearing cart:", error);
+      alert("Failed to clear cart.");
     }
   };
 
-  const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0); // Use Price and Quantity
+const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0); // Use Price and Quantity
   const shippingFee = 49;
   const finalTotal = total + shippingFee;
 
