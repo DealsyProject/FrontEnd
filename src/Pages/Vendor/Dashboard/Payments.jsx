@@ -444,7 +444,7 @@ const handleRefundToggle = async (paymentId) => {
                       </select>
                     </div>
                     <div className="flex gap-2">
-                      <button
+                      {/* <button
                         onClick={handleResetFilters}
                         className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium"
                       >
@@ -455,7 +455,7 @@ const handleRefundToggle = async (paymentId) => {
                         className="px-6 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/80 transition font-medium"
                       >
                         Refresh
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>

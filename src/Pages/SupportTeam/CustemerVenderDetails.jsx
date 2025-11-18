@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { Search, Download, RefreshCw, Copy, Eye, Users, Mail, Phone, MapPin } from "lucide-react";
+import {
+  Search,
+  Download,
+  RefreshCw,
+  Copy,
+  Eye,
+  Users,
+  Mail,
+  Phone,
+  MapPin,
+} from "lucide-react";
 import NavbarSupport from "../../Components/SupportTeam/NavbarSupport";
-
+import axiosInstance from "../../Components/utils/axiosInstance";
 
 export default function CustomerVendorDetails() {
   const [data, setData] = useState([]);
@@ -10,75 +20,50 @@ export default function CustomerVendorDetails() {
   const [query, setQuery] = useState("");
   const [filterTeam, setFilterTeam] = useState("all");
   const [showOnlyActive, setShowOnlyActive] = useState(false);
-
+  const [modalData, setModalData] = useState(null);
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetchFakeTeamData()
-      .then((resp) => {
-        setData(resp);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError("Failed to load data");
-        setLoading(false);
-      });
+    fetchData();
   }, []);
 
-  function fetchFakeTeamData() {
-    const fake = [
-      { 
-        id: 1, 
-        name: "Aisha K.", 
-        role: "Customer Success Manager", 
-        team: "Customer", 
-        email: "aisha.k@example.com", 
-        phone: "+91-98450-11223", 
-        location: "Kochi, IN", 
-        active: true,
-        avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face"
-      },
-      { 
-        id: 2, 
-        name: "Rahul P.", 
-        role: "Customer Support Engineer", 
-        team: "Customer", 
-        email: "rahul.p@example.com", 
-        phone: "+91-98450-33445", 
-        location: "Bengaluru, IN", 
-        active: true,
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
-      },
-      { 
-        id: 3, 
-        name: "Priya S.", 
-        role: "Vendor Relationship Manager", 
-        team: "Vendor", 
-        email: "priya.s@example.com", 
-        phone: "+91-98450-55667", 
-        location: "Chennai, IN", 
-        active: true,
-        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
-      },
-      { 
-        id: 4, 
-        name: "Arjun M.", 
-        role: "Vendor Support Specialist", 
-        team: "Vendor", 
-        email: "arjun.m@example.com", 
-        phone: "+91-98450-77889", 
-        location: "Hyderabad, IN", 
-        active: false,
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
-      }
-    ];
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axiosInstance.get("/SupportTeam"); // ✅ simplified call
+      const users = response.data.map((u, index) => ({
+        id: index + 1,
+        name: u.fullName,
+        role: u.role,
+        team: u.role === "Customer" ? "Customer" : "Vendor",
+        email: u.email,
+        phone: u.phoneNumber,
+        location: u.vendorDetails
+          ? u.vendorDetails.location
+          : u.customerDetails
+          ? u.customerDetails.address
+          : "N/A",
+        active: !u.isBlocked, 
+        avatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(
+          u.fullName || "User"
+        )}`,
+      }));
+      setData(users);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load data from server");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return new Promise((resolve) => setTimeout(() => resolve(fake), 600));
-  }
+  const refreshData = () => {
+    fetchData();
+  };
 
   // Filtering + searching
   const filtered = data.filter((item) => {
-    if (filterTeam !== "all" && item.team.toLowerCase() !== filterTeam) return false;
+    if (filterTeam !== "all" && item.team.toLowerCase() !== filterTeam)
+      return false;
     if (showOnlyActive && !item.active) return false;
     const q = query.trim().toLowerCase();
     if (!q) return true;
@@ -103,8 +88,19 @@ export default function CustomerVendorDetails() {
       alert("No rows to export");
       return;
     }
-    const header = ["id", "name", "role", "team", "email", "phone", "location", "active"];
-    const rows = items.map((r) => header.map((h) => JSON.stringify(r[h] ?? "")).join(","));
+    const header = [
+      "id",
+      "name",
+      "role",
+      "team",
+      "email",
+      "phone",
+      "location",
+      "active",
+    ];
+    const rows = items.map((r) =>
+      header.map((h) => JSON.stringify(r[h] ?? "")).join(",")
+    );
     const csv = [header.join(","), ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -117,31 +113,23 @@ export default function CustomerVendorDetails() {
     URL.revokeObjectURL(url);
   }
 
-  const refreshData = () => {
-    setLoading(true);
-    fetchFakeTeamData()
-      .then((resp) => {
-        setData(resp);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError("Failed to load data");
-        setLoading(false);
-      });
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#586330]/5 to-[#586330]/10 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}<NavbarSupport/>
+        {/* Header */}
+        <NavbarSupport />
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-[#586330] rounded-xl">
               <Users className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-[#586330]">Customer & Vendor Teams</h1>
-              <p className="text-gray-600 mt-1">Manage and view customer and vendor team details</p>
+              <h1 className="text-3xl font-bold text-[#586330]">
+                Customer & Vendor Teams
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Manage and view customer and vendor team details
+              </p>
             </div>
           </div>
         </div>
@@ -152,20 +140,8 @@ export default function CustomerVendorDetails() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total Members</p>
-                <p className="text-2xl font-bold text-gray-900">{data.length}</p>
-              </div>
-              <div className="p-2 bg-[#586330]/10 rounded-lg">
-                <Users className="h-5 w-5 text-[#586330]" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Customer Team</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {data.filter(item => item.team === 'Customer').length}
+                  {data.length}
                 </p>
               </div>
               <div className="p-2 bg-[#586330]/10 rounded-lg">
@@ -173,13 +149,27 @@ export default function CustomerVendorDetails() {
               </div>
             </div>
           </div>
-          
+
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Customer Team</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {data.filter((item) => item.team === "Customer").length}
+                </p>
+              </div>
+              <div className="p-2 bg-[#586330]/10 rounded-lg">
+                <Users className="h-5 w-5 text-[#586330]" />
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Active Members</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {data.filter(item => item.active).length}
+                  {data.filter((item) => item.active).length}
                 </p>
               </div>
               <div className="p-2 bg-[#586330]/10 rounded-lg">
@@ -194,7 +184,10 @@ export default function CustomerVendorDetails() {
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-3 flex-1">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -215,9 +208,9 @@ export default function CustomerVendorDetails() {
                 </select>
 
                 <label className="flex items-center gap-2 text-sm px-3 py-2.5 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input 
-                    type="checkbox" 
-                    checked={showOnlyActive} 
+                  <input
+                    type="checkbox"
+                    checked={showOnlyActive}
                     onChange={(e) => setShowOnlyActive(e.target.checked)}
                     className="rounded focus:ring-[#586330] text-[#586330]"
                   />
@@ -227,22 +220,26 @@ export default function CustomerVendorDetails() {
             </div>
 
             <div className="flex gap-2">
-              <button 
-                onClick={() => downloadCSV(filtered)} 
+              <button
+                onClick={() => downloadCSV(filtered)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 hover:bg-gray-50 transition-colors text-sm font-medium"
               >
                 <Download size={16} />
                 Export CSV
               </button>
-              <button 
+              <button
                 onClick={refreshData}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 hover:bg-gray-50 transition-colors text-sm font-medium"
               >
                 <RefreshCw size={16} />
                 Refresh
               </button>
-              <button 
-                onClick={() => { setQuery(""); setFilterTeam("all"); setShowOnlyActive(false); }} 
+              <button
+                onClick={() => {
+                  setQuery("");
+                  setFilterTeam("all");
+                  setShowOnlyActive(false);
+                }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#586330] text-white hover:bg-[#4a5428] transition-colors text-sm font-medium"
               >
                 Reset Filters
@@ -261,7 +258,7 @@ export default function CustomerVendorDetails() {
           ) : error ? (
             <div className="p-12 text-center text-red-600">
               <p>{error}</p>
-              <button 
+              <button
                 onClick={refreshData}
                 className="mt-3 px-4 py-2 bg-[#586330] text-white rounded-lg hover:bg-[#4a5428] transition-colors"
               >
@@ -274,28 +271,52 @@ export default function CustomerVendorDetails() {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="p-4 text-left text-sm font-semibold text-gray-600">Member</th>
-                      <th className="p-4 text-left text-sm font-semibold text-gray-600">Role</th>
-                      <th className="p-4 text-left text-sm font-semibold text-gray-600">Team</th>
-                      <th className="p-4 text-left text-sm font-semibold text-gray-600">Contact</th>
-                      <th className="p-4 text-left text-sm font-semibold text-gray-600">Location</th>
-                      <th className="p-4 text-left text-sm font-semibold text-gray-600">Status</th>
-                      <th className="p-4 text-left text-sm font-semibold text-gray-600">Actions</th>
+                      <th className="p-4 text-left text-sm font-semibold text-gray-600">
+                        Member
+                      </th>
+                      <th className="p-4 text-left text-sm font-semibold text-gray-600">
+                        Role
+                      </th>
+                      <th className="p-4 text-left text-sm font-semibold text-gray-600">
+                        Team
+                      </th>
+                      <th className="p-4 text-left text-sm font-semibold text-gray-600">
+                        Contact
+                      </th>
+                      <th className="p-4 text-left text-sm font-semibold text-gray-600">
+                        Location
+                      </th>
+                      {/* <th className="p-4 text-left text-sm font-semibold text-gray-600">
+                        Status
+                      </th> */}
+                      <th className="p-4 text-left text-sm font-semibold text-gray-600">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="p-12 text-center text-gray-500">
+                        <td
+                          colSpan={7}
+                          className="p-12 text-center text-gray-500"
+                        >
                           <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                          <p className="text-lg font-medium text-gray-400">No team members found</p>
-                          <p className="text-sm text-gray-400 mt-1">Try adjusting your search criteria</p>
+                          <p className="text-lg font-medium text-gray-400">
+                            No team members found
+                          </p>
+                          <p className="text-sm text-gray-400 mt-1">
+                            Try adjusting your search criteria
+                          </p>
                         </td>
                       </tr>
                     )}
 
                     {filtered.map((row) => (
-                      <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={row.id}
+                        className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                      >
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <img
@@ -304,19 +325,25 @@ export default function CustomerVendorDetails() {
                               className="w-10 h-10 rounded-full object-cover"
                             />
                             <div>
-                              <div className="font-semibold text-gray-900">{row.name}</div>
+                              <div className="font-semibold text-gray-900">
+                                {row.name}
+                              </div>
                             </div>
                           </div>
                         </td>
                         <td className="p-4">
-                          <div className="text-sm text-gray-900">{row.role}</div>
+                          <div className="text-sm text-gray-900">
+                            {row.role}
+                          </div>
                         </td>
                         <td className="p-4">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            row.team === 'Customer' 
-                              ? 'bg-[#586330]/10 text-[#586330]' 
-                              : 'bg-blue-100 text-blue-700'
-                          }`}>
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                              row.team === "Customer"
+                                ? "bg-[#586330]/10 text-[#586330]"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
                             {row.team}
                           </span>
                         </td>
@@ -351,7 +378,7 @@ export default function CustomerVendorDetails() {
                         </td>
                         <td className="p-4">
                           <div className="flex gap-2">
-                            <button 
+                            <button
                               onClick={() => copyToClipboard(row.email)}
                               className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                               title="Copy email"
@@ -359,14 +386,72 @@ export default function CustomerVendorDetails() {
                               <Copy size={12} />
                               Email
                             </button>
-                            <button 
-                              onClick={() => alert(JSON.stringify(row, null, 2))}
-                              className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                              title="View details"
-                            >
-                              <Eye size={12} />
-                              View
+                            <button onClick={() => setModalData(row)}>
+                              <Eye size={12} /> View
                             </button>
+                            {modalData && (
+                              <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn">
+                                <div className="relative bg-white/80 backdrop-blur-xl shadow-2xl rounded-3xl w-full max-w-md p-6 animate-scaleIn border border-white/40">
+                                  {/* Close Button */}
+                                  <button
+                                    onClick={() => setModalData(null)}
+                                    className="absolute top-4 right-4 text-gray-700 hover:text-black transition text-2xl"
+                                  >
+                                    ✕
+                                  </button>
+
+                                  {/* Avatar + Name Section */}
+                                  <div className="flex flex-col items-center text-center">
+                                    <img
+                                      src={modalData.avatar}
+                                      className="w-24 h-24 rounded-full shadow-md border-4 border-white"
+                                      alt="profile"
+                                    />
+                                    <h2 className="text-2xl font-bold mt-4">
+                                      {modalData.name}
+                                    </h2>
+                                    <p className="text-gray-600">
+                                      {modalData.role}
+                                    </p>
+                                  </div>
+
+                                  {/* Details */}
+                                  <div className="mt-6 space-y-4">
+                                    <div className="flex justify-between bg-white/60 p-3 rounded-xl shadow-sm">
+                                      <span className="font-medium">Team</span>
+                                      <span>{modalData.team}</span>
+                                    </div>
+
+                                    <div className="flex justify-between bg-white/60 p-3 rounded-xl shadow-sm">
+                                      <span className="font-medium">Email</span>
+                                      <span>{modalData.email}</span>
+                                    </div>
+
+                                    <div className="flex justify-between bg-white/60 p-3 rounded-xl shadow-sm">
+                                      <span className="font-medium">Phone</span>
+                                      <span>{modalData.phone}</span>
+                                    </div>
+
+                                    <div className="flex justify-between bg-white/60 p-3 rounded-xl shadow-sm">
+                                      <span className="font-medium">
+                                        Location
+                                      </span>
+                                      <span>{modalData.location}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Footer */}
+                                  <div className="mt-6 flex justify-center">
+                                    <button
+                                      onClick={() => setModalData(null)}
+                                      className="px-6 py-2.5 rounded-full bg-[#586330] text-white shadow-md hover:bg-[#485327] transition"
+                                    >
+                                      Close
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -379,10 +464,10 @@ export default function CustomerVendorDetails() {
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                   <p className="text-sm text-gray-600">
-                    Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{data.length}</span> team members
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Fake data included for testing — replace with your real API
+                    Showing{" "}
+                    <span className="font-semibold">{filtered.length}</span> of{" "}
+                    <span className="font-semibold">{data.length}</span> team
+                    members
                   </p>
                 </div>
               </div>

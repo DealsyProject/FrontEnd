@@ -13,7 +13,6 @@ const Customers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerStats, setCustomerStats] = useState(null);
   
-  // Add logout function
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
@@ -23,18 +22,44 @@ const Customers = () => {
 
   const activeView = 'customers';
 
-  // Fetch customers from API
+  // Fetch customers who ordered vendor's products
   useEffect(() => {
-    fetchCustomers();
+    fetchVendorCustomers();
   }, []);
 
-  const fetchCustomers = async () => {
+  const fetchVendorCustomers = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/api/Customer/all');
-      setCustomers(response.data.customers || []);
+      // CORRECTED: Fetch only customers who ordered THIS vendor's products
+      const response = await axiosInstance.get('/Vendor/customers-with-orders');
+      console.log('Vendor Customers API Response:', response.data);
+      
+      // Map the API response
+      const customersData = response.data.Customers?.map(customer => ({
+        id: customer.CustomerId,
+        customerId: customer.CustomerId,
+        userId: customer.UserId,
+        fullName: customer.FullName,
+        email: customer.Email,
+        phoneNumber: customer.PhoneNumber,
+        address: customer.Address,
+        pincode: customer.Pincode,
+        role: customer.Role,
+        isBlocked: customer.IsBlocked,
+        joinDate: customer.CreatedOn,
+        isRegistrationComplete: customer.IsRegistrationComplete,
+        // Include order statistics from vendor's products
+        totalOrders: customer.TotalOrders || 0,
+        totalSpent: customer.TotalSpent || 0,
+        lastOrderDate: customer.LastOrderDate,
+        orders: customer.Orders || [],
+        invoices: customer.Invoices || [],
+        payments: customer.Payments || []
+      })) || [];
+      
+      setCustomers(customersData);
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      console.error('Error fetching vendor customers:', error);
       toast.error('Failed to load customers');
       setCustomers([]);
     } finally {
@@ -42,37 +67,85 @@ const Customers = () => {
     }
   };
 
-  // Fetch customer details
+  // Fetch customer details with vendor-specific orders
   const fetchCustomerDetails = async (customerId) => {
     try {
-      const response = await axiosInstance.get(`/api/Customer/${customerId}`);
-      setSelectedCustomer(response.data);
+      // CORRECTED: Fetch customer details with only THIS vendor's orders
+      const response = await axiosInstance.get(`/Vendor/customers/${customerId}/details`);
+      console.log('Customer details response:', response.data);
       
-      // Fetch customer statistics
-      try {
-        const statsResponse = await axiosInstance.get(`/api/Customer/${customerId}/statistics`);
-        setCustomerStats(statsResponse.data);
-      } catch (statsError) {
-        console.error('Error fetching customer statistics:', statsError);
-        // Don't show toast for stats error as it's secondary data
-      }
+      const customerData = response.data;
+      const mappedCustomer = {
+        id: customerData.CustomerId,
+        customerId: customerData.CustomerId,
+        userId: customerData.UserId,
+        fullName: customerData.FullName,
+        email: customerData.Email,
+        phoneNumber: customerData.PhoneNumber,
+        address: customerData.Address,
+        pincode: customerData.Pincode,
+        role: customerData.Role,
+        isBlocked: customerData.IsBlocked,
+        joinDate: customerData.CreatedOn,
+        isRegistrationComplete: customerData.IsRegistrationComplete,
+        // Include vendor-specific order data
+        orders: customerData.Orders || [],
+        invoices: customerData.Invoices || [],
+        payments: customerData.Payments || []
+      };
+      
+      setSelectedCustomer(mappedCustomer);
+      
+      // Calculate statistics from vendor-specific orders
+      const stats = {
+        totalOrders: customerData.Orders?.length || 0,
+        completedOrders: customerData.Orders?.filter(o => o.Status === 'Completed').length || 0,
+        pendingOrders: customerData.Orders?.filter(o => o.Status === 'Pending' || o.Status === 'Processing').length || 0,
+        totalSpent: customerData.Orders?.reduce((sum, order) => sum + (order.TotalAmount || 0), 0) || 0,
+        averageOrderValue: customerData.Orders?.length > 0 
+          ? customerData.Orders.reduce((sum, order) => sum + (order.TotalAmount || 0), 0) / customerData.Orders.length 
+          : 0
+      };
+      setCustomerStats(stats);
+      
     } catch (error) {
       console.error('Error fetching customer details:', error);
       toast.error('Failed to load customer details');
     }
   };
 
-  // Search customers
+  // Search customers (only among those who ordered vendor's products)
   const searchCustomers = async () => {
     if (!searchTerm.trim()) {
-      fetchCustomers();
+      fetchVendorCustomers();
       return;
     }
 
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/api/Customer/search?searchTerm=${encodeURIComponent(searchTerm)}`);
-      setCustomers(response.data.customers || []);
+      // CORRECTED: Search only within vendor's customers
+      const response = await axiosInstance.get(`/Vendor/customers-with-orders/search?searchTerm=${encodeURIComponent(searchTerm)}`);
+      
+      const customersData = response.data.Customers?.map(customer => ({
+        id: customer.CustomerId,
+        customerId: customer.CustomerId,
+        userId: customer.UserId,
+        fullName: customer.FullName,
+        email: customer.Email,
+        phoneNumber: customer.PhoneNumber,
+        address: customer.Address,
+        pincode: customer.Pincode,
+        role: customer.Role,
+        isBlocked: customer.IsBlocked,
+        joinDate: customer.CreatedOn,
+        isRegistrationComplete: customer.IsRegistrationComplete,
+        totalOrders: customer.TotalOrders || 0,
+        totalSpent: customer.TotalSpent || 0,
+        lastOrderDate: customer.LastOrderDate,
+        orders: customer.Orders || []
+      })) || [];
+      
+      setCustomers(customersData);
     } catch (error) {
       console.error('Error searching customers:', error);
       toast.error('Failed to search customers');
@@ -81,14 +154,12 @@ const Customers = () => {
     }
   };
 
-  // Handle customer selection
   const handleCustomerSelect = async (customer) => {
-    setSelectedCustomer(null); // Clear previous selection
-    setCustomerStats(null); // Clear previous stats
-    await fetchCustomerDetails(customer.id);
+    setSelectedCustomer(null);
+    setCustomerStats(null);
+    await fetchCustomerDetails(customer.customerId);
   };
 
-  // Render star rating
   const renderRating = (rating) => {
     return (
       <div className="flex items-center space-x-1">
@@ -107,7 +178,6 @@ const Customers = () => {
     );
   };
 
-  // Format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -116,7 +186,6 @@ const Customers = () => {
     });
   };
 
-  // Format currency
   const formatCurrency = (amount) => {
     return `₹${amount?.toLocaleString('en-IN') || '0'}`;
   };
@@ -130,27 +199,23 @@ const Customers = () => {
     customer.pincode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Handle search input change with debounce
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
     
-    // If search term is empty, reset to all products
     if (!value.trim()) {
-      fetchCustomers();
+      fetchVendorCustomers();
     }
   };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar */}
       <Sidebar handleLogout={handleLogout} activeView={activeView} />
 
-      {/* Main Content */}
       <div className="flex-1 p-6 text-black">
         <header className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Customers</h1>
-          <p className="text-gray-600 mt-2">Manage and view customer information, orders, and reviews</p>
+          <h1 className="text-3xl font-bold text-gray-800">My Customers</h1>
+          <p className="text-gray-600 mt-2">Customers who ordered your products</p>
         </header>
 
         {/* Search Bar */}
@@ -158,7 +223,7 @@ const Customers = () => {
           <div className="flex gap-4">
             <input
               type="text"
-              placeholder="Search customers by name, email, phone, address, or pincode..."
+              placeholder="Search your customers by name, email, phone, address, or pincode..."
               value={searchTerm}
               onChange={handleSearchChange}
               onKeyPress={(e) => e.key === 'Enter' && searchCustomers()}
@@ -169,12 +234,6 @@ const Customers = () => {
               className="px-6 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/80 transition font-medium"
             >
               Search
-            </button>
-            <button
-              onClick={fetchCustomers}
-              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium"
-            >
-              Reset
             </button>
           </div>
         </div>
@@ -199,10 +258,10 @@ const Customers = () => {
               <div className="space-y-3 max-h-[600px] overflow-y-auto">
                 {filteredCustomers.map((customer) => (
                   <div
-                    key={customer.id}
+                    key={customer.customerId}
                     onClick={() => handleCustomerSelect(customer)}
                     className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                      selectedCustomer?.id === customer.id
+                      selectedCustomer?.customerId === customer.customerId
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                     }`}
@@ -216,16 +275,25 @@ const Customers = () => {
                           Joined: {formatDate(customer.joinDate)}
                         </p>
                       </div>
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full whitespace-nowrap">
-                        Active
+                      <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
+                        customer.isBlocked 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {customer.isBlocked ? 'Blocked' : 'Active'}
                       </span>
                     </div>
                     <div className="mt-2 text-xs text-gray-600">
                       <p>{customer.address}, {customer.pincode}</p>
                     </div>
-                    {customer.orders && customer.orders.length > 0 && (
-                      <div className="mt-2 text-xs text-blue-600">
-                        {customer.orders.length} order(s)
+                    {customer.totalOrders > 0 && (
+                      <div className="mt-2 flex gap-2 text-xs">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {customer.totalOrders} orders
+                        </span>
+                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                          {formatCurrency(customer.totalSpent)}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -238,7 +306,6 @@ const Customers = () => {
           <div className="lg:col-span-2">
             {selectedCustomer ? (
               <div className="bg-white rounded-xl shadow-md p-6">
-                {/* Customer Header with Stats */}
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex-1">
                     <h2 className="text-2xl font-bold text-gray-800">{selectedCustomer.fullName}</h2>
@@ -250,24 +317,28 @@ const Customers = () => {
                     <div className="mt-2 text-sm text-gray-600">
                       <p>📍 {selectedCustomer.address}, {selectedCustomer.pincode}</p>
                     </div>
+                    <div className="mt-2 flex gap-2">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        selectedCustomer.isBlocked 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {selectedCustomer.isBlocked ? 'Account Blocked' : 'Account Active'}
+                      </span>
+                    </div>
                   </div>
                   <div className="text-right">
                     <span className="bg-[#586330]/20 text-[#586330]/80 px-3 py-1 rounded-full text-sm font-medium">
-                      {selectedCustomer.orders?.length || 0} Orders
+                      Customer ID: {selectedCustomer.customerId}
                     </span>
-                    {customerStats && (
-                      <div className="mt-2 text-sm text-gray-600">
-                        <p>Total Spent: {formatCurrency(customerStats.totalSpent)}</p>
-                      </div>
-                    )}
                   </div>
                 </div>
 
-                {/* Customer Statistics */}
+                {/* Customer Statistics (Vendor-specific) */}
                 {customerStats && (
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Customer Statistics</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Order Statistics (Your Products)</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                       <div className="bg-blue-50 p-3 rounded-lg text-center">
                         <div className="text-lg font-bold text-blue-600">{customerStats.totalOrders}</div>
                         <div className="text-xs text-blue-800">Total Orders</div>
@@ -281,206 +352,73 @@ const Customers = () => {
                         <div className="text-xs text-yellow-800">Pending</div>
                       </div>
                       <div className="bg-purple-50 p-3 rounded-lg text-center">
-                        <div className="text-lg font-bold text-purple-600">{formatCurrency(customerStats.averageOrderValue)}</div>
-                        <div className="text-xs text-purple-800">Avg Order</div>
+                        <div className="text-lg font-bold text-purple-600">{formatCurrency(customerStats.totalSpent)}</div>
+                        <div className="text-xs text-purple-800">Total Spent</div>
+                      </div>
+                      <div className="bg-indigo-50 p-3 rounded-lg text-center">
+                        <div className="text-lg font-bold text-indigo-600">{formatCurrency(customerStats.averageOrderValue)}</div>
+                        <div className="text-xs text-indigo-800">Avg Order</div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Orders and Reviews */}
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-semibold text-gray-800">Orders & Reviews</h3>
-                    <span className="text-sm text-gray-500">
-                      {selectedCustomer.orders?.length || 0} orders
-                    </span>
-                  </div>
-                  
-                  {selectedCustomer.orders && selectedCustomer.orders.length > 0 ? (
-                    selectedCustomer.orders.map((order, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex gap-4">
-                          {/* Product Image */}
-                          <img
-                            src={order.productImage || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80'}
-                            alt={order.productName}
-                            className="w-20 h-20 object-cover rounded-lg"
-                            onError={(e) => {
-                              e.target.src = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80';
-                            }}
-                          />
-                          
-                          {/* Order Details */}
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="font-semibold text-gray-800">{order.productName}</h4>
-                                <p className="text-sm text-gray-600">
-                                  Quantity: {order.quantity} 
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  Ordered: {formatDate(order.orderDate)}
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  Status: <span className={`font-medium ${
-                                    order.status === 'Delivered' ? 'text-green-600' : 
-                                    order.status === 'Pending' ? 'text-yellow-600' : 'text-blue-600'
-                                  }`}>
-                                    {order.status}
-                                  </span>
-                                </p>
-                              </div>
-                              <span className="text-lg font-bold text-[#586330]">
-                                {formatCurrency(order.totalAmount)}
-                              </span>
-                            </div>
-
-                            {/* Review Section */}
-                            <div className="mt-3 pt-3 border-t border-gray-100">
-                              {order.review ? (
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="font-medium text-gray-700">Customer Review:</span>
-                                    {renderRating(order.review.rating)}
-                                  </div>
-                                  <p className="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg">
-                                    "{order.review.comment}"
-                                  </p>
-                                  <p className="text-xs text-gray-500 mt-1 text-right">
-                                    Reviewed on {formatDate(order.review.reviewDate)}
-                                  </p>
-                                </div>
-                              ) : (
-                                <div className="text-center py-3">
-                                  <span className="text-gray-500 text-sm">
-                                    No review submitted yet
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-2xl">📦</span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-600 mb-2">No Orders</h3>
-                      <p className="text-gray-500">
-                        This customer hasn't placed any orders yet
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Invoices Section */}
-                {selectedCustomer.invoices && selectedCustomer.invoices.length > 0 && (
-                  <div className="mt-8">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xl font-semibold text-gray-800">Invoices</h3>
-                      <span className="text-sm text-gray-500">
-                        {selectedCustomer.invoices.length} invoices
-                      </span>
-                    </div>
+                {/* Order History */}
+                {selectedCustomer.orders && selectedCustomer.orders.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Order History</h3>
                     <div className="space-y-3">
-                      {selectedCustomer.invoices.map((invoice, index) => (
-                        <div key={index} className="flex justify-between items-center bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors">
-                          <div>
-                            <p className="font-medium text-gray-800">{invoice.invoiceId}</p>
-                            <p className="text-sm text-gray-600">
-                              Date: {formatDate(invoice.date)} | Due: {formatDate(invoice.dueDate)}
-                            </p>
-                            {invoice.notes && (
-                              <p className="text-xs text-gray-500 mt-1">{invoice.notes}</p>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-gray-800">{formatCurrency(invoice.amount)}</p>
-                            <span className={`text-sm ${
-                              invoice.status === 'Paid' ? 'text-green-600' : 
-                              invoice.status === 'Pending' ? 'text-yellow-600' : 'text-red-600'
-                            }`}>
-                              {invoice.status}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Payments Section */}
-                {selectedCustomer.payments && selectedCustomer.payments.length > 0 && (
-                  <div className="mt-8">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xl font-semibold text-gray-800">Payments</h3>
-                      <span className="text-sm text-gray-500">
-                        {selectedCustomer.payments.length} payments
-                      </span>
-                    </div>
-                    <div className="space-y-3">
-                      {selectedCustomer.payments.map((payment, index) => (
-                        <div key={index} className="flex justify-between items-center bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors">
-                          <div>
-                            <p className="font-medium text-gray-800">{payment.paymentId}</p>
-                            <p className="text-sm text-gray-600">
-                              {payment.method} • {formatDate(payment.date)}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Transaction: {payment.transactionId}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-gray-800">{formatCurrency(payment.amount)}</p>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-sm ${
-                                payment.status === 'Completed' ? 'text-green-600' : 'text-yellow-600'
+                      {selectedCustomer.orders.map((order) => (
+                        <div key={order.OrderId} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-semibold">Order #{order.OrderId}</p>
+                              <p className="text-sm text-gray-600">{formatDate(order.OrderDate)}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-[#586330]">{formatCurrency(order.TotalAmount)}</p>
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                order.Status === 'Completed' ? 'bg-green-100 text-green-800' :
+                                order.Status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
                               }`}>
-                                {payment.status}
+                                {order.Status}
                               </span>
-                              {payment.isRefunded && (
-                                <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
-                                  Refunded
-                                </span>
-                              )}
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {(!selectedCustomer.orders || selectedCustomer.orders.length === 0) && (
+                  <div className="mt-6 text-center py-8 bg-gray-50 rounded-lg">
+                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">📦</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">No Orders Yet</h3>
+                    <p className="text-gray-500">
+                      This customer hasn't placed any orders for your products
+                    </p>
                   </div>
                 )}
               </div>
             ) : (
-              // Empty State
               <div className="bg-white rounded-xl shadow-md p-12 text-center">
                 <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-3xl">👥</span>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-600 mb-2">Select a Customer</h3>
                 <p className="text-gray-500">
-                  Choose a customer from the list to view their details, orders, and reviews
+                  Choose a customer from the list to view their order details
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Empty State for No Customers */}
-        {!loading && filteredCustomers.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-xl shadow-md">
-            <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">👥</span>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">No customers found</h3>
-            <p className="text-gray-500">
-              {searchTerm ? 'Try adjusting your search terms' : 'No customers in the system yet'}
-            </p>
-          </div>
-        )}
+        
 
         <ToastContainer position="top-right" autoClose={3000} />
       </div>

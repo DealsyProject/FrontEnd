@@ -98,7 +98,7 @@ export const useProfile = (setShowProfile, fetchDashboardData) => {
       if (fetchDashboardData) fetchDashboardData();
 
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to save profile';
+      const msg = err.response?.data?.message ;
       toast.error(msg);
     } finally {
       setIsUpdating(false);
