@@ -77,15 +77,7 @@ const decreaseQty = async (cartItemId, currentQty) => {
       console.error("❌ Error removing item:", error);
     }
   };
-
-  // const clearCart = async () => {
-  //   try {
-  //     await axiosInstance.delete(`/Cart/clear`);
-  //     setCart([]);
-  //   } catch (error) {
-  //     console.error("❌ Error clearing cart:", error);
-  //   }
-  // };
+  
   const clearCart = async () => {
     try {
       const customerId = localStorage.getItem("userId");
