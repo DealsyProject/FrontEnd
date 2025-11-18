@@ -3,10 +3,10 @@ import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Search, RefreshCw, Download, Plus, Package, DollarSign, Calendar,
   CheckCircle, Clock, AlertCircle, XCircle, CreditCard, Mail, Phone,
-  Filter, TrendingUp, ArrowUpRight, ArrowDownRight, ChevronRight,
-  Moon, Sun, MoreVertical, MessageCircle, Users, BarChart3, ShoppingBag,
+  Filter, Moon, Sun, MoreVertical, MessageCircle, Users, BarChart3, ShoppingBag,
   Truck, ShieldCheck, MessageSquare, Star, Zap, Bell, Settings,
-  ChevronLeft, ChevronDown, Upload, Eye, Edit, Trash2, Copy
+  ChevronLeft, ChevronDown, Eye,  Trash2, Copy,
+ 
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,6 +15,8 @@ import {
   ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend 
 } from "recharts";
 import NavbarSupport from "../../Components/SupportTeam/NavbarSupport";
+import { FaRemoveFormat } from "react-icons/fa";
+import { IoRemoveCircle } from "react-icons/io5";
 
 // Enhanced Sparkline with multiple variants
 const Sparkline = ({ data, color, variant = "line" }) => {
@@ -563,7 +565,7 @@ export default function ReturnRefundTracker() {
                   <h1 className={`text-2xl font-bold ${
                     darkMode ? 'text-[#a3b152]' : 'text-[#586330]'
                   }`}>
-                    ReturnFlow Pro
+                    Dealsy
                   </h1>
                   <p className={`text-sm ${
                     darkMode ? 'text-gray-400' : 'text-gray-500'
@@ -582,12 +584,9 @@ export default function ReturnRefundTracker() {
                 }`}
                 title="Toggle theme"
               >
-                {darkMode ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} />}
+                {darkMode ? <Sun size={25} className="text-yellow-400" /> : <Moon size={25} />}
               </button>
 
-              <div className="w-8 h-8 bg-[#586330] rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">A</span>
-              </div>
             </div>
           </div>
 
@@ -654,11 +653,13 @@ export default function ReturnRefundTracker() {
                       : "hover:bg-gray-100 text-gray-600"
                 }`}
               >
-                <div className="w-4 h-4 grid grid-cols-2 gap-0.5">
+                <div className="w-5 h-3.5 grid grid-cols-3 gap-0.5">
                   <div className="bg-current rounded-sm"></div>
+                  <div className="bg-current rounded-sm"></div> 
                   <div className="bg-current rounded-sm"></div>
+                  <div className="bg-current rounded-sm"></div> 
                   <div className="bg-current rounded-sm"></div>
-                  <div className="bg-current rounded-sm"></div>
+                  <div className="bg-current rounded-sm"></div> 
                 </div>
               </button>
               <button 
@@ -714,27 +715,7 @@ export default function ReturnRefundTracker() {
                     </select>
                   </div>
 
-                  <div>
-                    <label className={`block text-xs font-medium mb-1 ${
-                      darkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Priority
-                    </label>
-                    <select 
-                      value={priorityFilter}
-                      onChange={(e) => setPriorityFilter(e.target.value)}
-                      className={`px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#586330] transition-colors ${
-                        darkMode
-                          ? 'bg-gray-800 border-gray-600 text-gray-300'
-                          : 'bg-white border-gray-300 text-gray-700'
-                      }`}
-                    >
-                      <option value="All">All Priority</option>
-                      <option value="High">High</option>
-                      <option value="Medium">Medium</option>
-                      <option value="Low">Low</option>
-                    </select>
-                  </div>
+                
 
                   <div>
                     <label className={`block text-xs font-medium mb-1 ${
@@ -1010,11 +991,6 @@ export default function ReturnRefundTracker() {
                     <button className={`p-2 rounded-full transition-colors ${
                       darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
                     }`}>
-                      <Edit size={18} />
-                    </button>
-                    <button className={`p-2 rounded-full transition-colors ${
-                      darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
-                    }`}>
                       <Copy size={18} />
                     </button>
                     <button 
@@ -1111,20 +1087,20 @@ export default function ReturnRefundTracker() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <div className="flex items-center gap-2 mb-2">
-                        <PriorityIndicator priority={selected.priority} darkMode={darkMode} />
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              size={14} 
-                              className={i < selected.customerRating 
-                                ? "text-yellow-400 fill-current" 
-                                : darkMode ? "text-gray-600" : "text-gray-300"
-                              } 
-                            />
-                          ))}
-                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <PriorityIndicator priority={selected.priority} darkMode={darkMode} />
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i} 
+                                size={14} 
+                                className={i < selected.customerRating 
+                                  ? "text-yellow-400 fill-current" 
+                                  : darkMode ? "text-gray-600" : "text-gray-300"
+                                } 
+                              />
+                            ))}
+                          </div>
                       </div>
                       <p className={`text-sm ${
                         darkMode ? 'text-gray-400' : 'text-gray-600'
@@ -1281,15 +1257,9 @@ export default function ReturnRefundTracker() {
                       ? 'border-[#586330] hover:bg-[#586330]/50'
                       : 'border-[#586330] hover:bg-[#586330]/10'
                   }`}>
-                    <MessageCircle size={18} /> Contact
+                    <IoRemoveCircle size={18} /> No Refund
                   </button>
-                  <button className={`flex items-center justify-center gap-2 px-4 border py-3 rounded-xl font-medium transition-colors ${
-                    darkMode
-                      ? 'border-gray-600 hover:bg-gray-800'
-                      : 'border-gray-300 hover:bg-gray-50'
-                  }`}>
-                    <MoreVertical size={18} />
-                  </button>
+
                 </div>
               </div>
             </motion.div>

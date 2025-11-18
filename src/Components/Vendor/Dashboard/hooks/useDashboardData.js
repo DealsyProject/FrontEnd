@@ -74,32 +74,31 @@ export const useDashboardData = (navigate) => {
     }
   }, []);
 
-  const fetchFinancialData = useCallback(async () => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const mockFinancialData = [
-        { title: 'Total Revenue', value: '₹25,430.00', subtitle: '+12% from last month', bgColor: 'bg-blue-500' },
-        { title: 'Receivables', value: '₹8,560.00', subtitle: '3 pending invoices', bgColor: 'bg-green-500' },
-        { title: 'Overdue Bills', value: '₹2,340.00', subtitle: '2 overdue payments', bgColor: 'bg-red-500' },
-        { title: 'Total Expenses', value: '₹15,230.00', subtitle: 'Includes operational costs', bgColor: 'bg-yellow-500' }
-      ];
-      
-      setFinancialData(mockFinancialData);
-    } catch (error) {
-      console.error('Error loading financial data:', error);
-      setFinancialData(getDefaultFinancialData());
-    }
-  }, []);
+ const fetchFinancialData = useCallback(async () => {
+  try {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const mockFinancialData = [
+      { title: 'Total Revenue', value: '₹25,430.00', subtitle: '+12% from last month' },
+      { title: 'Total Refunded', value: '₹1,340.00', subtitle: '5 refund requests' },
+      { title: 'Overdue Bills', value: '₹2,340.00', subtitle: '2 overdue payments' }
+    ];
+    
+    setFinancialData(mockFinancialData);
+  } catch (error) {
+    console.error('Error loading financial data:', error);
+    setFinancialData(getDefaultFinancialData());
+  }
+}, []);
 
   const fetchRecentActivities = useCallback(async () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 400));
       
       const mockActivities = [
-        { type: 'Welcome to Dealsy!', description: 'Start by adding your products and services', date: 'Just now' },
-        { type: 'Account Created', description: 'Your vendor account has been successfully created', date: '2 hours ago' },
-        { type: 'Profile Setup', description: 'Complete your vendor profile to get started', date: '1 day ago' }
+        { type: 'Customer 1 added product', description: 'Customer 1 added product', date: 'Just now' },
+        { type: '1 order purchased customer1', description: '1 order purchased customer1', date: '2 hours ago' },
+        { type: 'pending customer payment of your wooden chair', description: 'pending customer payment of your wooden chair', date: '1 day ago' }
       ];
       
       setRecentActivities(mockActivities);
@@ -152,10 +151,10 @@ export const useDashboardData = (navigate) => {
 };
 
 const getDefaultFinancialData = (subtitle = 'No data available') => [
-  { title: 'Total Revenue', value: '₹0.00', subtitle, bgColor: 'bg-blue-500' },
-  { title: 'Receivables', value: '₹0.00', subtitle, bgColor: 'bg-green-500' },
-  { title: 'Overdue Bills', value: '₹0.00', subtitle, bgColor: 'bg-red-500' },
-  { title: 'Total Expenses', value: '₹0.00', subtitle, bgColor: 'bg-yellow-500' }
+  { title: 'Total Revenue', value: '₹0.00', subtitle },
+  { title: 'Total Payments', value: '₹0.00', subtitle },
+  { title: 'Total Refunded', value: '₹0.00', subtitle },
+  { title: 'Overdue Bills', value: '₹0.00', subtitle }
 ];
 
 const getDefaultActivities = () => [
