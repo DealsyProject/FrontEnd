@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import * as signalR from "@microsoft/signalr";
 import { jwtDecode } from "jwt-decode";
-
+import { Canvas } from '@react-three/fiber'
+import { OrbitControls, Float, Text3D, Center } from '@react-three/drei'
 function SupportChat() {
   // --- hooks ---
   const [connection, setConnection] = useState(null);
@@ -186,14 +187,36 @@ function SupportChat() {
     return customer.userId.substring(0, 2).toUpperCase();
   };
 
-  if (!isAuthorized) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-red-600 text-xl">Access Denied. Support Team Only.</div>
-      </div>
-    );
-  }
 
+
+
+
+if (!isAuthorized) {
+  return (
+    <div className="flex items-center justify-center h-screen bg-black relative overflow-hidden">
+      {/* Animated background particles */}
+      <div className="absolute inset-0 opacity-30">
+        {[...Array(20)].map((_, i) => (
+          <div key={i} 
+               className={`absolute w-1 h-1 bg-green-400 rounded-full animate-pulse`}
+               style={{
+                 left: `${Math.random() * 100}%`,
+                 top: `${Math.random() * 100}%`,
+                 animationDelay: `${Math.random() * 2}s`,
+                 animationDuration: `${1 + Math.random() * 2}s`
+               }}></div>
+        ))}
+      </div>
+      
+      <div className="animate-glitch text-red-400 font-mono text-xl font-bold 
+                     border border-green-400/30 bg-black/80 backdrop-blur-lg
+                     px-8 py-6 relative group hover:border-red-400/50 transition-all duration-500">
+        <div className="animate-ping-slow absolute -inset-1 bg-red-400/20 rounded-lg blur-sm"></div>
+        <span className="relative z-10">🚫 ACCESS DENIED. AUTHORIZED PERSONNEL ONLY.</span>
+      </div>
+    </div>
+  );
+}
   return (
     <div className="flex h-screen bg-[#f0f2f5]">
       {/* LEFT — User List */}

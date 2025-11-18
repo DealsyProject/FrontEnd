@@ -42,7 +42,7 @@ export default function CustomerVendorDetails() {
           : u.customerDetails
           ? u.customerDetails.address
           : "N/A",
-        active: !u.isBlocked, // 🔥 NOW IT SHOWS ACTIVE / INACTIVE CORRECTLY
+        active: !u.isBlocked, 
         avatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(
           u.fullName || "User"
         )}`,
