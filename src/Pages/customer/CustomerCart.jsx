@@ -78,17 +78,28 @@ const decreaseQty = async (cartItemId, currentQty) => {
     }
   };
 
+  // const clearCart = async () => {
+  //   try {
+  //     await axiosInstance.delete(`/Cart/clear`);
+  //     setCart([]);
+  //   } catch (error) {
+  //     console.error("❌ Error clearing cart:", error);
+  //   }
+  // };
   const clearCart = async () => {
     try {
+      const customerId = localStorage.getItem("userId");
       await axiosInstance.delete(`/Cart/clear`);
-      setCart([]);
+
+      setCart([]); // empty the UI
+      alert("🗑️ Cart cleared!");
     } catch (error) {
       console.error("❌ Error clearing cart:", error);
+      alert("Failed to clear cart.");
     }
   };
-  
 
-  const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0); // Use Price and Quantity
+const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0); // Use Price and Quantity
   const shippingFee = 49;
   const finalTotal = total + shippingFee;
 
