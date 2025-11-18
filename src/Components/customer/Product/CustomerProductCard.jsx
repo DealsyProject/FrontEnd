@@ -6,26 +6,19 @@ export default function CustomerProductCard({ product }) {
   const navigate = useNavigate();
 
   const handleAddToCart = async () => {
-    try {
-      const customerId = localStorage.getItem("userId");
-      if (!customerId) {
-        alert("Please log in to add items to your cart.");
-        navigate("/login");
-        return;
-      }
+  try {
+    await axiosInstance.post("/Cart", {
+      productId: product.id,
+      quantity: 1
+    });
 
-      await axiosInstance.post("/Cart", {
-        customerId: parseInt(customerId),
-        productId: product.id,
-        quantity: 1,
-      });
+    alert("✅ Product added to cart!");
+  } catch (error) {
+    console.error("❌ Error adding to cart:", error);
+    alert("Failed to add product to cart.");
+  }
+};
 
-      alert("✅ Product added to cart!");
-    } catch (error) {
-      console.error("❌ Error adding to cart:", error);
-      alert("Failed to add product to cart.");
-    }
-  };
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition">

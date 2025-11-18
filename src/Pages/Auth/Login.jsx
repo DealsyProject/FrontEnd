@@ -5,18 +5,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import axiosInstance from '../../Components/utils/axiosInstance';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -26,7 +20,6 @@ const Login = () => {
       toast.error('Please enter your email');
       return;
     }
-
     if (!formData.password) {
       toast.error('Please enter your password');
       return;
@@ -87,6 +80,7 @@ const Login = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
+
       if (error.response) {
         toast.error(error.response.data?.message || 'Login failed');
       } else if (error.request) {
@@ -128,8 +122,8 @@ const Login = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6 text-gray-900">
               <div>
-                <label 
-                  htmlFor="email" 
+                <label
+                  htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   Enter Email
@@ -149,8 +143,8 @@ const Login = () => {
               </div>
 
               <div>
-                <label 
-                  htmlFor="password" 
+                <label
+                  htmlFor="password"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   Enter Password
@@ -192,6 +186,7 @@ const Login = () => {
           </div>
         </div>
       </div>
+
       <ToastContainer />
     </div>
   );

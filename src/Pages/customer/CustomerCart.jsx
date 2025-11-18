@@ -86,6 +86,18 @@ const decreaseQty = async (cartItemId, currentQty) => {
       console.error("❌ Error clearing cart:", error);
     }
   };
+  const clearCart = async () => {
+    try {
+      const customerId = localStorage.getItem("userId");
+      await axiosInstance.delete(`/Cart/clear`);
+
+      setCart([]); // empty the UI
+      alert("🗑️ Cart cleared!");
+    } catch (error) {
+      console.error("❌ Error clearing cart:", error);
+      alert("Failed to clear cart.");
+    }
+  };
 
   const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0); // Use Price and Quantity
   const shippingFee = 49;
@@ -207,6 +219,12 @@ const decreaseQty = async (cartItemId, currentQty) => {
                 }`}
               >
                 {cart.length === 0 ? "Cart is Empty" : "Proceed to Checkout"}
+              </button>
+              <button
+                onClick={clearCart}
+                className="w-full bg-red-600 text-white py-3 rounded-md hover:bg-red-700 transition"
+              >
+                Clear Cart
               </button>
             </div>
           </div>
