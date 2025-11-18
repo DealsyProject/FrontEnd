@@ -1,164 +1,165 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { FaRegHeart, FaHeart } from "react-icons/fa";
 import Navbar from "../../Components/customer/Common/Navbar";
 import Footer from "../../Components/customer/Common/Footer";
+import axiosInstance from "../../Components/utils/axiosInstance";
 
 export default function CustomerProductView() {
+  const { id } = useParams();
   const [wishlist, setWishlist] = useState(false);
-  const [mainImage, setMainImage] = useState(
-    "https://plus.unsplash.com/premium_photo-1719289718424-0f5071da5a3a?ixlib=rb-4.1.0&auto=format&fit=crop&q=80&w=2070"
-  );
+  const [mainImage, setMainImage] = useState("");
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const mainProduct = {
-    name: "Eco-Friendly Ceramic Mug",
-    subheading: "Sustainable everyday use",
-    price: "₹499",
-    description:
-      "This handcrafted ceramic mug is perfect for your daily coffee or tea. Made with eco-friendly materials and a smooth matte finish for a premium feel.",
-    images: [
-      "https://images.unsplash.com/photo-1592782239353-381b0ab5a617?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=722",
-      "https://plus.unsplash.com/premium_photo-1719017276568-1c6e871bc471?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1171",
-      "https://plus.unsplash.com/premium_photo-1719617327169-c7c1f3bd18c1?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1332",
-    ],
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        // FIXED: Ensure id is defined before making the request
+        if (!id) {
+          console.error("Product ID is undefined");
+          setLoading(false);
+          return;
+        }
+
+        const response = await axiosInstance.get(`/Product/${id}`);
+        const data = response.data;
+
+        // CORRECTED: Use PascalCase properties
+        if (data.Images?.length > 0) {
+          setMainImage(data.Images[0].ImageData);
+        }
+
+        setProduct(data);
+        setLoading(false);
+
+        // Check if product is in wishlist
+        await checkWishlistStatus(data.Id);
+      } catch (error) {
+        console.error("❌ Error fetching product:", error);
+        setLoading(false);
+      }
+    };
+    
+    fetchProduct();
+  }, [id]);
+
+  const checkWishlistStatus = async (productId) => {
+    try {
+      const response = await axiosInstance.get(`/Wishlist`);
+      const wishlistItems = response.data;
+      const isInWishlist = wishlistItems.some(item => item.productId === productId);
+      setWishlist(isInWishlist);
+    } catch (error) {
+      console.error("❌ Error checking wishlist status:", error);
+    }
   };
 
-  const relatedProducts = [
-    {
-      name: "Blue Coffee Cup",
-      desc: "Sustainable everyday use",
-      price: "₹299",
-      img: "https://plus.unsplash.com/premium_photo-1718401701449-74ee891283d8?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
-    },
-    {
-      name: "Heart design mug",
-      desc: "Sustainable everyday use",
-      price: "₹349",
-      img: "https://images.unsplash.com/photo-1633677491302-db7fc823561b?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
-    },
-    {
-      name: "yellow coffee cup",
-      desc: "Sustainable everyday use",
-      price: "₹399",
-      img: "https://images.unsplash.com/photo-1685384338018-1774719d5b69?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=687",
-    },
-  ];
+  const handleAddToCart = async () => {
+    try {
+      await axiosInstance.post(`/Cart`, {
+        productId: product.Id,
+        quantity: 1,
+      });
+      alert("✅ Product added to cart!");
+    } catch (error) {
+      console.error("❌ Add to cart failed:", error);
+      alert("Failed to add product to cart.");
+    }
+  };
+
+  const handleWishlist = async () => {
+    try {
+      if (!wishlist) {
+        await axiosInstance.post(`/Wishlist`, {
+          productId: product.Id,
+        });
+        setWishlist(true);
+        alert("✅ Added to wishlist!");
+      } else {
+        alert("Remove from wishlist feature coming soon!");
+      }
+    } catch (error) {
+      console.error("❌ Wishlist update failed:", error);
+    }
+  };
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!product) return <div className="min-h-screen flex items-center justify-center">Product not found.</div>;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fde7e7]">
-      {/* ✅ Navbar */}
       <Navbar />
-
-      {/* ✅ Main Content */}
       <main className="flex-grow flex flex-col items-center py-10 px-5">
-        {/* Main Product Section */}
         <div className="bg-white rounded-xl shadow-md p-8 max-w-5xl w-full">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
-            {/* Product Image Section */}
+            {/* Product Image */}
             <div className="relative flex flex-col items-center">
               <img
-                src={mainImage}
-                alt={mainProduct.name}
-                className="w-full h-80 object-cover rounded-lg shadow-sm transition-all duration-300"
+                src={mainImage || "https://via.placeholder.com/400x300?text=No+Image"}
+                alt={product.ProductName} 
+                className="w-full h-80 object-cover rounded-lg shadow-sm"
               />
-
-              {/* Wishlist Heart Button */}
               <button
-                onClick={() => setWishlist(!wishlist)}
-                className="absolute top-3 right-3 bg-white rounded-full p-2 shadow-md hover:scale-110 transition"
-                title={wishlist ? "Remove from wishlist" : "Add to wishlist"}
+                onClick={handleWishlist}
+                className="absolute top-3 right-3 bg-white rounded-full p-2 shadow-md"
               >
-                {wishlist ? (
-                  <FaHeart className="text-red-500 text-xl" />
-                ) : (
-                  <FaRegHeart className="text-gray-600 text-xl" />
-                )}
+                {wishlist ? <FaHeart className="text-red-500 text-xl" /> : <FaRegHeart className="text-gray-600 text-xl" />}
               </button>
-
-              {/* Thumbnails */}
               <div className="flex gap-4 mt-5">
-                {mainProduct.images.map((img, i) => (
+                {product.Images?.map((img, i) => (
                   <img
                     key={i}
-                    src={img}
-                    alt="product thumbnail"
-                    className={`w-20 h-20 object-cover rounded-md cursor-pointer border-2 transition ${
-                      img === mainImage
-                        ? "border-[#3b450d]"
-                        : "border-transparent hover:border-gray-400"
+                    src={img.ImageData} 
+                    alt="thumb"
+                    onClick={() => setMainImage(img.ImageData)} 
+                    className={`w-20 h-20 object-cover rounded-md cursor-pointer border-2 ${
+                      img.ImageData === mainImage ? "border-[#3b450d]" : "border-transparent"
                     }`}
-                    onClick={() => setMainImage(img)}
                   />
                 ))}
               </div>
             </div>
 
-            {/* Product Info Section */}
+            {/* Product Details */}
             <div>
-              <h1 className="text-3xl font-semibold mb-2 text-gray-800">
-                {mainProduct.name}
-              </h1>
-              <p className="text-gray-500 mb-4">{mainProduct.subheading}</p>
-              <p className="text-2xl font-semibold text-[#3b450d] mb-4">
-                {mainProduct.price}
-              </p>
-              <p className="text-gray-600 mb-6">{mainProduct.description}</p>
+              <h1 className="text-3xl font-semibold mb-2">{product.ProductName}</h1>
+              <p className="text-gray-500 mb-2">By {product.VendorName}</p>
+              <p className="text-gray-600 mb-4">{product.ProductCategory}</p>
 
-              {/* Wishlist + Buy Now Buttons */}
+              <p className="text-2xl font-semibold text-[#3b450d] mb-4">₹{product.Price}</p>
+              <p className={`mb-4 text-sm font-medium ${product.Quantity > 0 ? "text-green-600" : "text-red-500"}`}>
+                {product.Quantity > 0 ? `In Stock: ${product.Quantity}` : "Out of Stock"}
+              </p>
+
+              <p className="text-gray-600 mb-6">{product.Description}</p>
+
               <div className="flex gap-3">
                 <button
-                  onClick={() => setWishlist(!wishlist)}
-                  className={`flex-1 px-6 py-2 rounded-md transition font-medium ${
-                    wishlist
-                      ? "bg-red-500 text-white hover:bg-red-600"
-                      : "border border-[#3b450d] text-[#3b450d] hover:bg-[#f4f4f4]"
+                  onClick={handleWishlist}
+                  className={`flex-1 px-6 py-2 rounded-md ${
+                    wishlist ? "bg-red-500 text-white" : "border border-[#3b450d] text-[#3b450d]"
                   }`}
                 >
                   {wishlist ? "Added to Wishlist ❤️" : "Add to Wishlist"}
                 </button>
-                <button className="flex-1 bg-[#3b450d] text-white px-6 py-2 rounded-md hover:bg-[#2e350b] transition">
-                  Buy Now
+
+                <button
+                  disabled={product.Quantity === 0}
+                  onClick={handleAddToCart}
+                  className={`flex-1 px-6 py-2 rounded-md ${
+                    product.Quantity === 0
+                      ? "bg-gray-400 text-gray-100 cursor-not-allowed"
+                      : "bg-[#3b450d] text-white hover:bg-[#2e350b]"
+                  }`}
+                >
+                  {product.Quantity === 0 ? "Out of Stock" : "Add to Cart 🛒"}
                 </button>
               </div>
-
-              <p className="text-gray-400 text-xs mt-4">
-                Free shipping on orders above ₹999
-              </p>
             </div>
           </div>
         </div>
-
-        {/* Related Products Section */}
-        <div className="max-w-6xl w-full mt-16">
-          <h2 className="text-2xl font-semibold text-center mb-8 text-gray-800">
-            Related Products
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {relatedProducts.map((item, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-xl shadow-sm hover:shadow-lg transition p-4 cursor-pointer group"
-              >
-                <img
-                  src={item.img}
-                  alt={item.name}
-                  className="w-full h-44 object-cover rounded-lg mb-3 group-hover:scale-105 transition"
-                />
-                <div className="flex justify-between items-center mb-1">
-                  <h3 className="text-lg font-medium text-gray-800">
-                    {item.name}
-                  </h3>
-                  <FaRegHeart className="text-gray-500 hover:text-red-500 cursor-pointer" />
-                </div>
-                <p className="text-sm text-gray-500 mb-2">{item.desc}</p>
-                <p className="text-gray-900 font-semibold">{item.price}</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </main>
-
-      {/* ✅ Footer */}
       <Footer />
     </div>
   );

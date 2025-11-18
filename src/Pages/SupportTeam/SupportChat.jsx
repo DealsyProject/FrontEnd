@@ -17,6 +17,7 @@ function SupportChat() {
   const connRef = useRef(null);
   const isMounted = useRef(true);
 
+
   useEffect(() => {
     isMounted.current = true;
     const startConnection = async () => {

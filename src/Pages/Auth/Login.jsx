@@ -43,33 +43,35 @@ const Login = () => {
       const { data } = response;
 
       if (response.status === 200) {
-        // Store authentication data
-        localStorage.setItem('authToken', data.token);
+        console.log('Login response:', data); // Debug log
+
+        // CORRECTED: Store authentication data with proper field names
+        localStorage.setItem('authToken', data.Token); // Note: 'Token' with capital T
         localStorage.setItem(
           'currentUser',
           JSON.stringify({
-            userId: data.userId,
-            fullName: data.fullName,
-            email: data.email,
-            role: data.role,
-            isRegistrationComplete: data.isRegistrationComplete
+            userId: data.UserId, // Capital U
+            fullName: data.FullName, // Capital F
+            email: data.Email, // Capital E
+            role: data.Role, // Capital R
+            isRegistrationComplete: data.IsRegistrationComplete, // Capital I
+            vendorId: data.VendorId || data.vendorId // Include vendorId if available
           })
         );
 
         toast.success('Login successful!');
 
         setTimeout(() => {
-          const role = data.role?.toString().toLowerCase();
+          const role = data.Role?.toString().toLowerCase();
 
-          
           if (role === 'vendor') {
-            if (data.isRegistrationComplete) {
+            if (data.IsRegistrationComplete) {
               navigate('/vendor-dashboard', { replace: true });
             } else {
               navigate('/vendor-register', { replace: true });
             }
           } else if (role === 'customer') {
-            if (data.isRegistrationComplete) {
+            if (data.IsRegistrationComplete) {
               navigate('/', { replace: true });
             } else {
               navigate('/customer-register', { replace: true });
@@ -104,7 +106,7 @@ const Login = () => {
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage:
-            'url(https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1920)',
+            'url(https://images.pexels.com/photos-1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1920)',
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-[#586330]/80"></div>
