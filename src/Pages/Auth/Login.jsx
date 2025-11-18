@@ -5,18 +5,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import axiosInstance from '../../Components/utils/axiosInstance';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -26,7 +20,6 @@ const Login = () => {
       toast.error('Please enter your email');
       return;
     }
-
     if (!formData.password) {
       toast.error('Please enter your password');
       return;
@@ -43,37 +36,38 @@ const Login = () => {
       const { data } = response;
 
       if (response.status === 200) {
-        // Store authentication data
-        localStorage.setItem('authToken', data.token);
+
+        // 🔥 FIX 1 — Store token properly (PascalCase or camelCase)
+        localStorage.setItem('authToken', data.token ?? data.Token);
+
+        // 🔥 FIX 2 — Store user details properly
         localStorage.setItem(
           'currentUser',
           JSON.stringify({
-            userId: data.userId,
-            fullName: data.fullName,
-            email: data.email,
-            role: data.role,
-            isRegistrationComplete: data.isRegistrationComplete
+            userId: data.userId ?? data.UserId,
+            fullName: data.fullName ?? data.FullName,
+            email: data.email ?? data.Email,
+            role: data.role ?? data.Role,
+            isRegistrationComplete: data.isRegistrationComplete ?? data.IsRegistrationComplete
           })
         );
 
         toast.success('Login successful!');
 
-        setTimeout(() => {
-          const role = data.role?.toString().toLowerCase();
+        // 🔥 FIX 3 — Read role correctly
+        const role = (data.Role ?? data.role)?.toString().toLowerCase();
+        const isRegComplete =
+          data.IsRegistrationComplete ?? data.isRegistrationComplete;
 
-          
+        setTimeout(() => {
           if (role === 'vendor') {
-            if (data.isRegistrationComplete) {
-              navigate('/vendor-dashboard', { replace: true });
-            } else {
-              navigate('/vendor-register', { replace: true });
-            }
+            navigate(isRegComplete ? '/vendor-dashboard' : '/vendor-register', {
+              replace: true
+            });
           } else if (role === 'customer') {
-            if (data.isRegistrationComplete) {
-              navigate('/', { replace: true });
-            } else {
-              navigate('/customer-register', { replace: true });
-            }
+            navigate(isRegComplete ? '/' : '/customer-register', {
+              replace: true
+            });
           } else if (role === 'supportteam') {
             navigate('/support-helpcenter', { replace: true });
           } else if (role === 'admin') {
@@ -85,6 +79,7 @@ const Login = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
+
       if (error.response) {
         toast.error(error.response.data?.message || 'Login failed');
       } else if (error.request) {
@@ -104,7 +99,7 @@ const Login = () => {
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage:
-            'url(https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1920)',
+            'url(https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1920)'
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-[#586330]/80"></div>
@@ -126,8 +121,8 @@ const Login = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6 text-gray-900">
               <div>
-                <label 
-                  htmlFor="email" 
+                <label
+                  htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   Enter Email
@@ -147,8 +142,8 @@ const Login = () => {
               </div>
 
               <div>
-                <label 
-                  htmlFor="password" 
+                <label
+                  htmlFor="password"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   Enter Password
@@ -190,6 +185,7 @@ const Login = () => {
           </div>
         </div>
       </div>
+
       <ToastContainer />
     </div>
   );
