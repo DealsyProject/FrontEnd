@@ -41,31 +41,27 @@ export default function CustomerProductView() {
   }, [id]);
 
   const handleAddToCart = async () => {
-    try {
-      const customerId = localStorage.getItem("userId");
-      await axiosInstance.post(`/Cart`, {
-        customerId,
-        productId: product.id,
-        quantity: 1,
-      });
-      alert("✅ Product added to cart!");
-    } catch (error) {
-      console.error("❌ Add to cart failed:", error);
-      alert("Failed to add product to cart.");
-    }
-  };
+  try {
+    await axiosInstance.post("/Cart", {
+      productId: product.id,
+      quantity: 1,
+    });
+
+    alert("✅ Product added to cart!");
+  } catch (error) {
+    console.error("❌ Add to cart failed:", error);
+    alert("Failed to add product to cart.");
+  }
+};
+
 
   const handleWishlist = async () => {
     try {
-      const customerId = localStorage.getItem("userId");
-      if (!wishlist) {
         await axiosInstance.post(`/Wishlist`, {
           customerId,
           productId: product.id,
         });
-      } else {
-        // remove from wishlist — backend handles this too
-      }
+      
       setWishlist(!wishlist);
     } catch (error) {
       console.error("❌ Wishlist update failed:", error);

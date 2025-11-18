@@ -10,8 +10,7 @@ export default function CustomerCart() {
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        const customerId = localStorage.getItem("userId");
-        const res = await axiosInstance.get(`/Cart/${customerId}`);
+        const res = await axiosInstance.get(`/Cart`);
         setCart(res.data);
       } catch (error) {
         console.error("❌ Error fetching cart:", error);
@@ -33,6 +32,18 @@ export default function CustomerCart() {
   const removeItem = async (id) => {
     await axiosInstance.delete(`/Cart/${id}`);
     setCart((prev) => prev.filter((i) => i.id !== id));
+  };
+  const clearCart = async () => {
+    try {
+      const customerId = localStorage.getItem("userId");
+      await axiosInstance.delete(`/Cart/clear`);
+
+      setCart([]); // empty the UI
+      alert("🗑️ Cart cleared!");
+    } catch (error) {
+      console.error("❌ Error clearing cart:", error);
+      alert("Failed to clear cart.");
+    }
   };
 
   const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
@@ -89,6 +100,12 @@ export default function CustomerCart() {
               </div>
               <button className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition">
                 Checkout
+              </button>
+              <button
+                onClick={clearCart}
+                className="w-full bg-red-600 text-white py-3 rounded-md hover:bg-red-700 transition"
+              >
+                Clear Cart
               </button>
             </div>
           </div>
