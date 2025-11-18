@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import * as signalR from "@microsoft/signalr";
 import { jwtDecode } from "jwt-decode";
-import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Float, Text3D, Center } from '@react-three/drei'
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, Float, Text3D, Center } from "@react-three/drei";
 function SupportChat() {
   // --- hooks ---
   const [connection, setConnection] = useState(null);
@@ -17,26 +17,36 @@ function SupportChat() {
   const connRef = useRef(null);
   const isMounted = useRef(true);
 
-
   useEffect(() => {
     isMounted.current = true;
     const startConnection = async () => {
       setConnectionStatus("Connecting...");
       try {
         const token = localStorage.getItem("authToken");
+        console.log("Token length:", token?.length);
+        console.log("Token parts:", token?.split(".")?.length);
         if (!token) {
           setConnectionStatus("No token");
           console.warn("Please login first: no authToken in localStorage.");
           return;
         }
 
-        const decoded = jwtDecode(token);
+        try {
+          const decoded = jwtDecode(token);
+          console.log("Decoded token:", decoded);
+        } catch (e) {
+          console.error("Decode failed:", e);
+        }
         const role =
-          decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+          decoded[
+            "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+          ] ||
           decoded.role ||
           decoded["role"];
+        console.log("Decoded token:", decoded);
 
-        const isSupport = role === "SupportTeam" || role === "4" || Number(role) === 4;
+        const isSupport =
+          role === "SupportTeam" || role === "4" || Number(role) === 4;
         if (!isSupport) {
           setConnectionStatus("Unauthorized");
           console.warn("Access denied. Support team only.");
@@ -45,7 +55,9 @@ function SupportChat() {
 
         setIsAuthorized(true);
 
-        const hubUrl = `https://localhost:7001/chatHub?access_token=${encodeURIComponent(token)}`;
+        const hubUrl = `https://localhost:7001/chatHub?access_token=${encodeURIComponent(
+          token
+        )}`;
 
         const conn = new signalR.HubConnectionBuilder()
           .withUrl(hubUrl)
@@ -55,15 +67,15 @@ function SupportChat() {
 
         connRef.current = conn;
 
-        conn.onreconnecting(err => {
+        conn.onreconnecting((err) => {
           console.log("reconnecting", err);
           if (isMounted.current) setConnectionStatus("Reconnecting...");
         });
-        conn.onreconnected(id => {
+        conn.onreconnected((id) => {
           console.log("reconnected", id);
           if (isMounted.current) setConnectionStatus("Connected");
         });
-        conn.onclose(err => {
+        conn.onclose((err) => {
           console.log("closed", err);
           if (isMounted.current) {
             setConnectionStatus("Disconnected");
@@ -72,23 +84,33 @@ function SupportChat() {
         });
 
         conn.on("ReceiveMessage", (fromUserId, msg) => {
-          setChatHistory(prev => {
+          setChatHistory((prev) => {
             const list = prev[fromUserId] ? [...prev[fromUserId]] : [];
-            list.push({ fromUserId, msg, isSupport: false, timestamp: new Date() });
+            list.push({
+              fromUserId,
+              msg,
+              isSupport: false,
+              timestamp: new Date(),
+            });
             return { ...prev, [fromUserId]: list };
           });
 
           // Check if we already have this customer in our list
-          setCustomers(prev => {
-            const exists = prev.some(customer => customer.userId === fromUserId);
+          setCustomers((prev) => {
+            const exists = prev.some(
+              (customer) => customer.userId === fromUserId
+            );
             if (exists) return prev;
-            
+
             // If not, add a placeholder customer object
-            return [...prev, { 
-              userId: fromUserId, 
-              fullName: `Customer ${fromUserId.substring(0, 8)}...`,
-              email: '' 
-            }];
+            return [
+              ...prev,
+              {
+                userId: fromUserId,
+                fullName: `Customer ${fromUserId.substring(0, 8)}...`,
+                email: "",
+              },
+            ];
           });
         });
 
@@ -102,11 +124,15 @@ function SupportChat() {
           // This will now return an array of customer objects with names
           const allCustomers = await conn.invoke("GetAllCustomers");
           if (isMounted.current && Array.isArray(allCustomers)) {
-            setCustomers(prev => {
+            setCustomers((prev) => {
               // Merge existing customers with new ones, avoiding duplicates
               const merged = [...prev];
-              allCustomers.forEach(newCustomer => {
-                if (!merged.some(existing => existing.userId === newCustomer.userId)) {
+              allCustomers.forEach((newCustomer) => {
+                if (
+                  !merged.some(
+                    (existing) => existing.userId === newCustomer.userId
+                  )
+                ) {
                   merged.push(newCustomer);
                 }
               });
@@ -143,19 +169,24 @@ function SupportChat() {
   const sendMessage = async () => {
     if (!connRef.current || !selectedUser || !message.trim()) return;
     try {
-      setChatHistory(prev => ({
+      setChatHistory((prev) => ({
         ...prev,
         [selectedUser]: [
           ...(prev[selectedUser] || []),
-          { fromUserId: "support", msg: message, isSupport: true, timestamp: new Date() }
-        ]
+          {
+            fromUserId: "support",
+            msg: message,
+            isSupport: true,
+            timestamp: new Date(),
+          },
+        ],
       }));
       const txt = message;
       setMessage("");
       await connRef.current.invoke("SendPrivateMessage", selectedUser, txt);
     } catch (e) {
       console.error("Failed to send:", e);
-      setChatHistory(prev => {
+      setChatHistory((prev) => {
         const list = [...(prev[selectedUser] || [])];
         if (list.length) {
           const last = list[list.length - 1];
@@ -179,45 +210,47 @@ function SupportChat() {
   const getInitials = (customer) => {
     if (customer.fullName && customer.fullName !== "Unknown Customer") {
       return customer.fullName
-        .split(' ')
-        .map(word => word[0])
-        .join('')
+        .split(" ")
+        .map((word) => word[0])
+        .join("")
         .toUpperCase()
         .substring(0, 2);
     }
     return customer.userId.substring(0, 2).toUpperCase();
   };
 
+  if (!isAuthorized) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-black relative overflow-hidden">
+        {/* Animated background particles */}
+        <div className="absolute inset-0 opacity-30">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className={`absolute w-1 h-1 bg-green-400 rounded-full animate-pulse`}
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${1 + Math.random() * 2}s`,
+              }}
+            ></div>
+          ))}
+        </div>
 
-
-
-
-if (!isAuthorized) {
-  return (
-    <div className="flex items-center justify-center h-screen bg-black relative overflow-hidden">
-      {/* Animated background particles */}
-      <div className="absolute inset-0 opacity-30">
-        {[...Array(20)].map((_, i) => (
-          <div key={i} 
-               className={`absolute w-1 h-1 bg-green-400 rounded-full animate-pulse`}
-               style={{
-                 left: `${Math.random() * 100}%`,
-                 top: `${Math.random() * 100}%`,
-                 animationDelay: `${Math.random() * 2}s`,
-                 animationDuration: `${1 + Math.random() * 2}s`
-               }}></div>
-        ))}
-      </div>
-      
-      <div className="animate-glitch text-red-400 font-mono text-xl font-bold 
+        <div
+          className="animate-glitch text-red-400 font-mono text-xl font-bold 
                      border border-green-400/30 bg-black/80 backdrop-blur-lg
-                     px-8 py-6 relative group hover:border-red-400/50 transition-all duration-500">
-        <div className="animate-ping-slow absolute -inset-1 bg-red-400/20 rounded-lg blur-sm"></div>
-        <span className="relative z-10">🚫 ACCESS DENIED. AUTHORIZED PERSONNEL ONLY.</span>
+                     px-8 py-6 relative group hover:border-red-400/50 transition-all duration-500"
+        >
+          <div className="animate-ping-slow absolute -inset-1 bg-red-400/20 rounded-lg blur-sm"></div>
+          <span className="relative z-10">
+            🚫 ACCESS DENIED. AUTHORIZED PERSONNEL ONLY.
+          </span>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
   return (
     <div className="flex h-screen bg-[#f0f2f5]">
       {/* LEFT — User List */}
@@ -233,7 +266,9 @@ if (!isAuthorized) {
         {/* Customer List */}
         <div className="flex-1 overflow-y-auto p-3">
           {customers.length === 0 && (
-            <p className="text-gray-500 text-center mt-10 text-sm">No customers yet</p>
+            <p className="text-gray-500 text-center mt-10 text-sm">
+              No customers yet
+            </p>
           )}
 
           {customers.map((customer, i) => (
@@ -250,15 +285,18 @@ if (!isAuthorized) {
                 {getInitials(customer)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold truncate">{getDisplayName(customer)}</div>
+                <div className="font-semibold truncate">
+                  {getDisplayName(customer)}
+                </div>
                 <div className="text-xs text-gray-500 truncate">
-                  {customer.email || `ID: ${customer.userId.substring(0, 10)}...`}
+                  {customer.email ||
+                    `ID: ${customer.userId.substring(0, 10)}...`}
                 </div>
                 <div className="text-xs text-gray-400">
                   {chatHistory[customer.userId]?.length || 0} messages
                 </div>
               </div>
-            </div>//
+            </div> //
           ))}
         </div>
       </div>
@@ -270,14 +308,23 @@ if (!isAuthorized) {
             {/* Chat Header */}
             <div className="px-5 py-4 bg-white shadow flex items-center gap-3 border-b">
               <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold">
-                {getInitials(customers.find(c => c.userId === selectedUser) || { userId: selectedUser })}
+                {getInitials(
+                  customers.find((c) => c.userId === selectedUser) || {
+                    userId: selectedUser,
+                  }
+                )}
               </div>
               <div>
                 <h3 className="font-medium">
-                  {getDisplayName(customers.find(c => c.userId === selectedUser) || { userId: selectedUser })}
+                  {getDisplayName(
+                    customers.find((c) => c.userId === selectedUser) || {
+                      userId: selectedUser,
+                    }
+                  )}
                 </h3>
                 <p className="text-xs text-gray-500">
-                  {customers.find(c => c.userId === selectedUser)?.email || 'Customer'}
+                  {customers.find((c) => c.userId === selectedUser)?.email ||
+                    "Customer"}
                 </p>
               </div>
             </div>
@@ -298,7 +345,11 @@ if (!isAuthorized) {
                   >
                     {!m.isSupport && (
                       <div className="w-9 h-9 rounded-full bg-gray-300 mr-2 flex items-center justify-center text-xs font-bold">
-                        {getInitials(customers.find(c => c.userId === m.fromUserId) || { userId: m.fromUserId })}
+                        {getInitials(
+                          customers.find((c) => c.userId === m.fromUserId) || {
+                            userId: m.fromUserId,
+                          }
+                        )}
                       </div>
                     )}
 
