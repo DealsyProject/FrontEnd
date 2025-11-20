@@ -3,6 +3,7 @@ import * as signalR from "@microsoft/signalr";
 import { jwtDecode } from "jwt-decode";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Float, Text3D, Center } from "@react-three/drei";
+import toast from "react-hot-toast";
 function SupportChat() {
   // --- hooks ---
   const [connection, setConnection] = useState(null);
@@ -194,7 +195,7 @@ function SupportChat() {
         }
         return { ...prev, [selectedUser]: list };
       });
-      alert("Failed to send message");
+      toast.error("Failed to send message");
     }
   };
 
