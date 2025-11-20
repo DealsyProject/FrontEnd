@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const axiosInstance = axios.create({
   baseURL: 'https://localhost:7001/api', // <-- API base
-  timeout: 100000,
+  timeout: 120000,
   headers: { 'Content-Type': 'application/json' },
 });
 
