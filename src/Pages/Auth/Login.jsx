@@ -39,9 +39,7 @@ const Login = () => {
         console.log('Login response:', data); // Debug log
 
         // CORRECTED: Store authentication data with proper field names
-        localStorage.setItem('authToken', data.Token);
-        console.log("Token parts:", Token?.split(".")?.length);
- // Note: 'Token' with capital T
+        localStorage.setItem('authToken', data.Token); // Note: 'Token' with capital T
         localStorage.setItem(
           'currentUser',
           JSON.stringify({
@@ -194,4 +192,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Login;
