@@ -795,37 +795,8 @@ export default function ReturnRefundTracker() {
           </div>
         </section>
 
-        {/* Quick Actions */}
-        <section className="mb-8">
-          <h2 className={`text-lg font-semibold mb-4 ${
-            darkMode ? 'text-white' : 'text-gray-900'
-          }`}>
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => (
-              <motion.button
-                key={action.label}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`flex items-center gap-3 p-4 rounded-xl shadow-sm border hover:shadow-md transition-all ${
-                  darkMode
-                    ? 'bg-gray-800 border-gray-700 hover:shadow-gray-900'
-                    : 'bg-white border-gray-100 hover:shadow-gray-200'
-                }`}
-              >
-                <div className={`p-2 rounded-lg ${action.color} bg-opacity-10`}>
-                  <action.icon size={20} className="text-[#586330]" />
-                </div>
-                <span className={`text-sm font-medium ${
-                  darkMode ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  {action.label}
-                </span>
-              </motion.button>
-            ))}
-          </div>
-        </section>
+       
+    
 
         {/* Returns Section */}
         <section>
