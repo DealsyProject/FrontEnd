@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ProductModal from '../../../Components/Vendor/Dashboard/modals/ProductModal';
@@ -8,13 +8,14 @@ import axiosInstance from '../../../Components/utils/axiosInstance';
 
 const Products = () => {
   const navigate = useNavigate();
+  const isFetchingRef = useRef(false);
   
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
     localStorage.removeItem('tempUserData');
     navigate('/');
-  };
+  }, [navigate]);
 
   const activeView = 'products';
   const [activeCategory, setActiveCategory] = useState('all');
@@ -36,18 +37,17 @@ const Products = () => {
     { id: 'Cloth', name: 'Cloth' }
   ];
 
-  // Updated state to support multiple images
   const [newProduct, setNewProduct] = useState({
     productName: '',
     description: '',
     price: 0,
     quantity: 1,
     productCategory: '',
-    images: [], // Changed from 'image' to 'images' array
+    images: [],
     rating: 0
   });
 
-  const handleApiError = (error, defaultMessage) => {
+  const handleApiError = useCallback((error, defaultMessage) => {
     console.error('API Error:', error);
     
     if (error.response?.status === 401) {
@@ -65,26 +65,70 @@ const Products = () => {
                         error.response?.data?.errors?.[0]?.errorMessage ||
                         defaultMessage;
     toast.error(errorMessage);
+  }, [handleLogout]);
+
+  // Helper function to normalize product data from PascalCase to camelCase
+  const normalizeProductData = (product) => {
+    if (!product) return null;
+    
+    return {
+      id: product.Id,
+      vendorId: product.VendorId,
+      vendorName: product.VendorName,
+      productName: product.ProductName,
+      description: product.Description,
+      price: product.Price,
+      quantity: product.Quantity,
+      rating: product.Rating,
+      productCategory: product.ProductCategory,
+      createdOn: product.CreatedOn,
+      modifiedOn: product.ModifiedOn,
+      images: (product.Images || []).map(image => ({
+        id: image.Id,
+        imageUrl: image.ImageUrl,
+        imageOrder: image.ImageOrder,
+        isPrimary: image.IsPrimary
+      }))
+    };
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  // Fetch vendor's own products
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
+    if (isFetchingRef.current) {
+      console.log('Already fetching products, skipping...');
+      return;
+    }
+    
     try {
+      isFetchingRef.current = true;
       setLoading(true);
-      // Changed to use my-products endpoint for vendor's own products
+      console.log('Fetching products from /Product/my-products');
+      
       const response = await axiosInstance.get('/Product/my-products');
-      setProducts(response.data.products || []);
+      console.log('Products API Response:', response.data);
+      
+      const productsData = response.data.products || [];
+      console.log('Products count:', productsData.length);
+      
+      // Normalize the product data from PascalCase to camelCase
+      const normalizedProducts = productsData.map(normalizeProductData);
+      setProducts(normalizedProducts);
+      
+      if (productsData.length === 0) {
+        toast.info('No products found. Add your first product!');
+      }
     } catch (error) {
+      console.error('Error fetching products:', error);
       handleApiError(error, 'Failed to load products');
       setProducts([]);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  };
+  }, [handleApiError]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const searchProducts = async () => {
     if (!searchTerm.trim()) {
@@ -95,9 +139,15 @@ const Products = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get(`/Product/search?searchTerm=${encodeURIComponent(searchTerm)}`);
-      // Filter to show only vendor's products from search results
-      const vendorProducts = response.data.products || [];
-      setProducts(vendorProducts);
+      const searchResults = response.data.products || [];
+      
+      // Normalize search results too
+      const normalizedResults = searchResults.map(normalizeProductData);
+      setProducts(normalizedResults);
+      
+      if (searchResults.length === 0) {
+        toast.info('No products found matching your search');
+      }
     } catch (error) {
       handleApiError(error, 'Failed to search products');
     } finally {
@@ -105,14 +155,21 @@ const Products = () => {
     }
   };
 
+  // Filter products - now using normalized camelCase properties
   const filteredProducts = products.filter(product => {
+    if (!product) return false;
+    
+    const productCategory = product.productCategory || '';
+    const productName = product.productName || '';
+    const description = product.description || '';
+    
     const categoryMatch = activeCategory === 'all' || 
-      product.productCategory?.toLowerCase() === activeCategory.toLowerCase();
+      productCategory.toLowerCase() === activeCategory.toLowerCase();
     
     const searchMatch = 
-      product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.productCategory?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      productCategory.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      description.toLowerCase().includes(searchTerm.toLowerCase());
 
     return categoryMatch && searchMatch;
   });
@@ -148,25 +205,30 @@ const Products = () => {
       price: 0,
       quantity: 1,
       productCategory: '',
-      images: [], // Reset to empty array
+      images: [],
       rating: 0
     });
     setShowAddModal(true);
   };
 
-  const handleUpdateProduct = (product) => {
-    setEditingProduct(product);
-    setNewProduct({ 
-      productName: product.productName,
-      description: product.description,
-      price: product.price,
-      quantity: product.quantity,
-      productCategory: product.productCategory,
-      images: product.images?.map(img => img.imageData) || [], // Map images from response
-      rating: product.rating || 0
-    });
-    setShowUpdateModal(true);
-  };
+ const handleUpdateProduct = (product) => {
+  console.log('Editing product:', product);
+  setEditingProduct(product);
+  
+  // Extract image URLs from the product's images array
+  const existingImageUrls = (product.images || []).map(img => img.imageUrl);
+  
+  setNewProduct({ 
+    productName: product.productName || '',
+    description: product.description || '',
+    price: product.price || 0,
+    quantity: product.quantity || 1,
+    productCategory: product.productCategory || '',
+    images: existingImageUrls, // Now includes existing image URLs
+    rating: product.rating || 0
+  });
+  setShowUpdateModal(true);
+};
 
   const validateProduct = () => {
     if (!newProduct.productName?.trim()) {
@@ -207,17 +269,25 @@ const Products = () => {
 
     setSaving(true);
     try {
-      const productData = {
-        productName: newProduct.productName.trim(),
-        description: newProduct.description.trim(),
-        price: parseFloat(newProduct.price),
-        quantity: parseInt(newProduct.quantity),
-        productCategory: newProduct.productCategory.trim(),
-        images: newProduct.images, // Send array of Base64 images
-        rating: parseFloat(newProduct.rating) || 0
-      };
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('productName', newProduct.productName.trim());
+      formData.append('description', newProduct.description.trim());
+      formData.append('price', parseFloat(newProduct.price));
+      formData.append('quantity', parseInt(newProduct.quantity));
+      formData.append('productCategory', newProduct.productCategory.trim());
+      formData.append('rating', parseFloat(newProduct.rating) || 0);
 
-      await axiosInstance.post('/Product/create', productData);
+      // Append each image file
+      newProduct.images.forEach((image, index) => {
+        formData.append('images', image);
+      });
+
+      await axiosInstance.post('/Product/create', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       
       await fetchProducts();
       
@@ -247,18 +317,30 @@ const Products = () => {
 
     setSaving(true);
     try {
-      const productData = {
-        id: editingProduct.id,
-        productName: newProduct.productName.trim(),
-        description: newProduct.description.trim(),
-        price: parseFloat(newProduct.price),
-        quantity: parseInt(newProduct.quantity),
-        productCategory: newProduct.productCategory.trim(),
-        images: newProduct.images, // Send array of Base64 images
-        rating: parseFloat(newProduct.rating) || 0
-      };
+      const productId = editingProduct.id;
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Add the Id field to satisfy backend validation
+      formData.append('Id', productId.toString());
+      formData.append('productName', newProduct.productName.trim());
+      formData.append('description', newProduct.description.trim());
+      formData.append('price', parseFloat(newProduct.price));
+      formData.append('quantity', parseInt(newProduct.quantity));
+      formData.append('productCategory', newProduct.productCategory.trim());
+      formData.append('rating', parseFloat(newProduct.rating) || 0);
 
-      await axiosInstance.put(`/Product/update/${editingProduct.id}`, productData);
+      // Append each image file (if new images are provided)
+      newProduct.images.forEach((image, index) => {
+        formData.append('images', image);
+      });
+
+      await axiosInstance.put(`/Product/update/${productId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       
       await fetchProducts();
       
@@ -296,47 +378,45 @@ const Products = () => {
     }
   };
 
-  // Updated image upload handler for multiple images
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Check if already have 3 images
-      if (newProduct.images.length >= 3) {
-        toast.error('Maximum 3 images allowed');
-        return;
-      }
+    const files = Array.from(e.target.files);
+    
+    if (files.length === 0) return;
 
-      // Check file size
+    // Check total images won't exceed 3
+    if (newProduct.images.length + files.length > 3) {
+      toast.error('Maximum 3 images allowed');
+      return;
+    }
+
+    // Validate each file
+    const validFiles = files.filter(file => {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size must be less than 5MB');
-        return;
+        toast.error(`Image ${file.name} must be less than 5MB`);
+        return false;
       }
 
-      // Check file type
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
       if (!validTypes.includes(file.type)) {
-        toast.error('Please select a valid image file (JPEG, PNG, WebP)');
-        return;
+        toast.error(`Please select a valid image file (JPEG, PNG, WebP) for ${file.name}`);
+        return false;
       }
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64String = event.target.result;
-        // Add new image to the array
-        setNewProduct(prev => ({ 
-          ...prev, 
-          images: [...prev.images, base64String] 
-        }));
-        toast.success(`Image ${newProduct.images.length + 1} uploaded successfully!`);
-      };
-      reader.onerror = () => {
-        toast.error('Failed to read image file');
-      };
-      reader.readAsDataURL(file);
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      setNewProduct(prev => ({ 
+        ...prev, 
+        images: [...prev.images, ...validFiles] 
+      }));
+      toast.success(`${validFiles.length} image(s) uploaded successfully!`);
     }
+
+    // Reset file input
+    e.target.value = '';
   };
 
-  // Updated remove image handler to remove specific image by index
   const handleRemoveImage = (index) => {
     setNewProduct(prev => ({
       ...prev,
@@ -367,60 +447,75 @@ const Products = () => {
     );
   };
 
-  const handleResetFilters = () => {
-    setSearchTerm('');
-    setActiveCategory('all');
-    setVisibleProducts(6);
-    fetchProducts();
-  };
-
-  // Product Card Component with Image Gallery
   const ProductCard = ({ product }) => {
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    
     const productImages = product.images || [];
     const hasMultipleImages = productImages.length > 1;
+    
+    const getImageUrl = (image) => {
+      if (!image) return 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
+      return image.imageUrl || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
+    };
+
+    const getPrimaryImage = () => {
+      if (!productImages.length) return 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
+      
+      const primaryImage = productImages.find(img => img.isPrimary);
+      if (primaryImage) return getImageUrl(primaryImage);
+      
+      return getImageUrl(productImages[0]);
+    };
+
+    const currentImage = productImages[selectedImageIndex];
+    const displayImage = currentImage ? getImageUrl(currentImage) : getPrimaryImage();
+
+    // Now using normalized camelCase properties
+    const productName = product.productName || '';
+    const productCategory = product.productCategory || '';
+    const price = product.price || 0;
+    const rating = product.rating || 0;
+    const description = product.description || '';
+    const quantity = product.quantity || 0;
+    const createdOn = product.createdOn || new Date();
+    const productId = product.id;
 
     return (
       <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition duration-300 border border-gray-200">
-        {/* Product Image Gallery */}
         <div className="h-48 bg-gray-200 overflow-hidden relative group">
           <img 
-            src={productImages[selectedImageIndex]?.imageData || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400'} 
-            alt={product.productName}
+            src={displayImage}
+            alt={productName}
             className="w-full h-full object-cover hover:scale-105 transition duration-300"
             onError={(e) => {
               e.target.src = 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
             }}
           />
           
-          {/* Image Counter */}
           {hasMultipleImages && (
             <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
               {selectedImageIndex + 1}/{productImages.length}
             </div>
           )}
 
-          {/* Stock Status */}
-          {product.quantity === 0 && (
+          {quantity === 0 && (
             <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-sm font-medium">
               Out of Stock
             </div>
           )}
 
-          {/* Rating Badge */}
-          {product.rating > 0 && (
+          {rating > 0 && (
             <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-sm">
-              ⭐ {product.rating.toFixed(1)}
+              ⭐ {rating.toFixed(1)}
             </div>
           )}
 
-          {/* Image Thumbnails Overlay - Show on hover if multiple images */}
           {hasMultipleImages && (
             <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <div className="flex gap-2 justify-center">
                 {productImages.map((img, index) => (
                   <button
-                    key={index}
+                    key={img.id || index}
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedImageIndex(index);
@@ -432,7 +527,7 @@ const Products = () => {
                     }`}
                   >
                     <img
-                      src={img.imageData}
+                      src={getImageUrl(img)}
                       alt={`Thumbnail ${index + 1}`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -446,51 +541,49 @@ const Products = () => {
           )}
         </div>
         
-        {/* Product Info */}
         <div className="p-6">
           <div className="flex justify-between items-start mb-3">
-            <h4 className="text-lg font-semibold text-gray-900 line-clamp-2">{product.productName}</h4>
+            <h4 className="text-lg font-semibold text-gray-900 line-clamp-2">{productName}</h4>
             <span className="text-xs text-[#586330] bg-[#586330]/20 px-2 py-1 rounded-full font-medium">
-              {product.productCategory}
+              {productCategory}
             </span>
           </div>
           
           <div className="mb-3">
             <span className="text-[#586330] font-bold text-xl">
-              {formatPrice(product.price)}
+              {formatPrice(price)}
             </span>
-            {product.rating > 0 && (
+            {rating > 0 && (
               <div className="mt-1">
-                {renderRating(product.rating)}
+                {renderRating(rating)}
               </div>
             )}
           </div>
           
           <p className="text-gray-600 mb-4 text-sm leading-relaxed line-clamp-3">
-            {product.description}
+            {description}
           </p>
 
           <div className="space-y-2 text-sm text-gray-700 mb-4">
             <div className="flex justify-between">
               <span className="font-medium">Quantity:</span>
               <span className={`font-semibold ${
-                product.quantity > 10 ? 'text-green-600' : 
-                product.quantity > 0 ? 'text-yellow-600' : 'text-red-600'
+                quantity > 10 ? 'text-green-600' : 
+                quantity > 0 ? 'text-yellow-600' : 'text-red-600'
               }`}>
-                {product.quantity} in stock
+                {quantity} in stock
               </span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium">Images:</span>
               <span className="text-gray-600">{productImages.length} photo{productImages.length !== 1 ? 's' : ''}</span>
-              </div>
+            </div>
             <div className="flex justify-between">
               <span className="font-medium">Added:</span>
-              <span>{new Date(product.createdOn).toLocaleDateString()}</span>
+              <span>{new Date(createdOn).toLocaleDateString()}</span>
             </div>
           </div>
           
-          {/* Action Buttons */}
           <div className="flex space-x-2">
             <button
               onClick={() => handleUpdateProduct(product)}
@@ -499,7 +592,7 @@ const Products = () => {
               Update
             </button>
             <button
-              onClick={() => handleDeleteProduct(product.id)}
+              onClick={() => handleDeleteProduct(productId)}
               className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition font-medium text-sm"
             >
               Delete
@@ -512,10 +605,8 @@ const Products = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar */}
       <Sidebar handleLogout={handleLogout} activeView={activeView} />
 
-      {/* Main Content */}
       <div className="flex-1 p-6 text-black">
         <header className="mb-6 flex justify-between items-center">
           <div>
@@ -531,7 +622,6 @@ const Products = () => {
           </button>
         </header>
 
-        {/* Search Bar */}
         <div className="mb-6">
           <div className="flex gap-4">
             <input
@@ -548,16 +638,9 @@ const Products = () => {
             >
               Search
             </button>
-            <button
-              onClick={handleResetFilters}
-              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium"
-            >
-              Reset
-            </button>
           </div>
         </div>
 
-        {/* Product Categories */}
         <div className="flex gap-4 mb-8 flex-wrap">
           {categories.map(category => (
             <button
@@ -574,7 +657,6 @@ const Products = () => {
           ))}
         </div>
 
-        {/* Loading State */}
         {loading && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#586330] mb-4"></div>
@@ -582,7 +664,6 @@ const Products = () => {
           </div>
         )}
 
-        {/* Product Count and Stats */}
         {!loading && (
           <div className="mb-6 flex justify-between items-center">
             <p className="text-gray-600">
@@ -600,16 +681,14 @@ const Products = () => {
           </div>
         )}
 
-        {/* Product Grid */}
-        {!loading && (
+        {!loading && productsToShow.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {productsToShow.map(product => (
-              <ProductCard key={product.id} product={product} />
+            {productsToShow.map((product, index) => (
+              <ProductCard key={product.id || index} product={product} />
             ))}
           </div>
         )}
 
-        {/* No Products Message */}
         {!loading && productsToShow.length === 0 && (
           <div className="text-center py-16 bg-white rounded-xl shadow-md">
             <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -637,7 +716,6 @@ const Products = () => {
           </div>
         )}
 
-        {/* Load More Button */}
         {!loading && visibleProducts < filteredProducts.length && (
           <div className="text-center mt-8">
             <button 
@@ -649,7 +727,6 @@ const Products = () => {
           </div>
         )}
 
-        {/* Products Summary */}
         {!loading && products.length > 0 && (
           <div className="mt-8 bg-white rounded-xl shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Products Summary</h3>
@@ -681,7 +758,6 @@ const Products = () => {
         )}
       </div>
 
-      {/* Modals */}
       {showAddModal && (
         <ProductModal
           title="Add New Product"
@@ -707,31 +783,32 @@ const Products = () => {
         />
       )}
 
-      {showUpdateModal && (
-        <ProductModal
-          title="Update Product"
-          newProduct={newProduct}
-          setNewProduct={setNewProduct}
-          onSave={handleSaveUpdatedProduct}
-          onClose={() => {
-            setShowUpdateModal(false);
-            setEditingProduct(null);
-            setNewProduct({
-              productName: '',
-              description: '',
-              price: 0,
-              quantity: 1,
-              productCategory: '',
-              images: [],
-              rating: 0
-            });
-          }}
-          handleImageUpload={handleImageUpload}
-          handleRemoveImage={handleRemoveImage}
-          categories={categories.filter(cat => cat.id !== 'all')}
-          isSaving={saving}
-        />
-      )}
+     {showUpdateModal && (
+  <ProductModal
+    title="Update Product"
+    newProduct={newProduct}
+    setNewProduct={setNewProduct}
+    onSave={handleSaveUpdatedProduct}
+    onClose={() => {
+      setShowUpdateModal(false);
+      setEditingProduct(null);
+      setNewProduct({
+        productName: '',
+        description: '',
+        price: 0,
+        quantity: 1,
+        productCategory: '',
+        images: [],
+        rating: 0
+      });
+    }}
+    handleImageUpload={handleImageUpload}
+    handleRemoveImage={handleRemoveImage}
+    categories={categories.filter(cat => cat.id !== 'all')}
+    isSaving={saving}
+    editingProduct={editingProduct} // Add this line
+  />
+)}
 
       <ToastContainer 
         position="top-right" 

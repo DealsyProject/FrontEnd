@@ -36,40 +36,41 @@ const Login = () => {
       const { data } = response;
 
       if (response.status === 200) {
+        console.log('Login response:', data); // Debug log
 
-        // 🔥 FIX 1 — Store token properly (PascalCase or camelCase)
-        localStorage.setItem('authToken', data.token ?? data.Token);
-
-        // 🔥 FIX 2 — Store user details properly
+        // CORRECTED: Store authentication data with proper field names
+        localStorage.setItem('authToken', data.Token); // Note: 'Token' with capital T
         localStorage.setItem(
           'currentUser',
           JSON.stringify({
-            userId: data.userId ?? data.UserId,
-            fullName: data.fullName ?? data.FullName,
-            email: data.email ?? data.Email,
-            role: data.role ?? data.Role,
-            isRegistrationComplete: data.isRegistrationComplete ?? data.IsRegistrationComplete
+            userId: data.UserId, // Capital U
+            fullName: data.FullName, // Capital F
+            email: data.Email, // Capital E
+            role: data.Role, // Capital R
+            isRegistrationComplete: data.IsRegistrationComplete, // Capital I
+            vendorId: data.VendorId || data.vendorId // Include vendorId if available
           })
         );
 
         toast.success('Login successful!');
 
-        // 🔥 FIX 3 — Read role correctly
-        const role = (data.Role ?? data.role)?.toString().toLowerCase();
-        const isRegComplete =
-          data.IsRegistrationComplete ?? data.isRegistrationComplete;
-
         setTimeout(() => {
+          const role = data.Role?.toString().toLowerCase();
+
           if (role === 'vendor') {
-            navigate(isRegComplete ? '/vendor-dashboard' : '/vendor-register', {
-              replace: true
-            });
+            if (data.IsRegistrationComplete) {
+              navigate('/vendor-dashboard', { replace: true });
+            } else {
+              navigate('/vendor-register', { replace: true });
+            }
           } else if (role === 'customer') {
-            navigate(isRegComplete ? '/' : '/customer-register', {
-              replace: true
-            });
+            if (data.IsRegistrationComplete) {
+              navigate('/', { replace: true });
+            } else {
+              navigate('/customer-register', { replace: true });
+            }
           } else if (role === 'supportteam') {
-            navigate('/support-helpcenter', { replace: true });
+            navigate('/support-custemervenderdetails', { replace: true });
           } else if (role === 'admin') {
             navigate('/admin', { replace: true });
           } else {
@@ -99,7 +100,7 @@ const Login = () => {
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage:
-            'url(https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1920)'
+            'url(https://images.pexels.com/photos-1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1920)',
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-[#586330]/80"></div>
@@ -191,4 +192,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Login;

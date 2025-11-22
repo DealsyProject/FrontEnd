@@ -46,9 +46,9 @@ const DashboardHeader = ({
           title="Messages"
         >
           Messages
-          {messageThreads?.filter(m => m.unread)?.length > 0 && (
+          {/* {messageThreads?.filter(m => m.unread)?.length > 0 && (
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#586330] rounded-full"></span>
-          )}
+          )} */}
         </button>
 
         {/* Notification Button */}

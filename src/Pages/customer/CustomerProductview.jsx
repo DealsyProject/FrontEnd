@@ -11,65 +11,117 @@ export default function CustomerProductView() {
   const [mainImage, setMainImage] = useState("");
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
+        if (!id) {
+          setError("Product ID is missing");
+          setLoading(false);
+          return;
+        }
+
         const response = await axiosInstance.get(`/Product/${id}`);
         const data = response.data;
 
-        if (data.images?.length > 0) {
-          setMainImage(data.images[0].imageData);
+        if (!data) {
+          setError("Product not found");
+          setLoading(false);
+          return;
+        }
+
+        // FIXED: Use ImageUrl instead of ImageData
+        if (data.Images?.length > 0) {
+          setMainImage(data.Images[0].ImageUrl);
         }
 
         setProduct(data);
         setLoading(false);
 
-        // Notify vendor if out of stock
-        if (data.quantity === 0) {
-          await axiosInstance.post(`/Notification/vendor-out-of-stock`, {
-            productId: data.id,
-            vendorId: data.vendorId,
-          });
-        }
+        // Check if product is in wishlist
+        await checkWishlistStatus(data.Id);
       } catch (error) {
         console.error("❌ Error fetching product:", error);
+        setError("Failed to load product details");
         setLoading(false);
       }
     };
+    
     fetchProduct();
   }, [id]);
 
-  const handleAddToCart = async () => {
-  try {
-    await axiosInstance.post("/Cart", {
-      productId: product.id,
-      quantity: 1,
-    });
-
-    alert("✅ Product added to cart!");
-  } catch (error) {
-    console.error("❌ Add to cart failed:", error);
-    alert("Failed to add product to cart.");
-  }
-};
-
-
-  const handleWishlist = async () => {
+  const checkWishlistStatus = async (productId) => {
     try {
-        await axiosInstance.post(`/Wishlist`, {
-          customerId,
-          productId: product.id,
-        });
-      
-      setWishlist(!wishlist);
+      const response = await axiosInstance.get(`/Wishlist`);
+      const wishlistItems = response.data || [];
+      const isInWishlist = wishlistItems.some(item => item.productId === productId);
+      setWishlist(isInWishlist);
     } catch (error) {
-      console.error("❌ Wishlist update failed:", error);
+      console.error("❌ Error checking wishlist status:", error);
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!product) return <div className="min-h-screen flex items-center justify-center">Product not found.</div>;
+  const handleAddToCart = async () => {
+    try {
+      await axiosInstance.post(`/Cart`, {
+        productId: product.Id,
+        quantity: 1,
+      });
+      alert("✅ Product added to cart!");
+    } catch (error) {
+      console.error("❌ Add to cart failed:", error);
+      alert("Failed to add product to cart.");
+    }
+  };
+
+  const handleWishlist = async () => {
+    try {
+      if (!wishlist) {
+        await axiosInstance.post(`/Wishlist`, {
+          productId: product.Id,
+        });
+        setWishlist(true);
+        alert("✅ Added to wishlist!");
+      } else {
+        // Remove from wishlist logic
+        await axiosInstance.delete(`/Wishlist/${product.Id}`);
+        setWishlist(false);
+        alert("✅ Removed from wishlist!");
+      }
+    } catch (error) {
+      console.error("❌ Wishlist update failed:", error);
+      alert("Failed to update wishlist.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fde7e7]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#3b450d] mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading product details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fde7e7]">
+        <div className="text-center">
+          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl">❌</span>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-600 mb-2">Product Not Found</h3>
+          <p className="text-gray-500">{error || "The product you're looking for doesn't exist."}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // FIXED: Use ImageUrl for all image references
+  const productImages = product.Images || [];
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fde7e7]">
@@ -80,65 +132,106 @@ export default function CustomerProductView() {
             {/* Product Image */}
             <div className="relative flex flex-col items-center">
               <img
-                src={mainImage}
-                alt={product.productName}
+                src={mainImage || "https://via.placeholder.com/400x300?text=No+Image"}
+                alt={product.ProductName} 
                 className="w-full h-80 object-cover rounded-lg shadow-sm"
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                }}
               />
               <button
                 onClick={handleWishlist}
-                className="absolute top-3 right-3 bg-white rounded-full p-2 shadow-md"
+                className="absolute top-3 right-3 bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition"
               >
-                {wishlist ? <FaHeart className="text-red-500 text-xl" /> : <FaRegHeart className="text-gray-600 text-xl" />}
+                {wishlist ? 
+                  <FaHeart className="text-red-500 text-xl" /> : 
+                  <FaRegHeart className="text-gray-600 text-xl hover:text-red-500" />
+                }
               </button>
-              <div className="flex gap-4 mt-5">
-                {product.images?.map((img, i) => (
-                  <img
-                    key={i}
-                    src={img.imageData}
-                    alt="thumb"
-                    onClick={() => setMainImage(img.imageData)}
-                    className={`w-20 h-20 object-cover rounded-md cursor-pointer border-2 ${
-                      img.imageData === mainImage ? "border-[#3b450d]" : "border-transparent"
-                    }`}
-                  />
-                ))}
-              </div>
+              
+              {productImages.length > 1 && (
+                <div className="flex gap-4 mt-5 overflow-x-auto py-2">
+                  {productImages.map((img, i) => (
+                    <img
+                      key={i}
+                      src={img.ImageUrl}
+                      alt={`${product.ProductName} view ${i + 1}`}
+                      onClick={() => setMainImage(img.ImageUrl)}
+                      className={`w-20 h-20 object-cover rounded-md cursor-pointer border-2 transition ${
+                        img.ImageUrl === mainImage ? "border-[#3b450d]" : "border-transparent hover:border-gray-300"
+                      }`}
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/80x80?text=No+Image';
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Product Details */}
             <div>
-              <h1 className="text-3xl font-semibold mb-2">{product.productName}</h1>
-              <p className="text-gray-500 mb-2">By {product.vendorName}</p>
-              <p className="text-gray-600 mb-4">{product.productCategory}</p>
+              <h1 className="text-3xl font-semibold mb-2 text-gray-800">{product.ProductName}</h1>
+              <p className="text-gray-500 mb-2">By {product.VendorName}</p>
+              <span className="inline-block bg-[#3b450d] text-white px-3 py-1 rounded-full text-sm mb-4">
+                {product.ProductCategory}
+              </span>
 
-              <p className="text-2xl font-semibold text-[#3b450d] mb-4">₹{product.price}</p>
-              <p className={`mb-4 text-sm font-medium ${product.quantity > 0 ? "text-green-600" : "text-red-500"}`}>
-                {product.quantity > 0 ? `In Stock: ${product.quantity}` : "Out of Stock"}
+              <p className="text-2xl font-semibold text-[#3b450d] mb-4">
+                ₹{product.Price?.toLocaleString('en-IN') || '0'}
+              </p>
+              
+              <p className={`mb-4 text-sm font-medium ${
+                product.Quantity > 0 ? "text-green-600" : "text-red-500"
+              }`}>
+                {product.Quantity > 0 ? `In Stock: ${product.Quantity} units` : "Out of Stock"}
               </p>
 
-              <p className="text-gray-600 mb-6">{product.description}</p>
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-700 mb-2">Description:</h3>
+                <p className="text-gray-600 leading-relaxed">{product.Description}</p>
+              </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={handleWishlist}
-                  className={`flex-1 px-6 py-2 rounded-md ${
-                    wishlist ? "bg-red-500 text-white" : "border border-[#3b450d] text-[#3b450d]"
+                  className={`flex-1 px-6 py-3 rounded-md transition font-medium ${
+                    wishlist 
+                      ? "bg-red-500 text-white hover:bg-red-600" 
+                      : "border border-[#3b450d] text-[#3b450d] hover:bg-[#3b450d] hover:text-white"
                   }`}
                 >
                   {wishlist ? "Added to Wishlist ❤️" : "Add to Wishlist"}
                 </button>
 
                 <button
-                  disabled={product.quantity === 0}
+                  disabled={product.Quantity === 0}
                   onClick={handleAddToCart}
-                  className={`flex-1 px-6 py-2 rounded-md ${
-                    product.quantity === 0
+                  className={`flex-1 px-6 py-3 rounded-md transition font-medium ${
+                    product.Quantity === 0
                       ? "bg-gray-400 text-gray-100 cursor-not-allowed"
                       : "bg-[#3b450d] text-white hover:bg-[#2e350b]"
                   }`}
                 >
-                  {product.quantity === 0 ? "Out of Stock" : "Add to Cart 🛒"}
+                  {product.Quantity === 0 ? "Out of Stock" : "Add to Cart 🛒"}
                 </button>
+              </div>
+
+              {/* Additional Product Info */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div>
+                    <span className="font-semibold">Product ID:</span> {product.Id}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Vendor ID:</span> {product.VendorId}
+                  </div>
+                  {product.Rating > 0 && (
+                    <div>
+                      <span className="font-semibold">Rating:</span> ⭐ {product.Rating.toFixed(1)}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

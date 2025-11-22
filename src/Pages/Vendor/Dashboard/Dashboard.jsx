@@ -186,7 +186,7 @@ const handleRefreshNotifications = useCallback(async () => {
       <ToastContainer position="top-right" autoClose={3000} />
 
       {/* Connection Status Indicator */}
-      <div className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg text-sm font-medium z-40 ${
+      {/* <div className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg text-sm font-medium z-40 ${
         isConnected 
           ? 'bg-green-100 text-green-800 border border-green-300' 
           : connectionStatus === 'reconnecting'
@@ -199,7 +199,7 @@ const handleRefreshNotifications = useCallback(async () => {
             {unreadCount}
           </span>
         )}
-      </div>
+      </div> */}
 
       {/* External Modals */}
       {showMessages && (
