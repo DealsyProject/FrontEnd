@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const ProductModal = ({
   title,
@@ -9,7 +9,8 @@ const ProductModal = ({
   handleImageUpload,
   handleRemoveImage,
   categories = [],
-  isSaving = false
+  isSaving = false,
+  editingProduct = null // Add this prop to know if we're in edit mode
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -22,6 +23,20 @@ const ProductModal = ({
   ];
 
   const categoryList = categories.length > 0 ? categories : defaultCategories;
+
+  // Helper function to check if an image is a File object (new image) or URL string (existing image)
+  const isFileObject = (img) => img instanceof File;
+  const isImageUrl = (img) => typeof img === 'string' && (img.startsWith('http') || img.startsWith('https'));
+
+  // Helper function to get image source URL
+  const getImageSrc = (img) => {
+    if (isFileObject(img)) {
+      return URL.createObjectURL(img);
+    } else if (isImageUrl(img)) {
+      return img;
+    }
+    return 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
+  };
 
   const handleInputChange = (field, value) => {
     setNewProduct(prev => ({
@@ -37,6 +52,18 @@ const ProductModal = ({
       [field]: numValue
     }));
   };
+
+  // Count existing and new images separately
+  const existingImages = newProduct.images ? newProduct.images.filter(img => isImageUrl(img)) : [];
+  const newImages = newProduct.images ? newProduct.images.filter(img => isFileObject(img)) : [];
+  const totalImages = existingImages.length + newImages.length;
+
+  // Reset active image index when images change
+  useEffect(() => {
+    if (activeImageIndex >= totalImages) {
+      setActiveImageIndex(Math.max(0, totalImages - 1));
+    }
+  }, [totalImages, activeImageIndex]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4 overflow-y-auto">
@@ -55,7 +82,7 @@ const ProductModal = ({
               {/* Product Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Product Name
+                  Product Name *
                 </label>
                 <input
                   type="text"
@@ -69,7 +96,7 @@ const ProductModal = ({
               {/* Category */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
+                  Category *
                 </label>
                 <select
                   value={newProduct.productCategory || ''}
@@ -90,7 +117,7 @@ const ProductModal = ({
                 {/* Price */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price (₹)
+                    Price (₹) *
                   </label>
                   <input
                     type="number"
@@ -106,7 +133,7 @@ const ProductModal = ({
                 {/* Quantity */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Quantity
+                    Quantity *
                   </label>
                   <input
                     type="number"
@@ -122,7 +149,7 @@ const ProductModal = ({
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  Description *
                 </label>
                 <textarea
                   placeholder="Describe your product features, specifications, and benefits..."
@@ -137,16 +164,21 @@ const ProductModal = ({
             {/* Right Column - Images */}
             <div className="space-y-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Product Images (1-3 images)
+                Product Images (1-3 images) *
+                {existingImages.length > 0 && (
+                  <span className="text-xs text-green-600 ml-2">
+                    {existingImages.length} existing image(s) • {newImages.length} new image(s)
+                  </span>
+                )}
               </label>
 
               {/* Main Image Preview */}
-              {newProduct.images && newProduct.images.length > 0 ? (
+              {totalImages > 0 ? (
                 <div className="space-y-3">
                   {/* Large Preview */}
                   <div className="relative">
                     <img 
-                      src={newProduct.images[activeImageIndex]} 
+                      src={getImageSrc(newProduct.images[activeImageIndex])}
                       alt={`Product preview ${activeImageIndex + 1}`}
                       className="w-full h-64 object-cover rounded-lg border-2 border-[#586330]"
                       onError={(e) => {
@@ -154,8 +186,18 @@ const ProductModal = ({
                       }}
                     />
                     <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white px-3 py-1 rounded-full text-sm">
-                      {activeImageIndex + 1} / {newProduct.images.length}
+                      {activeImageIndex + 1} / {totalImages}
                     </div>
+                    {/* Image Type Badge */}
+                    {newProduct.images[activeImageIndex] && (
+                      <div className={`absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium ${
+                        isFileObject(newProduct.images[activeImageIndex]) 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-green-500 text-white'
+                      }`}>
+                        {isFileObject(newProduct.images[activeImageIndex]) ? 'NEW' : 'EXISTING'}
+                      </div>
+                    )}
                   </div>
 
                   {/* Thumbnail Images */}
@@ -163,7 +205,7 @@ const ProductModal = ({
                     {newProduct.images.map((img, index) => (
                       <div key={index} className="relative group">
                         <img
-                          src={img}
+                          src={getImageSrc(img)}
                           alt={`Thumbnail ${index + 1}`}
                           onClick={() => setActiveImageIndex(index)}
                           className={`w-full h-24 object-cover rounded-lg cursor-pointer transition-all ${
@@ -175,32 +217,41 @@ const ProductModal = ({
                             e.target.src = 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
                           }}
                         />
-                        {/* Remove Button */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveImage(index);
-                            if (activeImageIndex >= newProduct.images.length - 1) {
-                              setActiveImageIndex(Math.max(0, newProduct.images.length - 2));
-                            }
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                          title="Remove image"
-                        >
-                          ×
-                        </button>
+                        
+                        {/* Image Type Indicator */}
+                        <div className={`absolute top-1 left-1 w-2 h-2 rounded-full ${
+                          isFileObject(img) ? 'bg-blue-500' : 'bg-green-500'
+                        }`}></div>
+                        
+                        {/* Remove Button - Only show for new images or if we want to allow removing existing ones */}
+                        {(isFileObject(img) || true) && ( // Set to true if you want to allow removing existing images
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveImage(index);
+                              if (activeImageIndex >= newProduct.images.length - 1) {
+                                setActiveImageIndex(Math.max(0, newProduct.images.length - 2));
+                              }
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                            title={isFileObject(img) ? "Remove new image" : "Remove existing image"}
+                          >
+                            ×
+                          </button>
+                        )}
                       </div>
                     ))}
 
                     {/* Add More Images Slots */}
-                    {newProduct.images.length < 3 && (
+                    {totalImages < 3 && (
                       <label className="cursor-pointer">
                         <input 
                           type="file" 
                           accept="image/*" 
                           onChange={handleImageUpload} 
                           className="hidden" 
+                          multiple
                         />
                         <div className="w-full h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-[#586330] hover:bg-gray-50 transition">
                           <div className="text-center">
@@ -225,9 +276,10 @@ const ProductModal = ({
                         accept="image/*" 
                         onChange={handleImageUpload} 
                         className="hidden" 
+                        multiple
                       />
                       <div className="px-6 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/90 transition cursor-pointer font-medium">
-                        Upload First Image
+                        Upload Images
                       </div>
                     </label>
                   </div>
@@ -235,19 +287,26 @@ const ProductModal = ({
               )}
 
               <p className="text-xs text-gray-500 mt-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                <span className="font-medium text-blue-800">💡 Tip:</span> Upload 1-3 high-quality images. 
-                First image will be the primary display image. Click thumbnails to preview.
+                <span className="font-medium text-blue-800">💡 Tip:</span> 
+                {editingProduct ? (
+                  <>
+                    Blue dot indicates new images, green dot indicates existing images. 
+                    You can mix existing and new images. Removing existing images will delete them permanently.
+                  </>
+                ) : (
+                  "Upload 1-3 high-quality images. First image will be the primary display image."
+                )}
                 <br />
                 <span className="text-blue-700">Supported: JPEG, PNG, WebP • Max: 5MB each</span>
               </p>
             </div>
           </div>
 
-          {/* Optional Fields Note */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-800 flex items-center">
-              <span className="text-blue-500 mr-2">💡</span>
-              All fields are optional. You can add as much information as you'd like.
+          {/* Required Fields Note */}
+          <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <p className="text-sm text-yellow-800 flex items-center">
+              <span className="text-yellow-500 mr-2">⚠️</span>
+              Fields marked with * are required. Please fill all required fields.
             </p>
           </div>
         </div>
@@ -275,7 +334,7 @@ const ProductModal = ({
                   <span>Saving...</span>
                 </>
               ) : (
-                <span>Save Product</span>
+                <span>{editingProduct ? 'Update Product' : 'Save Product'}</span>
               )}
             </button>
           </div>
