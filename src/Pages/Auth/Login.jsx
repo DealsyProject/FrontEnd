@@ -70,7 +70,7 @@ const Login = () => {
               navigate('/customer-register', { replace: true });
             }
           } else if (role === 'supportteam') {
-            navigate('/support-chatcenter', { replace: true });
+            navigate('/support-custemervenderdetails', { replace: true });
           } else if (role === 'admin') {
             navigate('/admin', { replace: true });
           } else {
@@ -192,4 +192,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Login;
