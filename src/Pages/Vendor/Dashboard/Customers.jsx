@@ -33,19 +33,21 @@ const Customers = () => {
       const response = await axiosInstance.get('/Vendor/customers-with-orders');
       console.log('Vendor Customers API Response:', response.data);
 
-      // API returns: { TotalCount, Customers: [...] }
-      const customersData = (response.data.customers || response.data.Customers || []).map(customer => ({
-        customerId: customer.customerId || customer.CustomerId,
+      // Handle API response format
+      const customersData = response.data.customers || response.data || [];
+      
+      const formattedCustomers = customersData.map(customer => ({
+        customerId: customer.customerId || customer.CustomerId || customer.id,
         userId: customer.userId || customer.UserId,
-        fullName: customer.fullName || customer.FullName,
-        email: customer.email || customer.Email,
-        phoneNumber: customer.phoneNumber || customer.PhoneNumber,
-        address: customer.address || customer.Address,
-        pincode: customer.pincode || customer.Pincode,
-        role: customer.role || customer.Role,
-        isBlocked: customer.isBlocked || customer.IsBlocked,
+        fullName: customer.fullName || customer.FullName || customer.name || 'Unknown Customer',
+        email: customer.email || customer.Email || 'No email',
+        phoneNumber: customer.phoneNumber || customer.PhoneNumber || customer.phone || 'No phone',
+        address: customer.address || customer.Address || 'No address',
+        pincode: customer.pincode || customer.Pincode || 'No pincode',
+        role: customer.role || customer.Role || 'Customer',
+        isBlocked: customer.isBlocked || customer.IsBlocked || false,
         createdOn: customer.createdOn || customer.CreatedOn,
-        isRegistrationComplete: customer.isRegistrationComplete || customer.IsRegistrationComplete,
+        isRegistrationComplete: customer.isRegistrationComplete || customer.IsRegistrationComplete || true,
         totalOrders: customer.totalOrders || customer.TotalOrders || 0,
         totalSpent: customer.totalSpent || customer.TotalSpent || 0,
         lastOrderDate: customer.lastOrderDate || customer.LastOrderDate,
@@ -54,7 +56,7 @@ const Customers = () => {
         payments: customer.payments || customer.Payments || []
       }));
 
-      setCustomers(customersData);
+      setCustomers(formattedCustomers);
     } catch (error) {
       console.error('Error fetching vendor customers:', error);
       toast.error('Failed to load customers');
@@ -73,9 +75,7 @@ const Customers = () => {
 
     try {
       setLoading(true);
-      // If you have a search endpoint, use it:
-      // const response = await axiosInstance.get(`/Vendor/search-customers?searchTerm=${searchTerm}`);
-      // Otherwise, filter client-side
+      // Filter client-side since we don't have a search endpoint
       const filtered = customers.filter(customer =>
         customer.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,16 +95,16 @@ const Customers = () => {
   const handleCustomerSelect = (customer) => {
     setSelectedCustomer(customer);
     const stats = {
-      totalOrders: customer.totalOrders,
-      completedOrders: customer.orders.filter(o => 
+      totalOrders: customer.totalOrders || 0,
+      completedOrders: (customer.orders || []).filter(o => 
         ['Completed', 'Delivered', 'Confirmed'].includes(o.status || o.Status)
       ).length,
-      pendingOrders: customer.orders.filter(o => 
+      pendingOrders: (customer.orders || []).filter(o => 
         ['Pending', 'Processing'].includes(o.status || o.Status)
       ).length,
-      totalSpent: customer.totalSpent,
-      averageOrderValue: customer.totalOrders > 0 
-        ? (customer.totalSpent / customer.totalOrders).toFixed(2)
+      totalSpent: customer.totalSpent || 0,
+      averageOrderValue: (customer.totalOrders || 0) > 0 
+        ? ((customer.totalSpent || 0) / (customer.totalOrders || 1)).toFixed(2)
         : 0
     };
     setCustomerStats(stats);
@@ -112,11 +112,15 @@ const Customers = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    try {
+      return new Date(dateString).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch {
+      return 'Invalid Date';
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -162,12 +166,19 @@ const Customers = () => {
             >
               Search
             </button>
+            <button
+              onClick={fetchVendorCustomers}
+              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium"
+            >
+              Refresh
+            </button>
           </div>
         </div>
 
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#586330]"></div>
+            <span className="ml-3 text-gray-600">Loading customers...</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -180,7 +191,19 @@ const Customers = () => {
                 <div className="max-h-screen overflow-y-auto">
                   {filteredCustomers.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
-                      <p className="text-lg">No customers found</p>
+                      <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <span className="text-2xl">👤</span>
+                      </div>
+                      <p className="text-lg mb-2">No customers found</p>
+                      <p className="text-sm text-gray-400 mb-4">
+                        {searchTerm ? 'Try a different search term' : 'Customers who purchase your products will appear here'}
+                      </p>
+                      <button 
+                        onClick={fetchVendorCustomers}
+                        className="px-4 py-2 bg-[#586330] text-white rounded-lg hover:bg-[#5A3E3E] transition font-medium"
+                      >
+                        Refresh
+                      </button>
                     </div>
                   ) : (
                     filteredCustomers.map((customer) => (
@@ -194,11 +217,14 @@ const Customers = () => {
                         }`}
                       >
                         <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-semibold text-gray-800">{customer.fullName}</h3>
-                            <p className="text-sm text-gray-600">{customer.email}</p>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-800 text-lg mb-1">
+                              {customer.fullName}
+                            </h3>
+                            <p className="text-sm text-gray-600 truncate">{customer.email}</p>
+                            <p className="text-xs text-gray-500 mt-1">{customer.phoneNumber}</p>
                           </div>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
+                          <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
                             customer.isBlocked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
                           }`}>
                             {customer.isBlocked ? 'Blocked' : 'Active'}
@@ -212,6 +238,16 @@ const Customers = () => {
                             {formatCurrency(customer.totalSpent)}
                           </span>
                         </div>
+                        {customer.lastOrderDate && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Last order: {formatDate(customer.lastOrderDate)}
+                          </p>
+                        )}
+                        {customer.address && (
+                          <p className="text-xs text-gray-500 mt-1 truncate">
+                            {customer.address}, {customer.pincode}
+                          </p>
+                        )}
                       </div>
                     ))
                   )}
@@ -224,17 +260,27 @@ const Customers = () => {
               {selectedCustomer ? (
                 <div className="bg-white rounded-xl shadow-lg p-8">
                   <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-800">{selectedCustomer.fullName}</h2>
-                      <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-600">
-                        <span>Email: {selectedCustomer.email}</span>
-                        <span>Phone: {selectedCustomer.phoneNumber}</span>
-                        <span>
-                          Location: {selectedCustomer.address}, Pin: {selectedCustomer.pincode}
-                        </span>
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedCustomer.fullName}</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div>
+                          <strong>Email:</strong> {selectedCustomer.email}
+                        </div>
+                        <div>
+                          <strong>Phone:</strong> {selectedCustomer.phoneNumber}
+                        </div>
+                        <div className="md:col-span-2">
+                          <strong>Address:</strong> {selectedCustomer.address}, {selectedCustomer.pincode}
+                        </div>
+                        <div>
+                          <strong>Member Since:</strong> {formatDate(selectedCustomer.createdOn)}
+                        </div>
+                        <div>
+                          <strong>Registration:</strong> {selectedCustomer.isRegistrationComplete ? 'Complete' : 'Incomplete'}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                         selectedCustomer.isBlocked 
                           ? 'bg-red-100 text-red-700' 
@@ -248,83 +294,114 @@ const Customers = () => {
                   {/* Stats Grid */}
                   {customerStats && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                      <div className="bg-blue-50 p-4 rounded-lg text-center">
+                      <div className="bg-blue-50 p-4 rounded-lg text-center border border-blue-100">
                         <div className="text-2xl font-bold text-blue-600">{customerStats.totalOrders}</div>
-                        <div className="text-xs text-blue-800">Total Orders</div>
+                        <div className="text-xs text-blue-800 font-medium">Total Orders</div>
                       </div>
-                      <div className="bg-green-50 p-4 rounded-lg text-center">
+                      <div className="bg-green-50 p-4 rounded-lg text-center border border-green-100">
                         <div className="text-2xl font-bold text-green-600">{customerStats.completedOrders}</div>
-                        <div className="text-xs text-green-800">Completed</div>
+                        <div className="text-xs text-green-800 font-medium">Completed</div>
                       </div>
-                      <div className="bg-yellow-50 p-4 rounded-lg text-center">
+                      <div className="bg-yellow-50 p-4 rounded-lg text-center border border-yellow-100">
                         <div className="text-2xl font-bold text-yellow-600">{customerStats.pendingOrders}</div>
-                        <div className="text-xs text-yellow-800">Pending</div>
+                        <div className="text-xs text-yellow-800 font-medium">Pending</div>
                       </div>
-                      <div className="bg-purple-50 p-4 rounded-lg text-center">
+                      <div className="bg-purple-50 p-4 rounded-lg text-center border border-purple-100">
                         <div className="text-2xl font-bold text-purple-600">{formatCurrency(customerStats.totalSpent)}</div>
-                        <div className="text-xs text-purple-800">Total Spent</div>
+                        <div className="text-xs text-purple-800 font-medium">Total Spent</div>
                       </div>
                     </div>
                   )}
 
                   {/* Orders List */}
                   <div>
-                    <h3 className="text-xl font-semibold mb-4">
-                      Order History ({selectedCustomer.orders.length})
-                    </h3>
-                    {selectedCustomer.orders.length > 0 ? (
-                      <div className="space-y-4">
-                        {selectedCustomer.orders.map((order) => {
-                          const orderStatus = order.status || order.Status;
-                          const productName = order.productName || order.ProductName;
-                          const quantity = order.quantity || order.Quantity;
-                          const price = order.price || order.Price;
-                          const totalAmount = order.totalAmount || order.TotalAmount;
-                          const productImage = order.productImage || order.ProductImage;
-                          const productBookingDate = order.productBookingDate || order.ProductBookingDate;
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-xl font-semibold text-gray-800">
+                        Order History ({(selectedCustomer.orders || []).length})
+                      </h3>
+                      {customerStats && (
+                        <div className="text-sm text-gray-600">
+                          Avg. Order: {formatCurrency(customerStats.averageOrderValue)}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {(selectedCustomer.orders || []).length > 0 ? (
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {selectedCustomer.orders.map((order, index) => {
+                          const orderStatus = order.status || order.Status || 'Unknown';
+                          const orderId = order.orderId || order.OrderId || order.id || `order-${index}`;
+                          const totalAmount = order.totalAmount || order.TotalAmount || 0;
+                          const createdOn = order.createdOn || order.CreatedOn;
+                          const orderItems = order.orderItems || order.OrderItems || [];
 
                           return (
-                            <div key={order.orderId || order.OrderId} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition">
-                              <div className="flex justify-between items-center">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-4">
-                                    {productImage && (
-                                      <img 
-                                        src={productImage} 
-                                        alt={productName}
-                                        className="w-16 h-16 object-cover rounded-lg"
-                                      />
-                                    )}
-                                    <div>
-                                      <p className="font-semibold text-gray-800">{productName}</p>
-                                      <p className="text-sm text-gray-600">
-                                        Qty: {quantity} × {formatCurrency(price)}
-                                      </p>
-                                      <p className="text-xs text-gray-500 mt-1">
-                                        Booked on {formatDate(productBookingDate)}
-                                      </p>
-                                    </div>
-                                  </div>
+                            <div key={orderId} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition">
+                              <div className="flex justify-between items-start mb-3">
+                                <div>
+                                  <p className="font-semibold text-gray-800">Order #{orderId}</p>
+                                  <p className="text-sm text-gray-600">
+                                    {createdOn ? `Placed on ${formatDate(createdOn)}` : 'Date not available'}
+                                  </p>
                                 </div>
                                 <div className="text-right">
                                   <p className="text-xl font-bold text-[#586330]">{formatCurrency(totalAmount)}</p>
                                   <span className={`mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                                    orderStatus === 'Confirmed' ? 'bg-blue-100 text-blue-700' :
-                                    orderStatus === 'Completed' || orderStatus === 'Delivered' ? 'bg-green-100 text-green-700' :
+                                    orderStatus === 'Confirmed' || orderStatus === 'Completed' ? 'bg-green-100 text-green-700' :
+                                    orderStatus === 'Delivered' ? 'bg-blue-100 text-blue-700' :
                                     orderStatus === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                                    orderStatus === 'Processing' ? 'bg-orange-100 text-orange-700' :
+                                    orderStatus === 'Cancelled' ? 'bg-red-100 text-red-700' :
                                     'bg-gray-100 text-gray-700'
                                   }`}>
                                     {orderStatus}
                                   </span>
                                 </div>
                               </div>
+
+                              {/* Order Items */}
+                              {orderItems.length > 0 && (
+                                <div className="border-t pt-3">
+                                  <h4 className="font-medium text-gray-700 mb-2">Items:</h4>
+                                  <div className="space-y-2">
+                                    {orderItems.map((item, itemIndex) => {
+                                      const productName = item.productName || item.ProductName || 'Unknown Product';
+                                      const quantity = item.quantity || item.Quantity || 1;
+                                      const price = item.price || item.Price || 0;
+                                      const itemTotal = item.totalAmount || item.TotalAmount || (quantity * price);
+
+                                      return (
+                                        <div key={itemIndex} className="flex justify-between items-center text-sm">
+                                          <div>
+                                            <span className="font-medium">{productName}</span>
+                                            <span className="text-gray-500 ml-2">(Qty: {quantity})</span>
+                                          </div>
+                                          <div className="text-right">
+                                            <span className="font-medium">{formatCurrency(price)} each</span>
+                                            <span className="ml-2 text-[#586330] font-semibold">
+                                              = {formatCurrency(itemTotal)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           );
                         })}
                       </div>
                     ) : (
-                      <div className="text-center py-12 bg-gray-50 rounded-lg">
-                        <p className="text-gray-500">No orders from this customer yet</p>
+                      <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
+                          <span className="text-3xl">📦</span>
+                        </div>
+                        <h4 className="text-lg font-semibold text-gray-700 mb-2">No Orders Yet</h4>
+                        <p className="text-gray-500 max-w-md mx-auto">
+                          This customer hasn't placed any orders with your products yet. 
+                          They will appear here once they make a purchase.
+                        </p>
                       </div>
                     )}
                   </div>
@@ -335,7 +412,9 @@ const Customers = () => {
                     <span className="text-4xl">👤</span>
                   </div>
                   <h3 className="text-2xl font-semibold text-gray-700 mb-2">Select a Customer</h3>
-                  <p className="text-gray-500">Click on a customer from the list to view details</p>
+                  <p className="text-gray-500 max-w-md mx-auto">
+                    Click on a customer from the list to view their details, order history, and statistics
+                  </p>
                 </div>
               )}
             </div>
@@ -347,5 +426,3 @@ const Customers = () => {
 };
 
 export default Customers;
-
-

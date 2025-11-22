@@ -98,7 +98,7 @@ function App() {
         <Route path="/customerprofile" element={<CustomerProfile />} />
         <Route path="/customercart" element={<CustomerCart />} />
         <Route path="/customerwishlist" element={<CustomerWishList />} />
-        <Route path="/customercheckout" element={<CustomerCheckout />} />
+        <Route path="/checkout" element={<CustomerCheckout />} />
         <Route path="/customerchat" element={<CustomerChat />} />
 
 
