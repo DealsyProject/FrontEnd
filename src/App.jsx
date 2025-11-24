@@ -50,7 +50,9 @@ import Payments from './Pages/Vendor/Dashboard/Payments';
 // Support Team 
 import CustemerVenderDetails from "./Pages/SupportTeam/CustemerVenderDetails"
 import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
-import Chatcenter from './Pages/SupportTeam/SupportChat.jsx';
+import FaqOption from './Pages/SupportTeam/FaqOption.jsx';
+import EmailSupport from './Pages/SupportTeam/EmailSupport.jsx';
+import SupportChatCustomer from './Pages/SupportTeam/SupportChatCustomer.jsx';
 
 
 
@@ -104,13 +106,13 @@ function App() {
 
 
         {/* Support Team */}
-        <Route path="/support-chatcenter" element={<Chatcenter />} />
+        <Route path="/support-Customerchatcenter" element={<SupportChatCustomer/>} />
         <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails />} />
         <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker />} />
-
-         
-
-      </Routes>
+        <Route path="/support-faq-options" element={<FaqOption />} />
+        <Route path="/support-emailsupport" element={<EmailSupport />} />
+        
+         </Routes>
     </Router>
   );
 }

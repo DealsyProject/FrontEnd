@@ -1,21 +1,16 @@
 // src/Pages/SupportTeam/ReturnRefundTracker.jsx
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
-  Search, RefreshCw, Download, Plus, Package, DollarSign, Calendar,
-  CheckCircle, Clock, AlertCircle, XCircle, CreditCard, Mail, Phone,
-  Filter, Moon, Sun, MoreVertical, MessageCircle, Users, BarChart3, ShoppingBag,
-  Truck, ShieldCheck, MessageSquare, Star, Zap, Bell, Settings,
-  ChevronLeft, ChevronDown, Eye,  Trash2, Copy,
- 
+  Search, Download,  Package, DollarSign, Calendar,CheckCircle, Clock, AlertCircle, XCircle, CreditCard,  Phone,
+  Filter, Moon, Sun, MoreVertical, BarChart3, ShoppingBag,ShieldCheck, Star,ChevronLeft, ChevronDown,  Copy,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
+  LineChart, Line, BarChart, Bar,
   ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend 
 } from "recharts";
 import NavbarSupport from "../../Components/SupportTeam/NavbarSupport";
-import { FaRemoveFormat } from "react-icons/fa";
 import { IoRemoveCircle } from "react-icons/io5";
 
 // Enhanced Sparkline with multiple variants
@@ -782,13 +777,7 @@ export default function ReturnRefundTracker() {
                 }`}>
                   Monthly
                 </button>
-                <button className={`px-3 py-1 text-sm rounded-lg transition-colors ${
-                  darkMode
-                    ? 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}>
-                  Quarterly
-                </button>
+
               </div>
             </div>
             <AnalyticsChart type="line" darkMode={darkMode} />
@@ -914,13 +903,6 @@ export default function ReturnRefundTracker() {
       </main>
 
       {/* Enhanced FAB */}
-      <motion.button 
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-[#586330] text-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all z-30"
-      >
-        <Plus size={24} />
-      </motion.button>
 
       {/* Enhanced Detail Drawer */}
       <AnimatePresence>
