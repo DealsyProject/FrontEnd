@@ -67,6 +67,31 @@ const Products = () => {
     toast.error(errorMessage);
   }, [handleLogout]);
 
+  // Helper function to normalize product data from PascalCase to camelCase
+  const normalizeProductData = (product) => {
+    if (!product) return null;
+    
+    return {
+      id: product.Id,
+      vendorId: product.VendorId,
+      vendorName: product.VendorName,
+      productName: product.ProductName,
+      description: product.Description,
+      price: product.Price,
+      quantity: product.Quantity,
+      rating: product.Rating,
+      productCategory: product.ProductCategory,
+      createdOn: product.CreatedOn,
+      modifiedOn: product.ModifiedOn,
+      images: (product.Images || []).map(image => ({
+        id: image.Id,
+        imageUrl: image.ImageUrl,
+        imageOrder: image.ImageOrder,
+        isPrimary: image.IsPrimary
+      }))
+    };
+  };
+
   const fetchProducts = useCallback(async () => {
     if (isFetchingRef.current) {
       console.log('Already fetching products, skipping...');
@@ -84,7 +109,9 @@ const Products = () => {
       const productsData = response.data.products || [];
       console.log('Products count:', productsData.length);
       
-      setProducts(productsData);
+      // Normalize the product data from PascalCase to camelCase
+      const normalizedProducts = productsData.map(normalizeProductData);
+      setProducts(normalizedProducts);
       
       if (productsData.length === 0) {
         toast.info('No products found. Add your first product!');
@@ -113,7 +140,10 @@ const Products = () => {
       setLoading(true);
       const response = await axiosInstance.get(`/Product/search?searchTerm=${encodeURIComponent(searchTerm)}`);
       const searchResults = response.data.products || [];
-      setProducts(searchResults);
+      
+      // Normalize search results too
+      const normalizedResults = searchResults.map(normalizeProductData);
+      setProducts(normalizedResults);
       
       if (searchResults.length === 0) {
         toast.info('No products found matching your search');
@@ -125,13 +155,13 @@ const Products = () => {
     }
   };
 
-  // Filter products - handle both PascalCase and camelCase
+  // Filter products - now using normalized camelCase properties
   const filteredProducts = products.filter(product => {
     if (!product) return false;
     
-    const productCategory = product.ProductCategory || product.productCategory || '';
-    const productName = product.ProductName || product.productName || '';
-    const description = product.Description || product.description || '';
+    const productCategory = product.productCategory || '';
+    const productName = product.productName || '';
+    const description = product.description || '';
     
     const categoryMatch = activeCategory === 'all' || 
       productCategory.toLowerCase() === activeCategory.toLowerCase();
@@ -181,25 +211,24 @@ const Products = () => {
     setShowAddModal(true);
   };
 
-  const handleUpdateProduct = (product) => {
-    console.log('Editing product:', product);
-    setEditingProduct(product);
-    
-    // Handle both PascalCase and camelCase
-    const images = product.Images || product.images || [];
-    const imageDataArray = images.map(img => img.ImageData || img.imageData);
-    
-    setNewProduct({ 
-      productName: product.ProductName || product.productName || '',
-      description: product.Description || product.description || '',
-      price: product.Price || product.price || 0,
-      quantity: product.Quantity || product.quantity || 1,
-      productCategory: product.ProductCategory || product.productCategory || '',
-      images: imageDataArray,
-      rating: product.Rating || product.rating || 0
-    });
-    setShowUpdateModal(true);
-  };
+ const handleUpdateProduct = (product) => {
+  console.log('Editing product:', product);
+  setEditingProduct(product);
+  
+  // Extract image URLs from the product's images array
+  const existingImageUrls = (product.images || []).map(img => img.imageUrl);
+  
+  setNewProduct({ 
+    productName: product.productName || '',
+    description: product.description || '',
+    price: product.price || 0,
+    quantity: product.quantity || 1,
+    productCategory: product.productCategory || '',
+    images: existingImageUrls, // Now includes existing image URLs
+    rating: product.rating || 0
+  });
+  setShowUpdateModal(true);
+};
 
   const validateProduct = () => {
     if (!newProduct.productName?.trim()) {
@@ -240,17 +269,26 @@ const Products = () => {
 
     setSaving(true);
     try {
-      const productData = {
-        productName: newProduct.productName.trim(),
-        description: newProduct.description.trim(),
-        price: parseFloat(newProduct.price),
-        quantity: parseInt(newProduct.quantity),
-        productCategory: newProduct.productCategory.trim(),
-        images: newProduct.images,
-        rating: parseFloat(newProduct.rating) || 0
-      };
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('productName', newProduct.productName.trim());
+      formData.append('description', newProduct.description.trim());
+      formData.append('price', parseFloat(newProduct.price));
+      formData.append('quantity', parseInt(newProduct.quantity));
+      formData.append('productCategory', newProduct.productCategory.trim());
+      formData.append('rating', parseFloat(newProduct.rating) || 0);
 
-      await axiosInstance.post('/Product/create', productData);
+      // Append each image file
+      newProduct.images.forEach((image, index) => {
+        formData.append('images', image);
+      });
+
+      await axiosInstance.post('/Product/create', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
       await fetchProducts();
       
       setShowAddModal(false);
@@ -279,19 +317,31 @@ const Products = () => {
 
     setSaving(true);
     try {
-      const productId = editingProduct.Id || editingProduct.id;
-      const productData = {
-        id: productId,
-        productName: newProduct.productName.trim(),
-        description: newProduct.description.trim(),
-        price: parseFloat(newProduct.price),
-        quantity: parseInt(newProduct.quantity),
-        productCategory: newProduct.productCategory.trim(),
-        images: newProduct.images,
-        rating: parseFloat(newProduct.rating) || 0
-      };
+      const productId = editingProduct.id;
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Add the Id field to satisfy backend validation
+      formData.append('Id', productId.toString());
+      formData.append('productName', newProduct.productName.trim());
+      formData.append('description', newProduct.description.trim());
+      formData.append('price', parseFloat(newProduct.price));
+      formData.append('quantity', parseInt(newProduct.quantity));
+      formData.append('productCategory', newProduct.productCategory.trim());
+      formData.append('rating', parseFloat(newProduct.rating) || 0);
 
-      await axiosInstance.put(`/Product/update/${productId}`, productData);
+      // Append each image file (if new images are provided)
+      newProduct.images.forEach((image, index) => {
+        formData.append('images', image);
+      });
+
+      await axiosInstance.put(`/Product/update/${productId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
       await fetchProducts();
       
       setShowUpdateModal(false);
@@ -329,38 +379,42 @@ const Products = () => {
   };
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (newProduct.images.length >= 3) {
-        toast.error('Maximum 3 images allowed');
-        return;
-      }
+    const files = Array.from(e.target.files);
+    
+    if (files.length === 0) return;
 
+    // Check total images won't exceed 3
+    if (newProduct.images.length + files.length > 3) {
+      toast.error('Maximum 3 images allowed');
+      return;
+    }
+
+    // Validate each file
+    const validFiles = files.filter(file => {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size must be less than 5MB');
-        return;
+        toast.error(`Image ${file.name} must be less than 5MB`);
+        return false;
       }
 
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
       if (!validTypes.includes(file.type)) {
-        toast.error('Please select a valid image file (JPEG, PNG, WebP)');
-        return;
+        toast.error(`Please select a valid image file (JPEG, PNG, WebP) for ${file.name}`);
+        return false;
       }
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64String = event.target.result;
-        setNewProduct(prev => ({ 
-          ...prev, 
-          images: [...prev.images, base64String] 
-        }));
-        toast.success(`Image ${newProduct.images.length + 1} uploaded successfully!`);
-      };
-      reader.onerror = () => {
-        toast.error('Failed to read image file');
-      };
-      reader.readAsDataURL(file);
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      setNewProduct(prev => ({ 
+        ...prev, 
+        images: [...prev.images, ...validFiles] 
+      }));
+      toast.success(`${validFiles.length} image(s) uploaded successfully!`);
     }
+
+    // Reset file input
+    e.target.value = '';
   };
 
   const handleRemoveImage = (index) => {
@@ -393,22 +447,21 @@ const Products = () => {
     );
   };
 
- 
   const ProductCard = ({ product }) => {
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     
-    const productImages = product.Images || product.images || [];
+    const productImages = product.images || [];
     const hasMultipleImages = productImages.length > 1;
     
     const getImageUrl = (image) => {
       if (!image) return 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
-      return image.ImageData || image.imageData || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
+      return image.imageUrl || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
     };
 
     const getPrimaryImage = () => {
       if (!productImages.length) return 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400';
       
-      const primaryImage = productImages.find(img => img.IsPrimary || img.isPrimary);
+      const primaryImage = productImages.find(img => img.isPrimary);
       if (primaryImage) return getImageUrl(primaryImage);
       
       return getImageUrl(productImages[0]);
@@ -417,15 +470,15 @@ const Products = () => {
     const currentImage = productImages[selectedImageIndex];
     const displayImage = currentImage ? getImageUrl(currentImage) : getPrimaryImage();
 
-    // Handle both PascalCase and camelCase
-    const productName = product.ProductName || product.productName || '';
-    const productCategory = product.ProductCategory || product.productCategory || '';
-    const price = product.Price || product.price || 0;
-    const rating = product.Rating || product.rating || 0;
-    const description = product.Description || product.description || '';
-    const quantity = product.Quantity || product.quantity || 0;
-    const createdOn = product.CreatedOn || product.createdOn || new Date();
-    const productId = product.Id || product.id;
+    // Now using normalized camelCase properties
+    const productName = product.productName || '';
+    const productCategory = product.productCategory || '';
+    const price = product.price || 0;
+    const rating = product.rating || 0;
+    const description = product.description || '';
+    const quantity = product.quantity || 0;
+    const createdOn = product.createdOn || new Date();
+    const productId = product.id;
 
     return (
       <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition duration-300 border border-gray-200">
@@ -462,7 +515,7 @@ const Products = () => {
               <div className="flex gap-2 justify-center">
                 {productImages.map((img, index) => (
                   <button
-                    key={img.Id || img.id || index}
+                    key={img.id || index}
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedImageIndex(index);
@@ -550,10 +603,6 @@ const Products = () => {
     );
   };
 
-  // Get quantity for stats - handle both cases
-  const getQuantity = (p) => (p.Quantity !== undefined ? p.Quantity : p.quantity) || 0;
-  const getImages = (p) => (p.Images || p.images) || [];
-
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar handleLogout={handleLogout} activeView={activeView} />
@@ -589,7 +638,6 @@ const Products = () => {
             >
               Search
             </button>
-          
           </div>
         </div>
 
@@ -627,7 +675,7 @@ const Products = () => {
                 Total: {products.length}
               </span>
               <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full">
-                In Stock: {products.filter(p => getQuantity(p) > 0).length}
+                In Stock: {products.filter(p => p.quantity > 0).length}
               </span>
             </div>
           </div>
@@ -636,7 +684,7 @@ const Products = () => {
         {!loading && productsToShow.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {productsToShow.map((product, index) => (
-              <ProductCard key={product.Id || product.id || index} product={product} />
+              <ProductCard key={product.id || index} product={product} />
             ))}
           </div>
         )}
@@ -689,19 +737,19 @@ const Products = () => {
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <div className="text-2xl font-bold text-green-600">
-                  {products.filter(p => getQuantity(p) > 0).length}
+                  {products.filter(p => p.quantity > 0).length}
                 </div>
                 <div className="text-sm text-green-800">In Stock</div>
               </div>
               <div className="text-center p-4 bg-yellow-50 rounded-lg">
                 <div className="text-2xl font-bold text-yellow-600">
-                  {products.filter(p => getQuantity(p) === 0).length}
+                  {products.filter(p => p.quantity === 0).length}
                 </div>
                 <div className="text-sm text-yellow-800">Out of Stock</div>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-lg">
                 <div className="text-2xl font-bold text-purple-600">
-                  {products.reduce((sum, p) => sum + getImages(p).length, 0)}
+                  {products.reduce((sum, p) => sum + (p.images?.length || 0), 0)}
                 </div>
                 <div className="text-sm text-purple-800">Total Images</div>
               </div>
@@ -735,31 +783,32 @@ const Products = () => {
         />
       )}
 
-      {showUpdateModal && (
-        <ProductModal
-          title="Update Product"
-          newProduct={newProduct}
-          setNewProduct={setNewProduct}
-          onSave={handleSaveUpdatedProduct}
-          onClose={() => {
-            setShowUpdateModal(false);
-            setEditingProduct(null);
-            setNewProduct({
-              productName: '',
-              description: '',
-              price: 0,
-              quantity: 1,
-              productCategory: '',
-              images: [],
-              rating: 0
-            });
-          }}
-          handleImageUpload={handleImageUpload}
-          handleRemoveImage={handleRemoveImage}
-          categories={categories.filter(cat => cat.id !== 'all')}
-          isSaving={saving}
-        />
-      )}
+     {showUpdateModal && (
+  <ProductModal
+    title="Update Product"
+    newProduct={newProduct}
+    setNewProduct={setNewProduct}
+    onSave={handleSaveUpdatedProduct}
+    onClose={() => {
+      setShowUpdateModal(false);
+      setEditingProduct(null);
+      setNewProduct({
+        productName: '',
+        description: '',
+        price: 0,
+        quantity: 1,
+        productCategory: '',
+        images: [],
+        rating: 0
+      });
+    }}
+    handleImageUpload={handleImageUpload}
+    handleRemoveImage={handleRemoveImage}
+    categories={categories.filter(cat => cat.id !== 'all')}
+    isSaving={saving}
+    editingProduct={editingProduct} // Add this line
+  />
+)}
 
       <ToastContainer 
         position="top-right" 
