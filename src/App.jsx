@@ -8,7 +8,7 @@ import ProductPage from './Pages/Admin/ProductPage.jsx';
 import OrdersPage from './Pages/Admin/OrdersPage.jsx';
 import TransactionsPage from './Pages/Admin/TransactionsPage.jsx';
 import UserManagement from './Pages/Admin/UserManagment.jsx';
-import ChatSupport from './Pages/Admin/ChatSupport.jsx';
+import ChatSupport from './Pages/Admin/AdminChatToSupport.jsx';
 import PendingVendors from './Pages/Admin/PendingVendors.jsx';
 import ProductReturnPage from "./Pages/Admin/ProductReturnPage.jsx";
 import SupportTeamPage from "./Pages/Admin/SupportTeamPage.jsx";

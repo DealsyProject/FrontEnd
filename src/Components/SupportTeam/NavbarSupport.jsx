@@ -30,7 +30,7 @@ function NavbarSupport() {
         </Link>
 
         <Link
-          to="/support-chatcenter"
+          to="/support-Customerchatcenter"
           className="hover:text-green-800 transition"
         >
           Help Center
