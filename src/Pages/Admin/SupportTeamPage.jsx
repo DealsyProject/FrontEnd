@@ -1,162 +1,337 @@
-// SupportTeamPage.jsx
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Navbar from '../../Components/Admin/Navbar.jsx';
+import React, { useState, useEffect } from "react";
+import axiosInstance from "../../Components/utils/axiosInstance.js";
+import Navbar from "../../Components/Admin/Navbar.jsx";
 
-const SupportTeamPage = () => {
-  // 🫒 Olive green theme (#586330)
-  const colors = {
-    backgroundLight: '#f8f8f8',
-    surfaceLight: '#ffffff',
-    primary: '#586330',
-    borderLight: '#e5e7eb',
-    textLight: '#1f2937',
-    textSecondaryLight: '#6b7280',
-    statusActiveBg: '#e5e9d3',
-    statusActiveText: '#3f4722',
-    statusInactiveBg: '#f3f4f6',
-    statusInactiveText: '#4b5563',
-    deleteAction: '#ef4444',
+export default function SupportManagement() {
+  const [supportUsers, setSupportUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editData, setEditData] = useState({});
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  const [newUser, setNewUser] = useState({
+    FullName: "",
+    Email: "",
+    PhoneNumber: "",
+    Password: "",
+  });
+
+  // Fetch all support users
+  const fetchSupportUsers = async () => {
+    try {
+      const res = await axiosInstance.get("/Admin/support-team");
+      setSupportUsers(res.data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load support users.");
+    }
+    setLoading(false);
   };
 
-  const [members, setMembers] = useState([
-    { id: 1, name: "Olivia Rhye", email: "olivia@example.com", phone: "9876543210", role: "L2 Support", active: "2 hours ago", status: "Active", bio: "Experienced support engineer." },
-    { id: 2, name: "Phoenix Baker", email: "phoenix@example.com", phone: "9876501234", role: "Supervisor", active: "Yesterday", status: "Active", bio: "Team lead." },
-    { id: 3, name: "Lana Steiner", email: "lana@example.com", phone: "9876509999", role: "L1 Support", active: "3 days ago", status: "Inactive", bio: "" },
-    { id: 4, name: "Demi Wilkinson", email: "demi@example.com", phone: "9876511111", role: "L1 Support", active: "5 minutes ago", status: "Active", bio: "" },
-  ]);
+  useEffect(() => {
+    fetchSupportUsers();
+  }, []);
 
-  const [showModal, setShowModal] = useState(false);
-  const [newMember, setNewMember] = useState({ name: '', email: '', phone: '', role: '', status: 'Active', bio: '' });
-  const [editIndex, setEditIndex] = useState(null);
+  // Block/unblock
+  const handleToggleBlock = async (user) => {
+    try {
+      const userId = user.UserId;
 
-  const handleSave = () => {
-    if (!newMember.name || !newMember.email) {
-      alert('Please enter name and email');
-      return;
+      if (user.IsBlocked) {
+        await axiosInstance.put(`/Admin/unblock/${userId}`);
+      } else {
+        await axiosInstance.put(`/Admin/block/${userId}`);
+      }
+
+      fetchSupportUsers();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update status.");
     }
-
-    if (editIndex !== null) {
-      const updated = [...members];
-      updated[editIndex] = { ...newMember, id: members[editIndex].id, active: members[editIndex].active }; 
-      setMembers(updated);
-    } else {
-      setMembers([...members, { ...newMember, id: Date.now(), active: "Just now" }]);
-    }
-    setShowModal(false);
-    setEditIndex(null);
-    setNewMember({ name: '', email: '', phone: '', role: '', status: 'Active', bio: '' });
   };
 
-  const handleDelete = (index) => {
-    if (!window.confirm('Delete this member?')) return;
-    const updated = [...members];
-    updated.splice(index, 1);
-    setMembers(updated);
+  // Start editing
+  const startEditing = (user) => {
+    setEditingUserId(user.UserId);
+    setEditData({
+      FullName: user.FullName,
+      Email: user.Email,
+      PhoneNumber: user.PhoneNumber,
+    });
+  };
+
+  // Save edit
+  const saveEdit = async (userId) => {
+    try {
+      await axiosInstance.put("/Admin/support-team/update", {
+        UserId: userId,
+        FullName: editData.FullName,
+        Email: editData.Email,
+        PhoneNumber: editData.PhoneNumber,
+      });
+
+      setEditingUserId(null);
+      fetchSupportUsers();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update user.");
+    }
+  };
+
+  // Add new support user
+  const addSupportUser = async (e) => {
+    e.preventDefault();
+
+    try {
+      await axiosInstance.post("/Admin/support-team/create", newUser);
+
+      setShowAddForm(false);
+      setNewUser({ FullName: "", Email: "", PhoneNumber: "", Password: "" });
+      fetchSupportUsers();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add support member.");
+    }
   };
 
   return (
-    <div className="font-display" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, paddingTop: '80px' }}>
-      <div className="flex min-h-screen w-full">
-        <Navbar />
+    <div className="min-h-screen bg-gray-100 text-gray-900 w-full">
+      <Navbar />
 
-        <main className="flex-1 p-8">
-          <div className="flex flex-col gap-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-3xl font-black">Support Team Management</p>
-                <p style={{ color: colors.textSecondaryLight }}>Add, edit, view profiles and manage roles.</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { setShowModal(true); setEditIndex(null); setNewMember({ name: '', email: '', phone: '', role: '', status: 'Active', bio: '' }); }}
-                  className="flex items-center gap-2 rounded-lg h-10 px-4 text-sm font-bold text-white"
-                  style={{ backgroundColor: colors.primary }}>
-                   Add New Member
-                </button>
-              </div>
-            </div>
+      <main className="pt-24 px-6 sm:px-12 lg:px-20">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Support Team</h1>
 
-            {/* Table */}
-            <div className="rounded-xl shadow-lg border overflow-hidden" style={{ backgroundColor: colors.surfaceLight, borderColor: colors.borderLight }}>
-              <table className="w-full text-sm text-left" style={{ color: colors.textLight }}>
-                <thead style={{ backgroundColor: colors.backgroundLight, color: colors.textSecondaryLight }}>
-                  <tr>
-                    <th className="p-4">Member</th>
-                    <th className="p-4">Role</th>
-                    <th className="p-4">Last Active</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {members.map((member, index) => (
-                    <tr key={member.id} className="border-b" style={{ borderColor: colors.borderLight }}>
-                      <td className="px-6 py-4 flex items-center gap-3">
-                        <img src="https://via.placeholder.com/40" alt="" className="w-10 h-10 rounded-full" />
-                        <div>
-                          <div className="font-semibold">{member.name}</div>
-                          <div style={{ color: colors.textSecondaryLight }}>{member.email}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">{member.role}</td>
-                      <td className="px-6 py-4" style={{ color: colors.textSecondaryLight }}>{member.active}</td>
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-1 rounded-full text-xs font-medium" 
-                          style={{ 
-                            backgroundColor: member.status === 'Active' ? colors.statusActiveBg : colors.statusInactiveBg, 
-                            color: member.status === 'Active' ? colors.statusActiveText : colors.statusInactiveText 
-                          }}>
-                          {member.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right flex justify-end gap-2">
-                    
-
-                        <button onClick={() => { setEditIndex(index); setNewMember(members[index]); setShowModal(true); }} className="p-2 rounded-lg hover:bg-gray-100" style={{ color: colors.textSecondaryLight }}>
-                          <span className="material-symbols-outlined">edit</span>
-                        </button>
-
-                        <button onClick={() => handleDelete(index)} className="p-2 rounded-lg hover:bg-red-50" style={{ color: colors.deleteAction }}>
-                          <span className="material-symbols-outlined">delete</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </main>
-      </div>
-
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-          <div className="p-6 rounded-xl w-[420px] border shadow-2xl" style={{ backgroundColor: colors.surfaceLight, borderColor: colors.borderLight, color: colors.textLight }}>
-            <h2 className="text-xl font-bold mb-4">{editIndex !== null ? 'Edit Member' : 'Add New Member'}</h2>
-
-            <div className="flex flex-col gap-3">
-              <input type="text" placeholder="Name" value={newMember.name} onChange={(e) => setNewMember({ ...newMember, name: e.target.value })} className="rounded-lg px-3 py-2 border" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }} />
-              <input type="email" placeholder="Email" value={newMember.email} onChange={(e) => setNewMember({ ...newMember, email: e.target.value })} className="rounded-lg px-3 py-2 border" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }} />
-              <input type="text" placeholder="Phone" value={newMember.phone} onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })} className="rounded-lg px-3 py-2 border" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }} />
-              <input type="text" placeholder="Role" value={newMember.role} onChange={(e) => setNewMember({ ...newMember, role: e.target.value })} className="rounded-lg px-3 py-2 border" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }} />
-              <textarea placeholder="Bio" value={newMember.bio} onChange={(e) => setNewMember({ ...newMember, bio: e.target.value })} className="rounded-lg px-3 py-2 border" rows={3} style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }} />
-              <select value={newMember.status} onChange={(e) => setNewMember({ ...newMember, status: e.target.value })} className="rounded-lg px-3 py-2 border" style={{ backgroundColor: colors.backgroundLight, color: colors.textLight, borderColor: colors.borderLight }}>
-                <option>Active</option>
-                <option>Inactive</option>
-              </select>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-5">
-              <button onClick={() => { setShowModal(false); setEditIndex(null); }} className="px-4 py-2 rounded-lg border hover:bg-gray-50" style={{ borderColor: colors.borderLight, color: colors.textSecondaryLight }}>Cancel</button>
-              <button onClick={handleSave} className="px-4 py-2 rounded-lg text-white font-semibold hover:opacity-90" style={{ backgroundColor: colors.primary }}>Save</button>
-            </div> 
-          </div>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Add New
+          </button>
         </div>
-      )}
+
+        {/* Add Form */}
+        {showAddForm && (
+          <form
+            onSubmit={addSupportUser}
+            className="bg-white p-6 rounded-lg shadow-md mb-6 grid gap-4 sm:grid-cols-2"
+          >
+            <input
+              required
+              placeholder="Full Name"
+              value={newUser.FullName}
+              onChange={(e) =>
+                setNewUser({ ...newUser, FullName: e.target.value })
+              }
+              className="p-2 border rounded"
+            />
+
+            <input
+              required
+              type="email"
+              placeholder="Email"
+              value={newUser.Email}
+              onChange={(e) =>
+                setNewUser({ ...newUser, Email: e.target.value })
+              }
+              className="p-2 border rounded"
+            />
+
+            <input
+              required
+              placeholder="Phone Number"
+              value={newUser.PhoneNumber}
+              onChange={(e) =>
+                setNewUser({ ...newUser, PhoneNumber: e.target.value })
+              }
+              className="p-2 border rounded"
+            />
+
+            <input
+              required
+              type="password"
+              placeholder="Password"
+              value={newUser.Password}
+              onChange={(e) =>
+                setNewUser({ ...newUser, Password: e.target.value })
+              }
+              className="p-2 border rounded"
+            />
+
+            <button
+              type="submit"
+              className="col-span-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Create Support Member
+            </button>
+          </form>
+        )}
+
+        {error && (
+          <div className="p-4 mb-6 text-sm text-red-800 bg-red-50 rounded-lg shadow-md">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="text-center py-10 text-gray-500">Loading...</div>
+        ) : (
+          <div className="bg-white rounded-lg border border-gray-300 shadow-xl overflow-x-auto">
+            <table className="w-full min-w-[750px]">
+              <thead>
+                <tr className="border-b bg-gray-100">
+                  <th className="px-6 py-4 text-left">Full Name</th>
+                  <th className="px-6 py-4 text-left">Email</th>
+                  <th className="px-6 py-4 text-left">Phone</th>
+                  <th className="px-6 py-4 text-left">Created On</th>
+                  <th className="px-6 py-4 text-center">Status</th>
+                  <th className="px-6 py-4 text-center">Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {supportUsers.length > 0 ? (
+                  supportUsers.map((u) => {
+                    const isEditing = editingUserId === u.UserId;
+
+                    return (
+                      <tr
+                        key={u.UserId}
+                        className="border-b hover:bg-gray-50 transition"
+                      >
+                        {/* Full Name */}
+                        <td className="px-6 py-4">
+                          {isEditing ? (
+                            <input
+                              className="p-1 border rounded w-full"
+                              value={editData.FullName}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  FullName: e.target.value,
+                                })
+                              }
+                            />
+                          ) : (
+                            u.FullName
+                          )}
+                        </td>
+
+                        {/* Email */}
+                        <td className="px-6 py-4">
+                          {isEditing ? (
+                            <input
+                              className="p-1 border rounded w-full"
+                              type="email"
+                              value={editData.Email}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  Email: e.target.value,
+                                })
+                              }
+                            />
+                          ) : (
+                            u.Email
+                          )}
+                        </td>
+
+                        {/* Phone Number */}
+                        <td className="px-6 py-4">
+                          {isEditing ? (
+                            <input
+                              className="p-1 border rounded w-full"
+                              value={editData.PhoneNumber}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  PhoneNumber: e.target.value,
+                                })
+                              }
+                            />
+                          ) : (
+                            u.PhoneNumber
+                          )}
+                        </td>
+
+                        {/* Created On */}
+                        <td className="px-6 py-4">
+                          {u.CreatedOn
+                            ? new Date(u.CreatedOn).toLocaleDateString()
+                            : "Invalid Date"}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-6 py-4 text-center">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              u.IsBlocked
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-green-100 text-green-700"
+                            }`}
+                          >
+                            {u.IsBlocked ? "Blocked" : "Active"}
+                          </span>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-6 py-4 text-center flex justify-center gap-2">
+                          <button
+                            onClick={() => handleToggleBlock(u)}
+                            className={`px-3 py-1 rounded-lg text-sm text-white shadow ${
+                              u.IsBlocked
+                                ? "bg-green-600 hover:bg-green-700"
+                                : "bg-red-600 hover:bg-red-700"
+                            }`}
+                          >
+                            {u.IsBlocked ? "Unblock" : "Block"}
+                          </button>
+
+                          {isEditing ? (
+                            <>
+                              <button
+                                onClick={() => saveEdit(u.UserId)}
+                                className="px-3 py-1 rounded-lg text-sm bg-green-600 text-white hover:bg-green-700"
+                              >
+                                Save
+                              </button>
+
+                              <button
+                                onClick={() => setEditingUserId(null)}
+                                className="px-3 py-1 rounded-lg text-sm bg-gray-400 text-white hover:bg-gray-500"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => startEditing(u)}
+                              className="px-3 py-1 rounded-lg text-sm bg-yellow-500 text-white hover:bg-yellow-600"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="text-center py-10 text-gray-500"
+                    >
+                      No support members found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </main>
     </div>
   );
-};
-
-export default SupportTeamPage;
+}
