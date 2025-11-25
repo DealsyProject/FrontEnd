@@ -24,7 +24,7 @@ import CustomerCart from './Pages/customer/CustomerCart';
 import CustomerWishList from './Pages/customer/CustomerWishList';
 import CustomerCheckout from './Pages/customer/CustomerCheckout';
 import CustomerChat from './Pages/customer/CustomerChat';
-
+import CustomerOrders from './Pages/customer/CustomerOrders.jsx';
 
 //Common for all users
 import Login from './Pages/Auth/Login';
@@ -53,6 +53,7 @@ import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
 import FaqOption from './Pages/SupportTeam/FaqOption.jsx';
 import EmailSupport from './Pages/SupportTeam/EmailSupport.jsx';
 import SupportChatCustomer from './Pages/SupportTeam/SupportChatCustomer.jsx';
+
 
 
 
@@ -100,8 +101,9 @@ function App() {
         <Route path="/customerprofile" element={<CustomerProfile />} />
         <Route path="/customercart" element={<CustomerCart />} />
         <Route path="/customerwishlist" element={<CustomerWishList />} />
-        <Route path="/customercheckout" element={<CustomerCheckout />} />
+        <Route path="/checkout" element={<CustomerCheckout />} />
         <Route path="/customerchat" element={<CustomerChat />} />
+        <Route path='/customer/orders' element={<CustomerOrders/>}/>
 
 
 
