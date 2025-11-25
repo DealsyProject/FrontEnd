@@ -16,6 +16,7 @@ const Payments = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [stats, setStats] = useState(null);
+  const [processingRefund, setProcessingRefund] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -33,37 +34,38 @@ const Payments = () => {
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/Vendor/payments');
-      const rawPayments = response.data.Payments || [];
+      const response = await axiosInstance.get('/Payment/vendor/payments');
+      const rawPayments = response.data.payments || response.data.Payments || [];
 
       const paymentsData = rawPayments.map(payment => ({
-        paymentId: payment.PaymentId,
-        date: payment.Date,
-        amount: Number(payment.Amount) || 0,
-        method: payment.Method?.trim() || 'Credit Card',
-        status: payment.Status || 'Confirmed',
-        transactionId: payment.TransactionId || 'N/A',
-        invoiceId: payment.InvoiceId || 'N/A',
-        isRefunded: payment.IsRefunded === true,
-        refundId: payment.RefundId || null,
-        refundDate: payment.RefundDate || null,
-        refundReason: payment.RefundReason || null,
+        paymentId: payment.paymentId || payment.PaymentId || payment.id,
+        date: payment.date || payment.Date || payment.createdOn,
+        amount: Number(payment.amount || payment.Amount) || 0,
+        method: payment.method || payment.Method || 'Credit Card',
+        status: payment.status || payment.Status || 'Confirmed',
+        transactionId: payment.transactionId || payment.TransactionId || payment.razorpayPaymentId || 'N/A',
+        invoiceId: payment.invoiceId || payment.InvoiceId || 'N/A',
+        orderId: payment.orderId || payment.OrderId,
+        isRefunded: payment.isRefunded || payment.IsRefunded || false,
+        refundId: payment.refundId || payment.RefundId || null,
+        refundDate: payment.refundDate || payment.RefundDate || null,
+        refundReason: payment.refundReason || payment.RefundReason || null,
         customer: {
-          id: payment.Customer?.Id,
-          name: payment.Customer?.Name || 'Unknown Customer',
-          email: payment.Customer?.Email || 'N/A',
-          phone: payment.Customer?.Phone || 'N/A',
-          address: payment.Customer?.Address || 'N/A',
-          pincode: payment.Customer?.Pincode || 'N/A',
+          id: payment.customer?.id || payment.Customer?.Id,
+          name: payment.customer?.name || payment.Customer?.Name || 'Unknown Customer',
+          email: payment.customer?.email || payment.Customer?.Email || 'N/A',
+          phone: payment.customer?.phone || payment.Customer?.Phone || 'N/A',
+          address: payment.customer?.address || payment.Customer?.Address || 'N/A',
+          pincode: payment.customer?.pincode || payment.Customer?.Pincode || 'N/A',
         },
-        items: (payment.Items || []).map(item => ({
-          productName: item.ProductName || 'Unknown Product',
-          productImage: item.ProductImage || null,
-          quantity: item.Quantity || 1,
-          price: Number(item.Price) || 0,
-          total: Number(item.Total) || 0,
+        items: (payment.items || payment.Items || []).map(item => ({
+          productName: item.productName || item.ProductName || 'Unknown Product',
+          productImage: item.productImage || item.ProductImage || null,
+          quantity: item.quantity || item.Quantity || 1,
+          price: Number(item.price || item.Price) || 0,
+          total: Number(item.total || item.Total) || 0,
         })),
-        orderDate: payment.OrderDate || null,
+        orderDate: payment.orderDate || payment.OrderDate || null,
       }));
 
       setPayments(paymentsData);
@@ -78,39 +80,46 @@ const Payments = () => {
   };
 
   const calculateStatistics = (paymentData) => {
-    const completedPayments = paymentData.filter(p => ['Completed', 'Confirmed'].includes(p.status));
+    const completedPayments = paymentData.filter(p => ['Completed', 'Confirmed', 'Captured'].includes(p.status));
     const totalRevenue = completedPayments.reduce((sum, p) => sum + p.amount, 0);
     const refundedCount = paymentData.filter(p => p.isRefunded).length;
+    const refundedAmount = paymentData.filter(p => p.isRefunded).reduce((sum, p) => sum + p.amount, 0);
 
     setStats({
       totalRevenue,
       totalRefundedCount: refundedCount,
+      totalRefundedAmount: refundedAmount,
       totalPayments: paymentData.length,
     });
   };
 
   const handleRefundAction = async (payment) => {
     if (!payment.isRefunded) {
-      // Process refund
-      if (!['Completed', 'Confirmed'].includes(payment.status)) {
+      if (!['Completed', 'Confirmed', 'Captured'].includes(payment.status)) {
         toast.error("Refund only allowed for Completed or Confirmed payments.");
         return;
       }
 
+      const reason = prompt("Enter refund reason:", "Customer request");
+      if (!reason) return;
+
       try {
-        await axiosInstance.post('/Vendor/initiate-refund', {
-          orderId: parseInt(payment.paymentId.replace('PAY-', '')),
-          paymentId: parseInt(payment.paymentId.replace('PAY-', '')),
-          razorpayPaymentId: payment.transactionId,
+        setProcessingRefund(payment.paymentId);
+        
+        const refundResponse = await axiosInstance.post('/Payment/refund', {
+          orderId: payment.orderId,
+          paymentId: payment.transactionId,
           amount: payment.amount,
-          reason: 'Customer request'
+          reason: reason
         });
 
         toast.success('Refund initiated successfully!');
         fetchPayments(); // Refresh data
       } catch (error) {
         console.error('Refund error:', error);
-        toast.error('Failed to process refund');
+        toast.error(error.response?.data?.message || 'Failed to process refund');
+      } finally {
+        setProcessingRefund(null);
       }
     }
   };
@@ -127,9 +136,11 @@ const Payments = () => {
   const paymentStatusConfig = {
     Completed: { color: 'bg-green-100 text-green-800', label: 'Completed' },
     Confirmed: { color: 'bg-emerald-100 text-emerald-800', label: 'Confirmed' },
+    Captured: { color: 'bg-green-100 text-green-800', label: 'Captured' },
     Pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
     Processing: { color: 'bg-blue-100 text-blue-800', label: 'Processing' },
     Failed: { color: 'bg-red-100 text-red-800', label: 'Failed' },
+    Refunded: { color: 'bg-orange-100 text-orange-800', label: 'Refunded' },
   };
 
   const refundConfig = {
@@ -186,7 +197,21 @@ const Payments = () => {
   };
 
   const formatCurrency = (amount) => `₹${Number(amount || 0).toLocaleString('en-IN')}`;
-  const formatDateTime = (date) => date ? new Date(date).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+  
+  const formatDateTime = (date) => {
+    if (!date) return 'N/A';
+    try {
+      return new Date(date).toLocaleString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    } catch {
+      return 'Invalid Date';
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -209,7 +234,7 @@ const Payments = () => {
 
             {!loading && stats && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                   <div className="bg-white rounded-xl shadow-md p-6">
                     <div className="flex items-center justify-between">
                       <div>
@@ -240,6 +265,17 @@ const Payments = () => {
                       <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-2xl">🔄</div>
                     </div>
                   </div>
+
+                  <div className="bg-white rounded-xl shadow-md p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Refund Amount</p>
+                        <p className="text-2xl font-bold text-orange-600">{formatCurrency(stats.totalRefundedAmount)}</p>
+                        <p className="text-xs text-gray-500 mt-1">total refunded</p>
+                      </div>
+                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-2xl">💸</div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Filters */}
@@ -259,8 +295,10 @@ const Payments = () => {
                         <option value="all">All Status</option>
                         <option value="Confirmed">Confirmed</option>
                         <option value="Completed">Completed</option>
+                        <option value="Captured">Captured</option>
                         <option value="Pending">Pending</option>
                         <option value="Failed">Failed</option>
+                        <option value="Refunded">Refunded</option>
                       </select>
                       <select value={refundFilter} onChange={(e) => setRefundFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg">
                         <option value="all">All Refunds</option>
@@ -316,15 +354,23 @@ const Payments = () => {
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex flex-col space-y-2">
-                                <button onClick={() => handleViewDetails(payment)} className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                                <button 
+                                  onClick={() => handleViewDetails(payment)} 
+                                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                                >
                                   View Details
                                 </button>
-                                {!payment.isRefunded && ['Completed', 'Confirmed'].includes(payment.status) && (
+                                {!payment.isRefunded && ['Completed', 'Confirmed', 'Captured'].includes(payment.status) && (
                                   <button
                                     onClick={() => handleRefundAction(payment)}
-                                    className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                                    disabled={processingRefund === payment.paymentId}
+                                    className={`px-3 py-2 rounded-lg text-sm ${
+                                      processingRefund === payment.paymentId
+                                        ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
+                                        : 'bg-red-600 text-white hover:bg-red-700'
+                                    }`}
                                   >
-                                    Process Refund
+                                    {processingRefund === payment.paymentId ? 'Processing...' : 'Process Refund'}
                                   </button>
                                 )}
                               </div>
@@ -339,6 +385,12 @@ const Payments = () => {
                         <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">💳</div>
                         <h3 className="text-xl font-semibold text-gray-600 mb-2">No payments found</h3>
                         <p className="text-gray-500">Try adjusting your search or filters</p>
+                        <button 
+                          onClick={fetchPayments}
+                          className="mt-4 px-4 py-2 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/80"
+                        >
+                          Refresh
+                        </button>
                       </div>
                     )}
                   </div>
@@ -364,12 +416,15 @@ const Payments = () => {
                   <div className="mt-3 text-sm">
                     <span className="text-gray-600">Refund ID:</span>
                     <span className="font-mono text-red-600 ml-2">{selectedPayment.refundId}</span>
+                    {selectedPayment.refundDate && (
+                      <span className="text-gray-500 ml-4">on {formatDateTime(selectedPayment.refundDate)}</span>
+                    )}
                   </div>
                 )}
               </div>
               <div className="text-right">
                 <div className="text-5xl font-bold text-gray-800">{formatCurrency(selectedPayment.amount)}</div>
-                <p className="text-lg text-gray-600 mt-2">Full Amount Received</p>
+                <p className="text-lg text-gray-600 mt-2">Amount {selectedPayment.isRefunded ? 'Refunded' : 'Received'}</p>
               </div>
             </div>
 
@@ -384,6 +439,10 @@ const Payments = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Invoice ID</span>
                     <span className="font-semibold">{selectedPayment.invoiceId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Order ID</span>
+                    <span className="font-semibold">{selectedPayment.orderId}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Payment Date</span>
@@ -425,10 +484,19 @@ const Payments = () => {
                   <div key={i} className="flex items-center justify-between bg-gray-50 p-6 rounded-xl hover:shadow-md transition-shadow">
                     <div className="flex items-center space-x-6">
                       {item.productImage ? (
-                        <img src={item.productImage} alt={item.productName} className="w-24 h-24 object-cover rounded-lg shadow-sm" onError={(e) => e.target.style.display = 'none'} />
-                      ) : (
-                        <div className="w-24 h-24 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 text-xs">No Image</div>
-                      )}
+                        <img 
+                          src={item.productImage} 
+                          alt={item.productName} 
+                          className="w-24 h-24 object-cover rounded-lg shadow-sm" 
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-24 h-24 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 text-xs ${item.productImage ? 'hidden' : 'flex'}`}>
+                        No Image
+                      </div>
                       <div>
                         <h4 className="text-xl font-semibold text-gray-800">{item.productName}</h4>
                         <p className="text-gray-600 mt-1">Quantity: <span className="font-medium">{item.quantity}</span></p>
@@ -443,13 +511,18 @@ const Payments = () => {
               </div>
             </div>
 
-            {!selectedPayment.isRefunded && ['Completed', 'Confirmed'].includes(selectedPayment.status) && (
+            {!selectedPayment.isRefunded && ['Completed', 'Confirmed', 'Captured'].includes(selectedPayment.status) && (
               <div className="flex justify-center pt-8 border-t border-gray-200">
                 <button
                   onClick={() => handleRefundAction(selectedPayment)}
-                  className="px-12 py-4 bg-red-600 text-white rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-xl hover:bg-red-700"
+                  disabled={processingRefund === selectedPayment.paymentId}
+                  className={`px-12 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-xl ${
+                    processingRefund === selectedPayment.paymentId
+                      ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
+                      : 'bg-red-600 text-white hover:bg-red-700'
+                  }`}
                 >
-                  Process Refund
+                  {processingRefund === selectedPayment.paymentId ? 'Processing Refund...' : 'Process Refund'}
                 </button>
               </div>
             )}

@@ -31,6 +31,7 @@ export default function CustomerProducts() {
       setProducts(productsData);
     } catch (error) {
       console.error("❌ Error fetching products:", error);
+      alert("Failed to load products. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -49,6 +50,7 @@ export default function CustomerProducts() {
       setProducts(searchResults);
     } catch (error) {
       console.error("❌ Error searching products:", error);
+      alert("Search failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -67,6 +69,7 @@ export default function CustomerProducts() {
       setProducts(categoryResults);
     } catch (error) {
       console.error("❌ Error filtering by category:", error);
+      alert("Failed to filter products. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -93,7 +96,8 @@ export default function CustomerProducts() {
   const ProductCard = ({ product }) => {
     const productImages = product.Images || [];
     const primaryImage = productImages.find(img => img.IsPrimary) || productImages[0];
-    const imageUrl = primaryImage?.ImageData || "https://via.placeholder.com/400x300?text=No+Image";
+    // FIXED: Use ImageUrl instead of ImageData
+    const imageUrl = primaryImage?.ImageUrl || "https://via.placeholder.com/400x300?text=No+Image";
 
     return (
       <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition duration-300 border border-gray-200">
@@ -132,7 +136,7 @@ export default function CustomerProducts() {
           
           <div className="mb-3">
             <span className="text-[#586330] font-bold text-xl">
-              ₹{product.Price.toLocaleString('en-IN')}
+              ₹{product.Price?.toLocaleString('en-IN') || '0'}
             </span>
             {product.Rating > 0 && (
               <div className="flex items-center space-x-1 mt-1">
