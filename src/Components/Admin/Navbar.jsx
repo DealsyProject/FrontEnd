@@ -34,7 +34,7 @@ export default function Navbar() {
             <Link to="/productPage" className="hover:text-[#d7dcc4] transition-colors">Products</Link>
             <Link to="/orders" className="hover:text-[#d7dcc4] transition-colors">Orders</Link>
             <Link to="/user" className="hover:text-[#d7dcc4] transition-colors">Customers</Link>
-            <Link to="/ChatSupport" className="hover:text-[#d7dcc4] transition-colors">Chat Support</Link>
+            <Link to="/support-adminchattosupport" className="hover:text-[#d7dcc4] transition-colors">Chat Support</Link>
             <Link to="/Transaction" className="hover:text-[#d7dcc4] transition-colors">Transactions</Link>
             <Link to="/Vendors" className="hover:text-[#d7dcc4] transition-colors">Vendors</Link>
             <Link to="/product-returns" className="hover:text-[#d7dcc4] transition-colors">Product Returns</Link>
@@ -91,7 +91,7 @@ export default function Navbar() {
           <Link onClick={toggleMenu} to="/user" className="py-2.5 px-4 flex items-center hover:bg-[#e5e9d3]">
             Customers
           </Link>
-          <Link onClick={toggleMenu} to="/ChatSupport" className="py-2.5 px-4 flex items-center hover:bg-[#e5e9d3]">
+          <Link onClick={toggleMenu} to="/support-adminchattosupport" className="py-2.5 px-4 flex items-center hover:bg-[#e5e9d3]">
             Chat Support
           </Link>
           <Link onClick={toggleMenu} to="/Transaction" className="py-2.5 px-4 flex items-center hover:bg-[#e5e9d3]">
