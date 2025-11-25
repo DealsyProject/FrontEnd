@@ -10,7 +10,6 @@ export default function CustomerCheckout() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [customer, setCustomer] = useState(null);
-
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -70,9 +69,33 @@ export default function CustomerCheckout() {
     });
   };
 
+  const createOrderWithItems = async () => {
+    try {
+      const orderItems = cart.map(item => ({
+        productId: item.ProductId,
+        quantity: item.Quantity,
+        price: item.Price
+      }));
+
+      const orderResponse = await axiosInstance.post('/Order/create', {
+        shippingAddress: `${form.address}, ${form.city}, ${form.pincode}`,
+        items: orderItems
+      });
+      return orderResponse.data;
+    } catch (error) {
+      console.error('❌ Error creating order:', error);
+      throw new Error('Failed to create order');
+    }
+  };
+
   const handlePayment = async () => {
     if (!form.name || !form.phone || !form.address || !form.pincode) {
       alert("Please fill all required fields");
+      return;
+    }
+
+    if (cart.length === 0) {
+      alert("Your cart is empty");
       return;
     }
 
@@ -80,13 +103,26 @@ export default function CustomerCheckout() {
     try {
       const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0) + 49;
 
-      // Create Razorpay order
-      const orderResponse = await axiosInstance.post('/Order/razorpay/create', {
+      // Step 1: Create the actual order with items first
+      const order = await createOrderWithItems();
+      console.log('✅ Order created with items:', order);
+
+      // Step 2: Create Razorpay order for payment
+      const razorpayResponse = await axiosInstance.post('/Order/razorpay/create', {
         amount: total,
         currency: 'INR'
       });
+      
+      const razorpayOrder = razorpayResponse.data;
+      console.log('✅ Razorpay order response:', razorpayOrder);
 
-      const razorpayOrder = orderResponse.data;
+      // Verify that key exists (backend returns 'Key' with capital K)
+      const key = razorpayOrder.key || razorpayOrder.Key;
+      if (!key) {
+        console.error('❌ Razorpay key is missing from response:', razorpayOrder);
+        alert('Payment configuration error. Please contact support.');
+        return;
+      }
 
       // Load Razorpay script
       const scriptLoaded = await loadRazorpayScript();
@@ -96,21 +132,23 @@ export default function CustomerCheckout() {
       }
 
       const options = {
-        key: razorpayOrder.key,
-        amount: razorpayOrder.amount * 100, // Convert to paise
-        currency: razorpayOrder.currency,
+        key: key, // Use the key variable we validated above
+        amount: razorpayOrder.amount || razorpayOrder.Amount * 100, // Convert to paise
+        currency: razorpayOrder.currency || razorpayOrder.Currency,
         name: 'Dealsy Furniture',
         description: 'Order Payment',
-        order_id: razorpayOrder.orderId,
+        order_id: razorpayOrder.orderId || razorpayOrder.OrderId,
         handler: async function (response) {
           try {
-            // Verify payment
+            // Step 3: Verify payment
             await axiosInstance.post('/Order/razorpay/verify', {
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature
             });
 
+            // Clear cart after successful payment
+            await clearCart();
             alert('✅ Payment Successful! Your order has been placed.');
             navigate('/customer/orders');
           } catch (error) {
@@ -124,7 +162,8 @@ export default function CustomerCheckout() {
           contact: form.phone
         },
         notes: {
-          address: form.address
+          address: form.address,
+          orderId: order.id
         },
         theme: {
           color: '#586330'
@@ -135,9 +174,20 @@ export default function CustomerCheckout() {
       razorpay.open();
     } catch (error) {
       console.error('❌ Payment failed:', error);
-      alert('Payment initialization failed. Please try again.');
+      alert(error.message || 'Payment initialization failed. Please try again.');
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const clearCart = async () => {
+    try {
+      for (const item of cart) {
+        await axiosInstance.delete(`/Cart/remove/${item.Id}`);
+      }
+      setCart([]);
+    } catch (error) {
+      console.error('Error clearing cart:', error);
     }
   };
 
@@ -146,166 +196,165 @@ export default function CustomerCheckout() {
   const finalTotal = total + shippingFee;
 
   if (loading) {
-    return (
-      <div className="flex flex-col min-h-screen bg-pink-50">
-        <Navbar />
-        <main className="flex-grow flex justify-center items-center">
-          <div className="text-center">Loading checkout...</div>
-        </main>
-        <Footer />
-      </div>
-    );
+    return <div className="flex justify-center items-center h-screen">Loading checkout...</div>;
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-pink-50">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="flex-grow py-10 px-6">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">Checkout</h1>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Shipping & Payment */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Shipping Information */}
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                    required
+                  />
+                </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Shipping & Payment */}
-            <div className="space-y-8">
-              {/* Shipping Information */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={form.name}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={form.phone}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
-                        required
-                      />
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={form.address}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={form.city}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
-                    <textarea
-                      name="address"
-                      value={form.address}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
+                    <input
+                      type="text"
+                      name="pincode"
+                      value={form.pincode}
                       onChange={handleChange}
-                      rows="3"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={form.city}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
-                      <input
-                        type="text"
-                        name="pincode"
-                        value={form.pincode}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
-                        required
-                      />
-                    </div>
-                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Payment Method */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="razorpay"
-                      checked={form.paymentMethod === "razorpay"}
-                      onChange={handleChange}
-                      className="text-[#586330] focus:ring-[#586330]"
+            {/* Payment Method */}
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
+              <div className="space-y-3">
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="razorpay"
+                    checked={form.paymentMethod === "razorpay"}
+                    onChange={handleChange}
+                    className="text-[#586330] focus:ring-[#586330]"
+                  />
+                  <span>Razorpay (Credit/Debit Card, UPI, Net Banking)</span>
+                </label>
+              </div>
+              <div className="mt-4 flex gap-3">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" className="w-10" alt="Visa" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/MasterCard_Logo.svg" className="w-10" alt="MasterCard" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Amex_logo.svg" className="w-10" alt="Amex" />
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Order Summary */}
+          <div className="bg-white rounded-xl shadow-md p-6 h-fit">
+            <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+            <div className="space-y-4 mb-6">
+              {cart.map((item) => (
+                <div key={item.Id} className="flex justify-between items-center">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={item.Product?.Images?.[0]?.ImageData || "https://via.placeholder.com/400x300?text=No+Image"}
+                      alt={item.ProductName}
+                      className="w-12 h-12 object-cover rounded"
                     />
-                    <span>Razorpay (Credit/Debit Card, UPI, Net Banking)</span>
-                  </label>
-                </div>
-                <div className="mt-4 flex gap-3">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" className="w-10" alt="Visa" />
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/MasterCard_Logo.svg" className="w-10" alt="MasterCard" />
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Amex_logo.svg" className="w-10" alt="Amex" />
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column - Order Summary */}
-            <div className="bg-white rounded-xl shadow-md p-6 h-fit">
-              <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-              
-              <div className="space-y-4 mb-6">
-                {cart.map((item) => (
-                  <div key={item.Id} className="flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                      <img 
-                        src={item.Product?.Images?.[0]?.ImageData || "https://via.placeholder.com/400x300?text=No+Image"} 
-                        alt={item.ProductName}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                      <div>
-                        <p className="font-medium text-sm">{item.ProductName}</p>
-                        <p className="text-gray-500 text-xs">Qty: {item.Quantity}</p>
-                      </div>
+                    <div>
+                      <p className="font-medium text-sm">{item.ProductName}</p>
+                      <p className="text-gray-500 text-xs">Qty: {item.Quantity}</p>
                     </div>
-                    <p className="font-semibold">₹{(item.Price * item.Quantity).toFixed(2)}</p>
                   </div>
-                ))}
-              </div>
-
-              <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
-                  <span>₹{total.toFixed(2)}</span>
+                  <p className="font-semibold">₹{(item.Price * item.Quantity).toFixed(2)}</p>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Shipping</span>
-                  <span>₹{shippingFee.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                  <span>Total</span>
-                  <span className="text-[#586330]">₹{finalTotal.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <button
-                onClick={handlePayment}
-                disabled={processing || cart.length === 0}
-                className={`w-full mt-6 py-3 rounded-md font-semibold transition ${
-                  processing || cart.length === 0
-                    ? "bg-gray-400 text-gray-100 cursor-not-allowed"
-                    : "bg-[#586330] text-white hover:bg-[#586330]/80"
-                }`}
-              >
-                {processing ? "Processing..." : `Pay ₹${finalTotal.toFixed(2)}`}
-              </button>
+              ))}
             </div>
+            <div className="border-t pt-4 space-y-2">
+              <div className="flex justify-between text-gray-600">
+                <span>Subtotal</span>
+                <span>₹{total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>Shipping</span>
+                <span>₹{shippingFee.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                <span>Total</span>
+                <span className="text-[#586330]">₹{finalTotal.toFixed(2)}</span>
+              </div>
+            </div>
+            <button
+              onClick={handlePayment}
+              disabled={processing || cart.length === 0}
+              className={`w-full mt-6 py-3 rounded-md font-semibold transition ${
+                processing || cart.length === 0
+                  ? "bg-gray-400 text-gray-100 cursor-not-allowed"
+                  : "bg-[#586330] text-white hover:bg-[#586330]/80"
+              }`}
+            >
+              {processing ? "Processing..." : `Pay ₹${finalTotal.toFixed(2)}`}
+            </button>
           </div>
         </div>
       </main>
