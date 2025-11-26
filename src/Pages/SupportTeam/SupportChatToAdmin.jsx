@@ -14,41 +14,47 @@ function SupportChatToAdmin() {
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
-    if (!token) {
-      setIsAuthorized(false);
-      return;
-    }
+    if (!token) return;
 
     let decoded;
     try {
       decoded = jwtDecode(token);
     } catch {
-      setIsAuthorized(false);
       return;
     }
 
-    const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || decoded.role;
+    const role = decoded["http://schemas.microsoft.com primera/ws/2008/06/identity/claims/role"] || decoded.role;
     const isSupport = role === "SupportTeam" || Number(role) === 4;
-
-    if (!isSupport) {
-      setIsAuthorized(false);
-      return;
-    }
+    if (!isSupport) return;
 
     setIsAuthorized(true);
 
     const conn = new signalR.HubConnectionBuilder()
       .withUrl(`https://localhost:7001/chatHub?access_token=${encodeURIComponent(token)}`)
       .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Information)
       .build();
 
-    conn.on("ReceiveSupportMessage", (fromUserId, msg) => {
-      setMessages(prev => [...prev, { from: fromUserId, msg, isMe: true, timestamp: new Date() }]);
+    // Receive message FROM Admin
+    conn.on("ReceiveAdminMessage", (fromAdminId, msg) => {
+      setMessages(prev => [...prev, {
+        from: "Admin",
+        msg,
+        isMe: false,
+        isAdmin: true,
+        timestamp: new Date()
+      }]);
     });
 
-    conn.on("ReceiveAdminMessage", (fromAdminId, msg) => {
-      setMessages(prev => [...prev, { from: fromAdminId, msg, isMe: false, timestamp: new Date(), isAdmin: true }]);
+    // Optional: echo own message (if backend echoes)
+    conn.on("ReceiveSupportMessage", (fromUserId, msg) => {
+      if (fromUserId === "You") {
+        setMessages(prev => [...prev, {
+          from: "You",
+          msg,
+          isMe: true,
+          timestamp: new Date()
+        }]);
+      }
     });
 
     conn.onreconnecting(() => setConnectionStatus("Reconnecting..."));
@@ -63,7 +69,6 @@ function SupportChatToAdmin() {
       })
       .catch(err => {
         console.error(err);
-        setConnectionStatus("Failed");
         toast.error("Failed to connect");
       });
 
@@ -75,12 +80,14 @@ function SupportChatToAdmin() {
     const text = message.trim();
     setMessage("");
 
+    // Show immediately
+    setMessages(prev => [...prev, { from: "You", msg: text, isMe: true, timestamp: new Date() }]);
+
     try {
       await connection.invoke("SendToAdmin", text);
-      setMessages(prev => [...prev, { from: "You", msg: text, isMe: true, timestamp: new Date() }]);
     } catch (err) {
       toast.error("Failed to send");
-      setMessage(text);
+      setMessages(prev => prev.slice(0, -1)); // remove last
     }
   };
 
@@ -103,7 +110,6 @@ function SupportChatToAdmin() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex flex-col">
-      {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 shadow-lg">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -121,20 +127,19 @@ function SupportChatToAdmin() {
         </div>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 max-w-4xl mx-auto w-full p-6">
         <div className="bg-white rounded-2xl shadow-xl h-full flex flex-col">
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 py-12">
                 <div className="text-6xl mb-4">Admin</div>
-                <p>No messages yet. Send a message to Admin when needed.</p>
+                <p>Send a message to Admin when needed.</p>
               </div>
             ) : (
               messages.map((m, i) => (
                 <div key={i} className={`flex ${m.isMe ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-xs lg:max-w-md px-5 py-3 rounded-2xl shadow-sm ${m.isMe ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : m.isAdmin ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white" : "bg-gray-200 text-gray-800"}`}>
-                    {!m.isMe && <div className="text-xs opacity-80 mb-1">{m.isAdmin ? "Admin" : m.from}</div>}
+                  <div className={`max-w-xs lg:max-w-md px-5 py-3 rounded-2xl shadow-sm ${m.isMe ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-gradient-to-r from-indigo-500 to-purple-600 text-white"}`}>
+                    <div className="text-xs opacity-80 mb-1">{m.isMe ? "You" : "Admin"}</div>
                     <p>{m.msg}</p>
                     <div className="text-xs mt-1 opacity-80">{formatTime(m.timestamp)}</div>
                   </div>
@@ -144,7 +149,6 @@ function SupportChatToAdmin() {
             <div ref={chatEndRef} />
           </div>
 
-          {/* Input */}
           <div className="border-t p-6 bg-gray-50">
             <div className="flex space-x-4">
               <input
@@ -158,7 +162,7 @@ function SupportChatToAdmin() {
               <button
                 onClick={sendMessage}
                 disabled={!message.trim() || connectionStatus !== "Connected"}
-                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition disabled:opacity-50"
               >
                 Send
               </button>
