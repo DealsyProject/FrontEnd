@@ -35,37 +35,38 @@ const Payments = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get('/Payment/vendor/payments');
-      const rawPayments = response.data.payments || response.data.Payments || [];
+      const rawPayments = response.data.payments || [];
 
+      // Transform data to match frontend structure
       const paymentsData = rawPayments.map(payment => ({
-        paymentId: payment.paymentId || payment.PaymentId || payment.id,
-        date: payment.date || payment.Date || payment.createdOn,
-        amount: Number(payment.amount || payment.Amount) || 0,
-        method: payment.method || payment.Method || 'Credit Card',
-        status: payment.status || payment.Status || 'Confirmed',
-        transactionId: payment.transactionId || payment.TransactionId || payment.razorpayPaymentId || 'N/A',
-        invoiceId: payment.invoiceId || payment.InvoiceId || 'N/A',
-        orderId: payment.orderId || payment.OrderId,
-        isRefunded: payment.isRefunded || payment.IsRefunded || false,
-        refundId: payment.refundId || payment.RefundId || null,
-        refundDate: payment.refundDate || payment.RefundDate || null,
-        refundReason: payment.refundReason || payment.RefundReason || null,
+        paymentId: payment.paymentId || payment.id,
+        date: payment.date || payment.createdOn,
+        amount: Number(payment.amount) || 0,
+        method: payment.method || 'Credit Card',
+        status: payment.status || 'Confirmed',
+        transactionId: payment.transactionId || payment.razorpayPaymentId || 'N/A',
+        invoiceId: payment.invoiceId || 'N/A',
+        orderId: payment.orderId,
+        isRefunded: payment.isRefunded || false,
+        refundId: payment.refundId || null,
+        refundDate: payment.refundDate || null,
+        refundReason: payment.refundReason || null,
         customer: {
-          id: payment.customer?.id || payment.Customer?.Id,
-          name: payment.customer?.name || payment.Customer?.Name || 'Unknown Customer',
-          email: payment.customer?.email || payment.Customer?.Email || 'N/A',
-          phone: payment.customer?.phone || payment.Customer?.Phone || 'N/A',
-          address: payment.customer?.address || payment.Customer?.Address || 'N/A',
-          pincode: payment.customer?.pincode || payment.Customer?.Pincode || 'N/A',
+          id: payment.customer?.id,
+          name: payment.customer?.name || 'Unknown Customer',
+          email: payment.customer?.email || 'N/A',
+          phone: payment.customer?.phone || 'N/A',
+          address: payment.customer?.address || 'N/A',
+          pincode: payment.customer?.pincode || 'N/A',
         },
-        items: (payment.items || payment.Items || []).map(item => ({
-          productName: item.productName || item.ProductName || 'Unknown Product',
-          productImage: item.productImage || item.ProductImage || null,
-          quantity: item.quantity || item.Quantity || 1,
-          price: Number(item.price || item.Price) || 0,
-          total: Number(item.total || item.Total) || 0,
+        items: (payment.items || []).map(item => ({
+          productName: item.productName || 'Unknown Product',
+          productImage: item.productImage || null,
+          quantity: item.quantity || 1,
+          price: Number(item.price) || 0,
+          total: Number(item.total) || 0,
         })),
-        orderDate: payment.orderDate || payment.OrderDate || null,
+        orderDate: payment.orderDate || null,
       }));
 
       setPayments(paymentsData);
@@ -113,8 +114,12 @@ const Payments = () => {
           reason: reason
         });
 
-        toast.success('Refund initiated successfully!');
-        fetchPayments(); // Refresh data
+        if (refundResponse.data.success) {
+          toast.success('Refund initiated successfully!');
+          fetchPayments(); // Refresh data
+        } else {
+          toast.error(refundResponse.data.message || 'Failed to process refund');
+        }
       } catch (error) {
         console.error('Refund error:', error);
         toast.error(error.response?.data?.message || 'Failed to process refund');

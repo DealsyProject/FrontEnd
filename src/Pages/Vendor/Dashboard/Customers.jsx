@@ -287,12 +287,10 @@ const Customers = () => {
                         <div>
                           <strong>Email:</strong> {selectedOrder.email}
                         </div>
-                        <div>
-                          <strong>Customer ID:</strong> {selectedOrder.customerId}
-                        </div>
-                        <div className="md:col-span-2">
+                        
+                        {/* <div className="md:col-span-2">
                           <strong>Total Orders:</strong> {selectedOrder.totalOrders}
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </div>
