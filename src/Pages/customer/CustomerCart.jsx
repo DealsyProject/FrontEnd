@@ -76,9 +76,9 @@ export default function CustomerCart() {
     }
   };
 
+  // REMOVED SHIPPING FEE - Only product total
   const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0);
-  const shippingFee = total > 500 ? 0 : 49; // Free shipping over ₹500
-  const finalTotal = total + shippingFee;
+  const finalTotal = total; // No shipping fee
 
   if (loading) {
     return (
@@ -216,19 +216,8 @@ export default function CustomerCart() {
                     <span className="font-medium">₹{total.toFixed(2)}</span>
                   </div>
                   
-                  <div className="flex justify-between text-gray-600">
-                    <span>Shipping</span>
-                    <span className="font-medium">
-                      {shippingFee === 0 ? "FREE" : `₹${shippingFee.toFixed(2)}`}
-                    </span>
-                  </div>
-
-                  {total > 0 && total < 500 && (
-                    <div className="text-sm text-green-600 bg-green-50 p-2 rounded-lg">
-                      Add ₹{(500 - total).toFixed(2)} more for FREE shipping!
-                    </div>
-                  )}
-
+                  {/* REMOVED SHIPPING FEE SECTION */}
+                  
                   <div className="border-t pt-4 flex justify-between text-lg font-semibold text-gray-800">
                     <span>Total</span>
                     <span>₹{finalTotal.toFixed(2)}</span>
