@@ -154,7 +154,7 @@ useEffect(() => {
 
     setTimeout(() => {
       setTypingCustomer(null);
-    }, 3000); // auto hide after 2 seconds
+    }, 3000); 
   });
 
   return () => connection.off("CustomerTyping");
