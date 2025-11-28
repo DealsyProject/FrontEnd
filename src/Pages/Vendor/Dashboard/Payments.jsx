@@ -32,54 +32,53 @@ const Payments = () => {
   }, []);
 
   const fetchPayments = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.get('/Payment/vendor/payments');
-      const rawPayments = response.data.payments || [];
+  try {
+    setLoading(true);
+    const response = await axiosInstance.get('/Payment/vendor/payments');
+    const rawPayments = response.data.payments || [];
 
-      // Transform data to match frontend structure
-      const paymentsData = rawPayments.map(payment => ({
-        paymentId: payment.paymentId || payment.id,
-        date: payment.date || payment.createdOn,
-        amount: Number(payment.amount) || 0,
-        method: payment.method || 'Credit Card',
-        status: payment.status || 'Confirmed',
-        transactionId: payment.transactionId || payment.razorpayPaymentId || 'N/A',
-        invoiceId: payment.invoiceId || 'N/A',
-        orderId: payment.orderId,
-        isRefunded: payment.isRefunded || false,
-        refundId: payment.refundId || null,
-        refundDate: payment.refundDate || null,
-        refundReason: payment.refundReason || null,
-        customer: {
-          id: payment.customer?.id,
-          name: payment.customer?.name || 'Unknown Customer',
-          email: payment.customer?.email || 'N/A',
-          phone: payment.customer?.phone || 'N/A',
-          address: payment.customer?.address || 'N/A',
-          pincode: payment.customer?.pincode || 'N/A',
-        },
-        items: (payment.items || []).map(item => ({
-          productName: item.productName || 'Unknown Product',
-          productImage: item.productImage || null,
-          quantity: item.quantity || 1,
-          price: Number(item.price) || 0,
-          total: Number(item.total) || 0,
-        })),
-        orderDate: payment.orderDate || null,
-      }));
+    // Transform data to match frontend structure - FIXED FIELD MAPPING
+    const paymentsData = rawPayments.map(payment => ({
+      paymentId: payment.PaymentId || payment.paymentId || payment.id,
+      date: payment.Date || payment.date || payment.createdOn,
+      amount: Number(payment.Amount || payment.amount) || 0,
+      method: payment.Method || payment.method || 'razorpay', // Use actual method from API
+      status: payment.Status || payment.status || 'completed',
+      transactionId: payment.TransactionId || payment.transactionId || payment.razorpayPaymentId || 'N/A',
+      invoiceId: payment.InvoiceId || payment.invoiceId || 'N/A',
+      orderId: payment.OrderId || payment.orderId,
+      isRefunded: payment.IsRefunded || payment.isRefunded || false,
+      refundId: payment.RefundId || payment.refundId || null,
+      refundDate: payment.RefundDate || payment.refundDate || null,
+      refundReason: payment.RefundReason || payment.refundReason || null,
+      customer: {
+        id: payment.Customer?.Id || payment.customer?.id,
+        name: payment.Customer?.Name || payment.customer?.name || 'Unknown Customer',
+        email: payment.Customer?.Email || payment.customer?.email || 'N/A',
+        phone: payment.Customer?.Phone || payment.customer?.phone || 'N/A',
+        address: payment.Customer?.Address || payment.customer?.address || 'N/A',
+        pincode: payment.Customer?.Pincode || payment.customer?.pincode || 'N/A',
+      },
+      items: (payment.Items || payment.items || []).map(item => ({
+        productName: item.ProductName || item.productName || 'Unknown Product',
+        productImage: item.ProductImage || item.productImage || null,
+        quantity: item.Quantity || item.quantity || 1,
+        price: Number(item.Price || item.price) || 0,
+        total: Number(item.Total || item.total) || 0,
+      })),
+      orderDate: payment.OrderDate || payment.orderDate || null,
+    }));
 
-      setPayments(paymentsData);
-      calculateStatistics(paymentsData);
-    } catch (error) {
-      console.error('Error fetching payments:', error);
-      toast.error('Failed to load payments');
-      setPayments([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+    setPayments(paymentsData);
+    calculateStatistics(paymentsData);
+  } catch (error) {
+    console.error('Error fetching payments:', error);
+    toast.error('Failed to load payments');
+    setPayments([]);
+  } finally {
+    setLoading(false);
+  }
+};
   const calculateStatistics = (paymentData) => {
     const completedPayments = paymentData.filter(p => ['Completed', 'Confirmed', 'Captured'].includes(p.status));
     const totalRevenue = completedPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -95,58 +94,67 @@ const Payments = () => {
   };
 
   const handleRefundAction = async (payment) => {
-    if (!payment.isRefunded) {
-      if (!['Completed', 'Confirmed', 'Captured'].includes(payment.status)) {
-        toast.error("Refund only allowed for Completed or Confirmed payments.");
-        return;
-      }
-
-      const reason = prompt("Enter refund reason:", "Customer request");
-      if (!reason) return;
-
-      try {
-        setProcessingRefund(payment.paymentId);
-        
-        const refundResponse = await axiosInstance.post('/Payment/refund', {
-          orderId: payment.orderId,
-          paymentId: payment.transactionId,
-          amount: payment.amount,
-          reason: reason
-        });
-
-        if (refundResponse.data.success) {
-          toast.success('Refund initiated successfully!');
-          fetchPayments(); // Refresh data
-        } else {
-          toast.error(refundResponse.data.message || 'Failed to process refund');
-        }
-      } catch (error) {
-        console.error('Refund error:', error);
-        toast.error(error.response?.data?.message || 'Failed to process refund');
-      } finally {
-        setProcessingRefund(null);
-      }
+  if (!payment.isRefunded) {
+    // Handle both lowercase and capitalized status values
+    const eligibleStatuses = ['completed', 'Completed', 'confirmed', 'Confirmed', 'captured', 'Captured'];
+    if (!eligibleStatuses.includes(payment.status)) {
+      toast.error("Refund only allowed for Completed or Confirmed payments.");
+      return;
     }
-  };
 
-  const paymentMethods = {
-    'Credit Card': { name: 'Credit Card', icon: '💳', color: 'bg-purple-100 text-purple-800' },
-    'Debit Card': { name: 'Debit Card', icon: '💳', color: 'bg-blue-100 text-blue-800' },
-    'UPI': { name: 'UPI', icon: '📱', color: 'bg-green-100 text-green-800' },
-    'Bank Transfer': { name: 'Bank Transfer', icon: '🏦', color: 'bg-indigo-100 text-indigo-800' },
-    'Cash': { name: 'Cash', icon: '💵', color: 'bg-yellow-100 text-yellow-800' },
-    'Wallet': { name: 'Wallet', icon: '👛', color: 'bg-orange-100 text-orange-800' },
-  };
+    const reason = prompt("Enter refund reason:", "Customer request");
+    if (!reason) return;
+
+    try {
+      setProcessingRefund(payment.paymentId);
+      
+      const refundResponse = await axiosInstance.post('/Payment/refund', {
+        orderId: payment.orderId,
+        paymentId: payment.transactionId,
+        amount: payment.amount,
+        reason: reason
+      });
+
+      if (refundResponse.data.success) {
+        toast.success('Refund initiated successfully!');
+        fetchPayments(); // Refresh data
+      } else {
+        toast.error(refundResponse.data.message || 'Failed to process refund');
+      }
+    } catch (error) {
+      console.error('Refund error:', error);
+      toast.error(error.response?.data?.message || 'Failed to process refund');
+    } finally {
+      setProcessingRefund(null);
+    }
+  }
+};
+ const paymentMethods = {
+  'razorpay': { name: 'Razorpay', icon: '💳', color: 'bg-purple-100 text-purple-800' },
+  'Credit Card': { name: 'Credit Card', icon: '💳', color: 'bg-purple-100 text-purple-800' },
+  'Debit Card': { name: 'Debit Card', icon: '💳', color: 'bg-blue-100 text-blue-800' },
+  'UPI': { name: 'UPI', icon: '📱', color: 'bg-green-100 text-green-800' },
+  'Bank Transfer': { name: 'Bank Transfer', icon: '🏦', color: 'bg-indigo-100 text-indigo-800' },
+  'Cash': { name: 'Cash', icon: '💵', color: 'bg-yellow-100 text-yellow-800' },
+  'Wallet': { name: 'Wallet', icon: '👛', color: 'bg-orange-100 text-orange-800' },
+};
 
   const paymentStatusConfig = {
-    Completed: { color: 'bg-green-100 text-green-800', label: 'Completed' },
-    Confirmed: { color: 'bg-emerald-100 text-emerald-800', label: 'Confirmed' },
-    Captured: { color: 'bg-green-100 text-green-800', label: 'Captured' },
-    Pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
-    Processing: { color: 'bg-blue-100 text-blue-800', label: 'Processing' },
-    Failed: { color: 'bg-red-100 text-red-800', label: 'Failed' },
-    Refunded: { color: 'bg-orange-100 text-orange-800', label: 'Refunded' },
-  };
+  completed: { color: 'bg-green-100 text-green-800', label: 'Completed' },
+  Completed: { color: 'bg-green-100 text-green-800', label: 'Completed' },
+  confirmed: { color: 'bg-emerald-100 text-emerald-800', label: 'Confirmed' },
+  Confirmed: { color: 'bg-emerald-100 text-emerald-800', label: 'Confirmed' },
+  captured: { color: 'bg-green-100 text-green-800', label: 'Captured' },
+  Captured: { color: 'bg-green-100 text-green-800', label: 'Captured' },
+  pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
+  Pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
+  processing: { color: 'bg-blue-100 text-blue-800', label: 'Processing' },
+  Processing: { color: 'bg-blue-100 text-blue-800', label: 'Processing' },
+  failed: { color: 'bg-red-100 text-red-800', label: 'Failed' },
+  Failed: { color: 'bg-red-100 text-red-800', label: 'Failed' },
+  refunded: { color: 'bg-orange-100 text-orange-800', label: 'Refunded' },
+  Refunded: { color: 'bg-orange-100 text-orange-800', label: 'Refunded' },
+};
 
   const refundConfig = {
     true: { color: 'bg-red-100 text-red-800', label: 'Refunded' },
@@ -296,15 +304,15 @@ const Payments = () => {
                       />
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                      <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg">
-                        <option value="all">All Status</option>
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Captured">Captured</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Failed">Failed</option>
-                        <option value="Refunded">Refunded</option>
-                      </select>
+                     <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg">
+  <option value="all">All Status</option>
+  <option value="confirmed">Confirmed</option>
+  <option value="completed">Completed</option>
+  <option value="captured">Captured</option>
+  <option value="pending">Pending</option>
+  <option value="failed">Failed</option>
+  <option value="refunded">Refunded</option>
+</select>
                       <select value={refundFilter} onChange={(e) => setRefundFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg">
                         <option value="all">All Refunds</option>
                         <option value="refunded">Refunded</option>
@@ -365,19 +373,19 @@ const Payments = () => {
                                 >
                                   View Details
                                 </button>
-                                {!payment.isRefunded && ['Completed', 'Confirmed', 'Captured'].includes(payment.status) && (
-                                  <button
-                                    onClick={() => handleRefundAction(payment)}
-                                    disabled={processingRefund === payment.paymentId}
-                                    className={`px-3 py-2 rounded-lg text-sm ${
-                                      processingRefund === payment.paymentId
-                                        ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
-                                        : 'bg-red-600 text-white hover:bg-red-700'
-                                    }`}
-                                  >
-                                    {processingRefund === payment.paymentId ? 'Processing...' : 'Process Refund'}
-                                  </button>
-                                )}
+                                {!payment.isRefunded && ['completed', 'Completed', 'confirmed', 'Confirmed', 'captured', 'Captured'].includes(payment.status) && (
+  <button
+    onClick={() => handleRefundAction(payment)}
+    disabled={processingRefund === payment.paymentId}
+    className={`px-3 py-2 rounded-lg text-sm ${
+      processingRefund === payment.paymentId
+        ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
+        : 'bg-red-600 text-white hover:bg-red-700'
+    }`}
+  >
+    {processingRefund === payment.paymentId ? 'Processing...' : 'Process Refund'}
+  </button>
+)}
                               </div>
                             </td>
                           </tr>
