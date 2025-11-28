@@ -1,77 +1,175 @@
-import React, { useState } from "react";
+import React from "react";
+import { useFormik } from "formik";
 import axios from "axios";
 import CustomerExtraForm from "../../Components/customer/Registration/CustomerExtraForm";
 import VendorExtraForm from "../../Components/Vendor/Registration/VendorExtraForm";
 import { Link } from "react-router-dom";
 
 export default function Register() {
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    phoneNumber: "",
-    role: 3,
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [errorMsg, setErrorMsg] = React.useState("");
+  const [successMsg, setSuccessMsg] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
+  const formik = useFormik({
+    initialValues: {
+      fullName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      phoneNumber: "",
+      role: 3,
+      // Vendor details
+      companyName: "",
+      companyOwnerName: "",
+      companyEmail: "",
+      location: "",
+      // Customer details
+      address: "",
+      pincode: ""
+    },
+    validate: (values) => {
+      const errors = {};
+
+      // Basic info validation (matches backend)
+      if (!values.fullName.trim()) {
+        errors.fullName = "Full name is required";
+      }
+
+      if (!values.email.trim()) {
+        errors.email = "Email is required";
+      } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
+        errors.email = "Invalid email format";
+      }
+
+      if (!values.password) {
+        errors.password = "Password is required";
+      } else if (values.password.length < 6) {
+        errors.password = "Password must be at least 6 characters";
+      } else if (!/[A-Z]/.test(values.password)) {
+        errors.password = "Password must contain at least one uppercase letter";
+      } else if (!/[0-9]/.test(values.password)) {
+        errors.password = "Password must contain at least one number";
+      }
+
+      if (!values.confirmPassword) {
+        errors.confirmPassword = "Please confirm your password";
+      } else if (values.password !== values.confirmPassword) {
+        errors.confirmPassword = "Passwords do not match";
+      }
+
+      if (!values.phoneNumber.trim()) {
+        errors.phoneNumber = "Phone number is required";
+      }
+
+      // Vendor-specific validation
+      if (values.role === 2) {
+        if (!values.companyName.trim()) {
+          errors.companyName = "Company name is required";
+        } else if (values.companyName.length < 2 || values.companyName.length > 200) {
+          errors.companyName = "Company name must be between 2 and 200 characters";
+        }
+
+        if (!values.companyOwnerName.trim()) {
+          errors.companyOwnerName = "Company owner name is required";
+        } else if (values.companyOwnerName.length < 2 || values.companyOwnerName.length > 100) {
+          errors.companyOwnerName = "Company owner name must be between 2 and 100 characters";
+        }
+
+        if (!values.companyEmail.trim()) {
+          errors.companyEmail = "Company email is required";
+        } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.companyEmail)) {
+          errors.companyEmail = "Invalid company email format";
+        }
+
+        if (!values.location.trim()) {
+          errors.location = "Location is required";
+        } else if (values.location.length < 2 || values.location.length > 200) {
+          errors.location = "Location must be between 2 and 200 characters";
+        }
+      }
+
+      // Customer-specific validation
+      if (values.role === 3) {
+        if (!values.address.trim()) {
+          errors.address = "Address is required";
+        }
+
+        if (!values.pincode.trim()) {
+          errors.pincode = "Pincode is required";
+        } else if (!/^\d{5,6}$/.test(values.pincode)) {
+          errors.pincode = "Invalid pincode format (5-6 digits)";
+        }
+      }
+
+      return errors;
+    },
+    onSubmit: async (values) => {
+      setErrorMsg("");
+      setSuccessMsg("");
+
+      const payload = {
+        fullName: values.fullName,
+        email: values.email,
+        password: values.password,
+        confirmPassword: values.confirmPassword,
+        phoneNumber: values.phoneNumber,
+        role: values.role
+      };
+
+      // Add role-specific details
+      if (values.role === 2) {
+        payload.vendorDetails = {
+          companyName: values.companyName,
+          companyOwnerName: values.companyOwnerName,
+          companyEmail: values.companyEmail,
+          location: values.location
+        };
+      } else if (values.role === 3) {
+        payload.customerDetails = {
+          address: values.address,
+          pincode: values.pincode
+        };
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await axios.post(
+          "https://localhost:7001/api/Auth/register",
+          payload
+        );
+        setSuccessMsg("Registration successful! Please log in.");
+        console.log("✅ Registration success:", response.data);
+        formik.resetForm();
+      } catch (error) {
+        console.error("❌ Registration error:", error);
+        setErrorMsg(
+          error.response?.data?.message ||
+            "Registration failed. Please try again."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
   });
 
-  const [extraData, setExtraData] = useState({}); 
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: name === "role" ? Number(value) : value,
-    });
+  const handleRoleChange = (e) => {
+    const roleValue = Number(e.target.value);
+    formik.setFieldValue("role", roleValue);
   };
 
   const handleExtraChange = (e) => {
     const { name, value } = e.target;
-    setExtraData({
-      ...extraData,
-      [name]: value,
-    });
+    formik.setFieldValue(name, value);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrorMsg("");
-    setSuccessMsg("");
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
-    const payload = {
-      ...formData,
-      vendorDetails: formData.role === 2 ? extraData : null,
-      customerDetails: formData.role === 3 ? extraData : null,
-    };
-
-    try {
-      setIsLoading(true);
-      const response = await axios.post(
-        "https://localhost:7001/api/Auth/register",
-        payload
-      );
-      setSuccessMsg("Registration successful! Please log in.");
-      console.log("✅ Registration success:", response.data);
-      setFormData({
-        fullName: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-        phoneNumber: "",
-        role: 3,
-      });
-      setExtraData({});
-    } catch (error) {
-      console.error("❌ Registration error:", error);
-      setErrorMsg(
-        error.response?.data?.message ||
-          "Registration failed. Please try again."
-      );
-    } finally {
-      setIsLoading(false);
-    }
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   return (
@@ -103,56 +201,184 @@ export default function Register() {
                 Create an Account
               </h2>
 
-              <form onSubmit={handleSubmit} className="space-y-3 text-gray-900">
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  placeholder="Full Name"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330]"
-                  required
-                />
+              <form onSubmit={formik.handleSubmit} className="space-y-3 text-gray-900">
+                <div>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formik.values.fullName}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder="Full Name"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#586330] ${
+                      formik.touched.fullName && formik.errors.fullName ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    required
+                  />
+                  {formik.touched.fullName && formik.errors.fullName && (
+                    <div className="text-red-500 text-sm mt-1">{formik.errors.fullName}</div>
+                  )}
+                </div>
 
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Email"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330]"
-                  required
-                />
+                <div>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formik.values.email}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder="Email"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#586330] ${
+                      formik.touched.email && formik.errors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    required
+                  />
+                  {formik.touched.email && formik.errors.email && (
+                    <div className="text-red-500 text-sm mt-1">{formik.errors.email}</div>
+                  )}
+                </div>
 
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330]"
-                  required
-                />
+                {/* Password Field with Eye Icon */}
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formik.values.password}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder="Password"
+                    className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-2 focus:ring-[#586330] ${
+                      formik.touched.password && formik.errors.password ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    required
+                  />
+                  {/* Eye Icon for Password */}
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={togglePasswordVisibility}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? (
+                      <svg
+                        className="h-5 w-5 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="h-5 w-5 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                  {formik.touched.password && formik.errors.password && (
+                    <div className="text-red-500 text-sm mt-1">{formik.errors.password}</div>
+                  )}
+                </div>
 
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Confirm Password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330]"
-                  required
-                />
+                {/* Confirm Password Field with Eye Icon */}
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={formik.values.confirmPassword}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder="Confirm Password"
+                    className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-2 focus:ring-[#586330] ${
+                      formik.touched.confirmPassword && formik.errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    required
+                  />
+                  {/* Eye Icon for Confirm Password */}
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={toggleConfirmPasswordVisibility}
+                    disabled={isLoading}
+                  >
+                    {showConfirmPassword ? (
+                      <svg
+                        className="h-5 w-5 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="h-5 w-5 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                  {formik.touched.confirmPassword && formik.errors.confirmPassword && (
+                    <div className="text-red-500 text-sm mt-1">{formik.errors.confirmPassword}</div>
+                  )}
+                </div>
 
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleChange}
-                  placeholder="Phone Number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330]"
-                  required
-                />
+                <div>
+                  <input
+                    type="tel"
+                    name="phoneNumber"
+                    value={formik.values.phoneNumber}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder="Phone Number"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#586330] ${
+                      formik.touched.phoneNumber && formik.errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    required
+                  />
+                  {formik.touched.phoneNumber && formik.errors.phoneNumber && (
+                    <div className="text-red-500 text-sm mt-1">{formik.errors.phoneNumber}</div>
+                  )}
+                </div>
 
                 {/* Role Selection */}
                 <div className="flex justify-around mt-4">
@@ -161,8 +387,8 @@ export default function Register() {
                       type="radio"
                       name="role"
                       value="3"
-                      checked={formData.role === 3}
-                      onChange={handleChange}
+                      checked={formik.values.role === 3}
+                      onChange={handleRoleChange}
                       className="text-[#586330] focus:ring-[#586330]"
                     />
                     Customer
@@ -173,8 +399,8 @@ export default function Register() {
                       type="radio"
                       name="role"
                       value="2"
-                      checked={formData.role === 2}
-                      onChange={handleChange}
+                      checked={formik.values.role === 2}
+                      onChange={handleRoleChange}
                       className="text-[#586330] focus:ring-[#586330]"
                     />
                     Vendor
@@ -192,7 +418,7 @@ export default function Register() {
 
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || !formik.isValid}
                   className="w-full bg-[#586330]/80 hover:bg-[#586330]/90 text-white font-semibold py-3 rounded-full shadow-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Registering..." : "Register"}
@@ -214,18 +440,30 @@ export default function Register() {
 
             {/* Right Form - Extra Details */}
             <div className="border-l border-gray-200 pl-6">
-              {formData.role === 3 && (
+              {formik.values.role === 3 && (
                 <CustomerExtraForm
-                  extraData={extraData}
+                  extraData={{
+                    address: formik.values.address,
+                    pincode: formik.values.pincode
+                  }}
                   handleExtraChange={handleExtraChange}
                   isLoading={isLoading}
+                  errors={formik.errors}
+                  touched={formik.touched}
                 />
               )}
-              {formData.role === 2 && (
+              {formik.values.role === 2 && (
                 <VendorExtraForm
-                  extraData={extraData}
+                  extraData={{
+                    companyName: formik.values.companyName,
+                    companyOwnerName: formik.values.companyOwnerName,
+                    companyEmail: formik.values.companyEmail,
+                    location: formik.values.location
+                  }}
                   handleExtraChange={handleExtraChange}
                   isLoading={isLoading}
+                  errors={formik.errors}
+                  touched={formik.touched}
                 />
               )}
             </div>
