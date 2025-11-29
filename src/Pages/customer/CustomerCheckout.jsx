@@ -24,14 +24,43 @@ export default function CustomerCheckout() {
   useEffect(() => {
     fetchCart();
     fetchCustomerDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- FETCH CART (updated to include ProductImage like CustomerCart) ---
   const fetchCart = async () => {
     try {
-      const res = await axiosInstance.get(`/Cart`);
-      setCart(res.data);
+      const cartRes = await axiosInstance.get(`/Cart`);
+      let cartData = cartRes.data || [];
+
+      if (cartData.length === 0) {
+        setCart([]);
+        return;
+      }
+
+      const updatedCart = await Promise.all(
+        cartData.map(async (item) => {
+          try {
+            const prodRes = await axiosInstance.get(`/Product/${item.ProductId}`);
+            const prod = prodRes.data;
+
+            const primaryImage =
+              prod.Images?.find((img) => img.IsPrimary) || prod.Images?.[0];
+
+            return {
+              ...item,
+              ProductImage: primaryImage?.ImageUrl || null,
+            };
+          } catch {
+            return { ...item, ProductImage: null };
+          }
+        })
+      );
+
+      setCart(updatedCart);
     } catch (error) {
       console.error("❌ Error fetching cart:", error);
+      setCart([]);
     } finally {
       setLoading(false);
     }
@@ -39,15 +68,15 @@ export default function CustomerCheckout() {
 
   const fetchCustomerDetails = async () => {
     try {
-      const response = await axiosInstance.get('/Customer/profile');
+      const response = await axiosInstance.get('/CustomerViewDetails/profile');
       setCustomer(response.data);
       setForm(prev => ({
         ...prev,
-        name: response.data.fullName || "",
-        email: response.data.email || "",
-        phone: response.data.phoneNumber || "",
-        address: response.data.address || "",
-        pincode: response.data.pincode || ""
+        name: response.data.FullName || "",
+        email: response.data.Email || "",
+        phone: response.data.PhoneNumber || "",
+        address: response.data.Address || "",
+        pincode: response.data.Pincode || ""
       }));
     } catch (error) {
       console.error("❌ Error fetching customer details:", error);
@@ -69,7 +98,7 @@ export default function CustomerCheckout() {
     });
   };
 
-  const createOrderWithItems = async () => {
+  const createOrderWithPayment = async () => {
     try {
       const orderItems = cart.map(item => ({
         productId: item.ProductId,
@@ -77,14 +106,23 @@ export default function CustomerCheckout() {
         price: item.Price
       }));
 
-      const orderResponse = await axiosInstance.post('/Order/create', {
-        shippingAddress: `${form.address}, ${form.city}, ${form.pincode}`,
+      const orderData = {
+        shippingAddress: `${form.address}, ${form.city}, ${form.state}, ${form.pincode}`
+          .trim()
+          .replace(/,\s*,/g, ',')
+          .replace(/,$/, ''),
         items: orderItems
-      });
+      };
+
+      console.log('Creating order with data:', orderData);
+
+      // Use your backend endpoint
+      const orderResponse = await axiosInstance.post('/Order/create-with-payment', orderData);
       return orderResponse.data;
     } catch (error) {
-      console.error('❌ Error creating order:', error);
-      throw new Error('Failed to create order');
+      console.error('❌ Error creating order with payment:', error);
+      console.error('Error details:', error.response?.data);
+      throw new Error(error.response?.data?.message || 'Failed to create order');
     }
   };
 
@@ -101,26 +139,39 @@ export default function CustomerCheckout() {
 
     setProcessing(true);
     try {
-      const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0) + 49;
+      // Create order with payment integration
+      const orderResponse = await createOrderWithPayment();
+      console.log('✅ Order created with payment:', orderResponse);
 
-      // Step 1: Create the actual order with items first
-      const order = await createOrderWithItems();
-      console.log('✅ Order created with items:', order);
+      // Handle different property namings
+      const razorpayOrder = orderResponse.razorpayOrder || orderResponse.RazorpayOrder;
+      const orderDetails = orderResponse.orderDetails || orderResponse.OrderDetails;
 
-      // Step 2: Create Razorpay order for payment
-      const razorpayResponse = await axiosInstance.post('/Order/razorpay/create', {
-        amount: total,
-        currency: 'INR'
-      });
-      
-      const razorpayOrder = razorpayResponse.data;
-      console.log('✅ Razorpay order response:', razorpayOrder);
+      if (!razorpayOrder) {
+        console.error('❌ Razorpay order data is missing:', orderResponse);
+        alert('Payment configuration error. Please contact support.');
+        setProcessing(false);
+        return;
+      }
 
-      // Verify that key exists (backend returns 'Key' with capital K)
+      // Get the Razorpay key from the response
       const key = razorpayOrder.key || razorpayOrder.Key;
       if (!key) {
         console.error('❌ Razorpay key is missing from response:', razorpayOrder);
         alert('Payment configuration error. Please contact support.');
+        setProcessing(false);
+        return;
+      }
+
+      // Get order ID for Razorpay
+      const razorpayOrderId = razorpayOrder.orderId || razorpayOrder.OrderId;
+      const amount = razorpayOrder.amount || razorpayOrder.Amount;
+      const currency = razorpayOrder.currency || razorpayOrder.Currency || 'INR';
+
+      if (!razorpayOrderId) {
+        console.error('❌ Razorpay order ID is missing:', razorpayOrder);
+        alert('Payment configuration error. Please contact support.');
+        setProcessing(false);
         return;
       }
 
@@ -128,24 +179,29 @@ export default function CustomerCheckout() {
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         alert('Razorpay SDK failed to load. Are you online?');
+        setProcessing(false);
         return;
       }
 
       const options = {
-        key: key, // Use the key variable we validated above
-        amount: razorpayOrder.amount || razorpayOrder.Amount * 100, // Convert to paise
-        currency: razorpayOrder.currency || razorpayOrder.Currency,
+        key: key,
+        amount: amount * 100, // Convert to paise
+        currency: currency,
         name: 'Dealsy Furniture',
         description: 'Order Payment',
-        order_id: razorpayOrder.orderId || razorpayOrder.OrderId,
+        order_id: razorpayOrderId,
         handler: async function (response) {
           try {
-            // Step 3: Verify payment
-            await axiosInstance.post('/Order/razorpay/verify', {
+            console.log('Payment response:', response);
+            
+            // Verify payment using the correct endpoint
+            const verifyResponse = await axiosInstance.post('/Order/verify-payment', {
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature
             });
+
+            console.log('✅ Payment verified:', verifyResponse.data);
 
             // Clear cart after successful payment
             await clearCart();
@@ -153,7 +209,10 @@ export default function CustomerCheckout() {
             navigate('/customer/orders');
           } catch (error) {
             console.error('Payment verification failed:', error);
+            console.error('Verification error details:', error.response?.data);
             alert('❌ Payment verification failed. Please contact support.');
+          } finally {
+            setProcessing(false);
           }
         },
         prefill: {
@@ -163,19 +222,25 @@ export default function CustomerCheckout() {
         },
         notes: {
           address: form.address,
-          orderId: order.id
+          orderId: orderDetails?.id || orderDetails?.Id
         },
         theme: {
           color: '#586330'
+        },
+        modal: {
+          ondismiss: function() {
+            setProcessing(false);
+            console.log('Payment modal dismissed');
+          }
         }
       };
 
       const razorpay = new window.Razorpay(options);
       razorpay.open();
+      
     } catch (error) {
       console.error('❌ Payment failed:', error);
       alert(error.message || 'Payment initialization failed. Please try again.');
-    } finally {
       setProcessing(false);
     }
   };
@@ -183,6 +248,7 @@ export default function CustomerCheckout() {
   const clearCart = async () => {
     try {
       for (const item of cart) {
+        // used same remove endpoint as your original checkout code
         await axiosInstance.delete(`/Cart/remove/${item.Id}`);
       }
       setCart([]);
@@ -192,8 +258,7 @@ export default function CustomerCheckout() {
   };
 
   const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0);
-  const shippingFee = total > 0 ? 49 : 0;
-  const finalTotal = total + shippingFee;
+  const finalTotal = total;
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen">Loading checkout...</div>;
@@ -249,11 +314,11 @@ export default function CustomerCheckout() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
-                  <input
-                    type="text"
+                  <textarea
                     name="address"
                     value={form.address}
                     onChange={handleChange}
+                    rows="3"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
                     required
                   />
@@ -281,6 +346,17 @@ export default function CustomerCheckout() {
                       required
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                  <input
+                    type="text"
+                    name="state"
+                    value={form.state}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                  />
                 </div>
               </div>
             </div>
@@ -317,7 +393,7 @@ export default function CustomerCheckout() {
                 <div key={item.Id} className="flex justify-between items-center">
                   <div className="flex items-center space-x-3">
                     <img
-                      src={item.Product?.Images?.[0]?.ImageData || "https://via.placeholder.com/400x300?text=No+Image"}
+                      src={item.ProductImage || "https://via.placeholder.com/400x300?text=No+Image"}
                       alt={item.ProductName}
                       className="w-12 h-12 object-cover rounded"
                     />
@@ -334,10 +410,6 @@ export default function CustomerCheckout() {
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
                 <span>₹{total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Shipping</span>
-                <span>₹{shippingFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-semibold text-lg border-t pt-2">
                 <span>Total</span>
