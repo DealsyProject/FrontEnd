@@ -10,6 +10,10 @@ export default function CustomerProducts() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
+  // PAGINATION ADDED
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 6;
+
   const categories = [
     { id: 'all', name: 'All Products' },
     { id: 'Grocery', name: 'Grocery' },
@@ -29,9 +33,9 @@ export default function CustomerProducts() {
       const response = await axiosInstance.get('/Product/all');
       const productsData = response.data.products || [];
       setProducts(productsData);
+      setCurrentPage(1); // reset page on reload
     } catch (error) {
       console.error("❌ Error fetching products:", error);
-      alert("Failed to load products. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -48,9 +52,9 @@ export default function CustomerProducts() {
       const response = await axiosInstance.get(`/Product/search?searchTerm=${encodeURIComponent(searchTerm)}`);
       const searchResults = response.data.products || [];
       setProducts(searchResults);
+      setCurrentPage(1); // reset page on search
     } catch (error) {
       console.error("❌ Error searching products:", error);
-      alert("Search failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -67,9 +71,9 @@ export default function CustomerProducts() {
       const response = await axiosInstance.get(`/Product/category/${categoryId}`);
       const categoryResults = response.data.products || [];
       setProducts(categoryResults);
+      setCurrentPage(1); // reset page on filter
     } catch (error) {
       console.error("❌ Error filtering by category:", error);
-      alert("Failed to filter products. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -96,7 +100,6 @@ export default function CustomerProducts() {
   const ProductCard = ({ product }) => {
     const productImages = product.Images || [];
     const primaryImage = productImages.find(img => img.IsPrimary) || productImages[0];
-    // FIXED: Use ImageUrl instead of ImageData
     const imageUrl = primaryImage?.ImageUrl || "https://via.placeholder.com/400x300?text=No+Image";
 
     return (
@@ -136,7 +139,7 @@ export default function CustomerProducts() {
           
           <div className="mb-3">
             <span className="text-[#586330] font-bold text-xl">
-              ₹{product.Price?.toLocaleString('en-IN') || '0'}
+              ₹{product.Price.toLocaleString('en-IN')}
             </span>
             {product.Rating > 0 && (
               <div className="flex items-center space-x-1 mt-1">
@@ -159,16 +162,6 @@ export default function CustomerProducts() {
             {product.Description}
           </p>
 
-          <div className="flex justify-between items-center text-sm text-gray-700 mb-4">
-            <span className={`font-semibold ${
-              product.Quantity > 10 ? 'text-green-600' : 
-              product.Quantity > 0 ? 'text-yellow-600' : 'text-red-600'
-            }`}>
-              {product.Quantity > 0 ? `${product.Quantity} in stock` : 'Out of stock'}
-            </span>
-            <span className="text-gray-500">{productImages.length} image{productImages.length !== 1 ? 's' : ''}</span>
-          </div>
-          
           <Link
             to={`/customer/product/${product.Id}`}
             className="block w-full bg-[#586330] text-white text-center py-2 rounded-lg hover:bg-[#586330]/80 transition font-medium text-sm"
@@ -179,6 +172,12 @@ export default function CustomerProducts() {
       </div>
     );
   };
+
+  // PAGINATION LOGIC
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(products.length / productsPerPage);
 
   return (
     <div className="flex flex-col min-h-screen bg-pink-50">
@@ -193,16 +192,14 @@ export default function CustomerProducts() {
           {/* Search and Filter Section */}
           <div className="mb-8 bg-white rounded-xl shadow-md p-6">
             <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  placeholder="Search products by name, category, or description..."
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                  onKeyPress={handleSearchSubmit}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent"
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Search products by name, category, or description..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                onKeyPress={handleSearchSubmit}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#586330] focus:border-transparent"
+              />
               <button
                 onClick={handleSearchSubmit}
                 className="px-6 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/80 transition font-medium"
@@ -264,9 +261,9 @@ export default function CustomerProducts() {
             </div>
           )}
 
-          {!loading && products.length > 0 && (
+          {!loading && currentProducts.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((product) => (
+              {currentProducts.map((product) => (
                 <ProductCard key={product.Id} product={product} />
               ))}
             </div>
@@ -290,6 +287,42 @@ export default function CustomerProducts() {
               </p>
             </div>
           )}
+
+          {/* PAGINATION UI */}
+          {!loading && products.length > 0 && (
+            <div className="flex justify-center mt-10 space-x-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                className="px-4 py-2 bg-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-400"
+              >
+                Previous
+              </button>
+
+              {Array.from({ length: totalPages }, (_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentPage(index + 1)}
+                  className={`px-4 py-2 rounded-lg ${
+                    currentPage === index + 1
+                      ? "bg-[#586330] text-white"
+                      : "bg-gray-200 hover:bg-gray-300"
+                  }`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                className="px-4 py-2 bg-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-400"
+              >
+                Next
+              </button>
+            </div>
+          )}
+
         </div>
       </main>
       <Footer />

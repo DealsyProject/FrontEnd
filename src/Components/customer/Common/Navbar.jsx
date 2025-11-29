@@ -3,38 +3,61 @@ import { FiShoppingCart } from "react-icons/fi";
 import { IoChatbubbleEllipsesOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import axiosInstance from "../../utils/axiosInstance";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // ✅ Check login status from localStorage
+  // ⭐ Cart count state
+  const [cartCount, setCartCount] = useState(0);
+
+  // ⭐ Fetch cart count using same API as CartPage
+  const fetchCartCount = async () => {
+    try {
+      const res = await axiosInstance.get(`/Cart`); // backend detects user via token
+      const total = res.data.reduce((sum, item) => sum + item.Quantity, 0);
+      setCartCount(total);
+    } catch (err) {
+      console.error("Error fetching cart count:", err);
+    }
+  };
+
+  // Check login status
   const checkLoginStatus = () => {
     const token = localStorage.getItem("authToken");
     setIsLoggedIn(!!token);
+    if (token) fetchCartCount();
   };
 
   useEffect(() => {
     checkLoginStatus();
+
+    // update navbar count when cart changes
+    window.addEventListener("cartUpdated", fetchCartCount);
+
     const handleStorageChange = () => checkLoginStatus();
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("cartUpdated", fetchCartCount);
+    };
   }, []);
 
-  // ✅ Logout handler
+  // Logout
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("currentUser");
     setIsLoggedIn(false);
+    setCartCount(0);
     navigate("/");
   };
 
-  // ✅ Scroll to footer
+  // Scroll to footer
   const scrollToFooter = () => {
     const footer = document.getElementById("footer-section");
-    if (footer) {
-      footer.scrollIntoView({ behavior: "smooth" });
-    }
+    if (footer) footer.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -69,7 +92,6 @@ export default function Navbar() {
           Products
         </button>
 
-        {/* ✅ About Us scrolls to footer */}
         <button
           onClick={() => {
             if (window.location.pathname === "/") {
@@ -83,7 +105,6 @@ export default function Navbar() {
           About Us
         </button>
 
-        {/* ✅ Contact scrolls to footer */}
         <button
           onClick={() => {
             if (window.location.pathname === "/") {
@@ -113,15 +134,25 @@ export default function Navbar() {
             </div>
 
             {/* Icons */}
-            <div className="bg-white/40 backdrop-blur-md rounded-full px-4 py-2 flex items-center space-x-3">
+            <div className="bg-white/40 backdrop-blur-md rounded-full px-4 py-2 flex items-center space-x-3 relative">
               <FaRegHeart
                 className="text-xl cursor-pointer hover:text-[#586330] transition"
                 onClick={() => navigate("/customerwishlist")}
               />
-              <FiShoppingCart
-                className="text-xl cursor-pointer hover:text-[#586330] transition"
-                onClick={() => navigate("/customercart")}
-              />
+
+              {/* ⭐ Cart with badge */}
+              <div className="relative">
+                <FiShoppingCart
+                  className="text-xl cursor-pointer hover:text-[#586330] transition"
+                  onClick={() => navigate("/customercart")}
+                />
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-3 bg-red-600 text-white text-xs px-1 py-[1px] rounded-full">
+                    {cartCount}
+                  </span>
+                )}
+              </div>
+
               <FaRegUser
                 className="text-xl cursor-pointer hover:text-[#586330] transition"
                 onClick={() => navigate("/customerprofile")}
@@ -139,7 +170,6 @@ export default function Navbar() {
             </div>
           </>
         ) : (
-          // Login / Sign Up buttons
           <div className="bg-white/40 backdrop-blur-md rounded-full px-4 py-2 flex items-center space-x-2">
             <button
               onClick={() => navigate("/login")}

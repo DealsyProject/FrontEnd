@@ -24,14 +24,43 @@ export default function CustomerCheckout() {
   useEffect(() => {
     fetchCart();
     fetchCustomerDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- FETCH CART (updated to include ProductImage like CustomerCart) ---
   const fetchCart = async () => {
     try {
-      const res = await axiosInstance.get(`/Cart`);
-      setCart(res.data);
+      const cartRes = await axiosInstance.get(`/Cart`);
+      let cartData = cartRes.data || [];
+
+      if (cartData.length === 0) {
+        setCart([]);
+        return;
+      }
+
+      const updatedCart = await Promise.all(
+        cartData.map(async (item) => {
+          try {
+            const prodRes = await axiosInstance.get(`/Product/${item.ProductId}`);
+            const prod = prodRes.data;
+
+            const primaryImage =
+              prod.Images?.find((img) => img.IsPrimary) || prod.Images?.[0];
+
+            return {
+              ...item,
+              ProductImage: primaryImage?.ImageUrl || null,
+            };
+          } catch {
+            return { ...item, ProductImage: null };
+          }
+        })
+      );
+
+      setCart(updatedCart);
     } catch (error) {
       console.error("❌ Error fetching cart:", error);
+      setCart([]);
     } finally {
       setLoading(false);
     }
@@ -39,15 +68,15 @@ export default function CustomerCheckout() {
 
   const fetchCustomerDetails = async () => {
     try {
-      const response = await axiosInstance.get('/Customer/profile');
+      const response = await axiosInstance.get('/CustomerViewDetails/profile');
       setCustomer(response.data);
       setForm(prev => ({
         ...prev,
-        name: response.data.fullName || "",
-        email: response.data.email || "",
-        phone: response.data.phoneNumber || "",
-        address: response.data.address || "",
-        pincode: response.data.pincode || ""
+        name: response.data.FullName || "",
+        email: response.data.Email || "",
+        phone: response.data.PhoneNumber || "",
+        address: response.data.Address || "",
+        pincode: response.data.Pincode || ""
       }));
     } catch (error) {
       console.error("❌ Error fetching customer details:", error);
@@ -206,6 +235,7 @@ if (verifyResponse.data.Success || verifyResponse.data.success) {
   const clearCart = async () => {
     try {
       for (const item of cart) {
+        // used same remove endpoint as your original checkout code
         await axiosInstance.delete(`/Cart/remove/${item.Id}`);
       }
       setCart([]);
@@ -282,11 +312,11 @@ const finalTotal = total;
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
-                  <input
-                    type="text"
+                  <textarea
                     name="address"
                     value={form.address}
                     onChange={handleChange}
+                    rows="3"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
                     required
                   />
@@ -325,6 +355,17 @@ const finalTotal = total;
                     />
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                  <input
+                    type="text"
+                    name="state"
+                    value={form.state}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                  />
+                </div>
               </div>
             </div>
 
@@ -360,7 +401,7 @@ const finalTotal = total;
                 <div key={item.Id} className="flex justify-between items-center">
                   <div className="flex items-center space-x-3">
                     <img
-                      src={item.Product?.Images?.[0]?.ImageData || "https://via.placeholder.com/400x300?text=No+Image"}
+                      src={item.ProductImage || "https://via.placeholder.com/400x300?text=No+Image"}
                       alt={item.ProductName}
                       className="w-12 h-12 object-cover rounded"
                     />
