@@ -15,8 +15,6 @@ export default function CustomerCheckout() {
     email: "",
     phone: "",
     address: "",
-    city: "",
-    state: "",
     pincode: "",
     paymentMethod: "razorpay"
   });
@@ -98,139 +96,139 @@ export default function CustomerCheckout() {
     });
   };
 
- const handlePayment = async () => {
-  if (!form.name || !form.phone || !form.address || !form.pincode) {
-    alert("Please fill all required fields");
-    return;
-  }
-
-  if (cart.length === 0) {
-    alert("Your cart is empty");
-    return;
-  }
-
-  setProcessing(true);
-  try {
-    // Remove shipping fee - use only product total
-    const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0);
-
-    // Step 1: Create order with payment in one API call
-    const orderItems = cart.map(item => ({
-      productId: item.ProductId,
-      quantity: item.Quantity,
-      price: item.Price
-    }));
-
-    const shippingAddress = `${form.address}, ${form.city}, ${form.state}, ${form.pincode}`;
-
-    const orderResponse = await axiosInstance.post('/Order/create', {
-      items: orderItems,
-      shippingAddress: shippingAddress,
-      currency: 'INR'
-    });
-
-    console.log('✅ Order with payment created:', orderResponse.data);
-
-    // Extract Razorpay details from response - FIXED PROPERTY NAMES
-    const razorpayData = orderResponse.data;
-    console.log('🔍 Full Razorpay response:', razorpayData);
-
-    // Use correct property names that match your backend response
-    const razorpayKey = razorpayData.RazorpayKey || razorpayData.razorpayKey || razorpayData.key;
-    const razorpayOrderId = razorpayData.RazorpayOrderId || razorpayData.razorpayOrderId || razorpayData.orderId;
-    const amount = razorpayData.Amount || razorpayData.amount;
-    const currency = razorpayData.Currency || razorpayData.currency || 'INR';
-
-    console.log('🔍 Extracted values:', {
-      razorpayKey,
-      razorpayOrderId,
-      amount,
-      currency
-    });
-
-    if (!razorpayKey || !razorpayOrderId) {
-      console.error('❌ Missing Razorpay configuration:', razorpayData);
-      alert('Payment configuration error. Please contact support.');
+  const handlePayment = async () => {
+    if (!form.name || !form.phone || !form.address || !form.pincode) {
+      alert("Please fill all required fields");
       return;
     }
 
-    // Load Razorpay script
-    const scriptLoaded = await loadRazorpayScript();
-    if (!scriptLoaded) {
-      alert('Razorpay SDK failed to load. Are you online?');
+    if (cart.length === 0) {
+      alert("Your cart is empty");
       return;
     }
 
-    // Step 2: Initialize Razorpay payment
-    const options = {
-      key: razorpayKey,
-      amount: amount * 100, // Convert to paise
-      currency: currency,
-      name: 'Dealsy Furniture',
-      description: 'Order Payment',
-      order_id: razorpayOrderId,
-      handler: async function (response) {
-        try {
-          // Step 3: Verify payment with items
-          const verifyPayload = {
-            razorpayOrderId: response.razorpay_order_id,
-            razorpayPaymentId: response.razorpay_payment_id,
-            razorpaySignature: response.razorpay_signature,
-            items: orderItems,
-            shippingAddress: shippingAddress
-          };
+    setProcessing(true);
+    try {
+      // Remove shipping fee - use only product total
+      const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0);
 
-          const verifyResponse = await axiosInstance.post('/Order/verify-payment', verifyPayload);
+      // Step 1: Create order with payment in one API call
+      const orderItems = cart.map(item => ({
+        productId: item.ProductId,
+        quantity: item.Quantity,
+        price: item.Price
+      }));
 
-console.log('✅ Payment verified:', verifyResponse.data);
+      const shippingAddress = `${form.address}, ${form.pincode}`;
 
-// Check for both 'Success' and 'success' to be safe
-if (verifyResponse.data.Success || verifyResponse.data.success) {
-  // Clear cart after successful payment
-  await clearCart();
-  alert('✅ Payment Successful! Your order has been placed.');
-  navigate('/customer/orders');
-} else {
-  const errorMessage = verifyResponse.data.Message || verifyResponse.data.message || 'Payment verification failed';
-  alert(`❌ ${errorMessage}`);
-}
-        } catch (error) {
-          console.error('Payment verification failed:', error);
-          alert('❌ Payment verification failed. Please contact support with your payment ID: ' + response.razorpay_payment_id);
-        }
-      },
-      prefill: {
-        name: form.name,
-        email: form.email,
-        contact: form.phone
-      },
-      notes: {
-        address: shippingAddress
-      },
-      theme: {
-        color: '#586330'
-      },
-      modal: {
-        ondismiss: function() {
-          setProcessing(false);
-          alert('Payment cancelled. Your order has been saved and you can complete the payment later.');
-        }
+      const orderResponse = await axiosInstance.post('/Order/create', {
+        items: orderItems,
+        shippingAddress: shippingAddress,
+        currency: 'INR'
+      });
+
+      console.log('✅ Order with payment created:', orderResponse.data);
+
+      // Extract Razorpay details from response - FIXED PROPERTY NAMES
+      const razorpayData = orderResponse.data;
+      console.log('🔍 Full Razorpay response:', razorpayData);
+
+      // Use correct property names that match your backend response
+      const razorpayKey = razorpayData.RazorpayKey || razorpayData.razorpayKey || razorpayData.key;
+      const razorpayOrderId = razorpayData.RazorpayOrderId || razorpayData.razorpayOrderId || razorpayData.orderId;
+      const amount = razorpayData.Amount || razorpayData.amount;
+      const currency = razorpayData.Currency || razorpayData.currency || 'INR';
+
+      console.log('🔍 Extracted values:', {
+        razorpayKey,
+        razorpayOrderId,
+        amount,
+        currency
+      });
+
+      if (!razorpayKey || !razorpayOrderId) {
+        console.error('❌ Missing Razorpay configuration:', razorpayData);
+        alert('Payment configuration error. Please contact support.');
+        return;
       }
-    };
 
-    const razorpay = new window.Razorpay(options);
-    razorpay.on('payment.failed', function (response) {
-      console.error('Payment failed:', response.error);
-      alert('❌ Payment failed: ' + response.error.description);
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        alert('Razorpay SDK failed to load. Are you online?');
+        return;
+      }
+
+      // Step 2: Initialize Razorpay payment
+      const options = {
+        key: razorpayKey,
+        amount: amount * 100, // Convert to paise
+        currency: currency,
+        name: 'Dealsy Furniture',
+        description: 'Order Payment',
+        order_id: razorpayOrderId,
+        handler: async function (response) {
+          try {
+            // Step 3: Verify payment with items
+            const verifyPayload = {
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              items: orderItems,
+              shippingAddress: shippingAddress
+            };
+
+            const verifyResponse = await axiosInstance.post('/Order/verify-payment', verifyPayload);
+
+            console.log('✅ Payment verified:', verifyResponse.data);
+
+            // Check for both 'Success' and 'success' to be safe
+            if (verifyResponse.data.Success || verifyResponse.data.success) {
+              // Clear cart after successful payment
+              await clearCart();
+              alert('✅ Payment Successful! Your order has been placed.');
+              navigate('/');
+            } else {
+              const errorMessage = verifyResponse.data.Message || verifyResponse.data.message || 'Payment verification failed';
+              alert(`❌ ${errorMessage}`);
+            }
+          } catch (error) {
+            console.error('Payment verification failed:', error);
+            alert('❌ Payment verification failed. Please contact support with your payment ID: ' + response.razorpay_payment_id);
+          }
+        },
+        prefill: {
+          name: form.name,
+          email: form.email,
+          contact: form.phone
+        },
+        notes: {
+          address: shippingAddress
+        },
+        theme: {
+          color: '#586330'
+        },
+        modal: {
+          ondismiss: function () {
+            setProcessing(false);
+            alert('Payment cancelled. Your order has been saved and you can complete the payment later.');
+          }
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.on('payment.failed', function (response) {
+        console.error('Payment failed:', response.error);
+        alert('❌ Payment failed: ' + response.error.description);
+        setProcessing(false);
+      });
+      razorpay.open();
+    } catch (error) {
+      console.error('❌ Payment initialization failed:', error);
+      alert(error.response?.data?.message || error.message || 'Payment initialization failed. Please try again.');
       setProcessing(false);
-    });
-    razorpay.open();
-  } catch (error) {
-    console.error('❌ Payment initialization failed:', error);
-    alert(error.response?.data?.message || error.message || 'Payment initialization failed. Please try again.');
-    setProcessing(false);
-  }
-};
+    }
+  };
 
   const clearCart = async () => {
     try {
@@ -244,9 +242,9 @@ if (verifyResponse.data.Success || verifyResponse.data.success) {
     }
   };
 
-  
-const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0);
-const finalTotal = total;
+
+  const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0);
+  const finalTotal = total;
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -267,7 +265,7 @@ const finalTotal = total;
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Checkout</h1>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Shipping & Payment */}
           <div className="lg:col-span-2 space-y-6">
@@ -324,26 +322,6 @@ const finalTotal = total;
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={form.city}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                    <input
-                      type="text"
-                      name="state"
-                      value={form.state}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
-                    />
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
                     <input
                       type="text"
@@ -354,17 +332,6 @@ const finalTotal = total;
                       required
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={form.state}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
-                  />
                 </div>
               </div>
             </div>
@@ -415,27 +382,26 @@ const finalTotal = total;
               ))}
             </div>
             <div className="border-t pt-4 space-y-2">
-  <div className="flex justify-between text-gray-600">
-    <span>Subtotal</span>
-    <span>₹{total.toFixed(2)}</span>
-  </div>
-  {/* Remove shipping fee line */}
-  <div className="flex justify-between font-semibold text-lg border-t pt-2">
-    <span>Total</span>
-    <span className="text-[#586330]">₹{finalTotal.toFixed(2)}</span>
-  </div>
-</div>
-           <button
-  onClick={handlePayment}
-  disabled={processing || cart.length === 0}
-  className={`w-full mt-6 py-3 rounded-md font-semibold transition ${
-    processing || cart.length === 0
-      ? "bg-gray-400 text-gray-100 cursor-not-allowed"
-      : "bg-[#586330] text-white hover:bg-[#586330]/80"
-  }`}
->
-  {processing ? "Processing..." : `Pay ₹${finalTotal.toFixed(2)}`}
-</button>
+              <div className="flex justify-between text-gray-600">
+                <span>Subtotal</span>
+                <span>₹{total.toFixed(2)}</span>
+              </div>
+              {/* Remove shipping fee line */}
+              <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                <span>Total</span>
+                <span className="text-[#586330]">₹{finalTotal.toFixed(2)}</span>
+              </div>
+            </div>
+            <button
+              onClick={handlePayment}
+              disabled={processing || cart.length === 0}
+              className={`w-full mt-6 py-3 rounded-md font-semibold transition ${processing || cart.length === 0
+                  ? "bg-gray-400 text-gray-100 cursor-not-allowed"
+                  : "bg-[#586330] text-white hover:bg-[#586330]/80"
+                }`}
+            >
+              {processing ? "Processing..." : `Pay ₹${finalTotal.toFixed(2)}`}
+            </button>
           </div>
         </div>
       </main>

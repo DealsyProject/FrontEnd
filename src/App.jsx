@@ -22,7 +22,6 @@ import CustomerProfile from './Pages/customer/CustomerProfile';
 import CustomerCart from './Pages/customer/CustomerCart';
 import CustomerWishList from './Pages/customer/CustomerWishList';
 import CustomerCheckout from './Pages/customer/CustomerCheckout';
-import CustomerChat from './Pages/customer/CustomerChat';
 
 //Common for all users
 import Login from './Pages/Auth/Login';
