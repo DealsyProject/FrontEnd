@@ -158,7 +158,11 @@ export default function CustomerVendorDetails() {
 const quotes = [
   "A great support team doesn’t just solve problems—they build trust and empower others.",
   "Support is not just service, it’s an experience we create together.",
-  "Behind every satisfied customer is a team that cares."
+  "Behind every satisfied customer is a team that cares.",
+  "Care is our first response, and a solution is the result.",
+  "Our support is a promise, kept with every interaction.",
+  "Care is our first response, and a solution is the result.",
+  "We measure our success by your growing independence."
 ];
   const filtered = getFilteredData();
 

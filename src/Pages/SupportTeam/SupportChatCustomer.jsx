@@ -3,7 +3,7 @@ import * as signalR from "@microsoft/signalr";
 import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
 
-function SupportChat() {
+function SupportChatCustomer() {
   const [connection, setConnection] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -98,7 +98,7 @@ function SupportChat() {
             {
               userId: fromUserId,
               fullName: `Customer ${fromUserId.substring(0, 6)}`,
-              email: "",
+              email: email,
             },
           ];
         });
@@ -444,4 +444,4 @@ function SupportChat() {
   );
 }
 
-export default SupportChat;
+export default SupportChatCustomer;

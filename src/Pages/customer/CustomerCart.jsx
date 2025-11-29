@@ -15,8 +15,34 @@ export default function CustomerCart() {
 
   const fetchCart = async () => {
     try {
-      const res = await axiosInstance.get(`/Cart`);
-      setCart(res.data || []);
+      const cartRes = await axiosInstance.get(`/Cart`);
+      let cartData = cartRes.data || [];
+
+      if (cartData.length === 0) {
+        setCart([]);
+        return;
+      }
+
+      const updatedCart = await Promise.all(
+        cartData.map(async (item) => {
+          try {
+            const prodRes = await axiosInstance.get(`/Product/${item.ProductId}`);
+            const prod = prodRes.data;
+
+            const primaryImage =
+              prod.Images?.find((img) => img.IsPrimary) || prod.Images?.[0];
+
+            return {
+              ...item,
+              ProductImage: primaryImage?.ImageUrl || null,
+            };
+          } catch {
+            return { ...item, ProductImage: null };
+          }
+        })
+      );
+
+      setCart(updatedCart);
     } catch (error) {
       console.error("❌ Error fetching cart:", error);
       setCart([]);
@@ -25,30 +51,27 @@ export default function CustomerCart() {
     }
   };
 
-  const updateQuantity = async (cartItemId, newQuantity, productId) => {
+  const updateQuantity = async (cartItemId, newQuantity) => {
     try {
       if (newQuantity <= 0) {
         await removeItem(cartItemId);
         return;
       }
 
-      // Update quantity via PUT request
-      await axiosInstance.put(`/Cart/${cartItemId}`, {
-        quantity: newQuantity
-      });
-      fetchCart(); // Refresh cart data
+      await axiosInstance.put(`/Cart/${cartItemId}`, { quantity: newQuantity });
+      fetchCart();
     } catch (error) {
       console.error("❌ Error updating quantity:", error);
       alert("Failed to update quantity");
     }
   };
 
-  const increaseQty = async (cartItemId, currentQty, productId) => {
-    await updateQuantity(cartItemId, currentQty + 1, productId);
+  const increaseQty = async (cartItemId, currentQty) => {
+    await updateQuantity(cartItemId, currentQty + 1);
   };
 
-  const decreaseQty = async (cartItemId, currentQty, productId) => {
-    await updateQuantity(cartItemId, currentQty - 1, productId);
+  const decreaseQty = async (cartItemId, currentQty) => {
+    await updateQuantity(cartItemId, currentQty - 1);
   };
 
   const removeItem = async (cartItemId) => {
@@ -62,9 +85,7 @@ export default function CustomerCart() {
   };
 
   const clearCart = async () => {
-    if (!window.confirm("Are you sure you want to clear your entire cart?")) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to clear your entire cart?")) return;
 
     try {
       await axiosInstance.delete(`/Cart/clear`);
@@ -76,9 +97,7 @@ export default function CustomerCart() {
     }
   };
 
-  const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0);
-  const shippingFee = total > 500 ? 0 : 49; // Free shipping over ₹500
-  const finalTotal = total + shippingFee;
+  const total = cart.reduce((sum, item) => sum + item.Price * item.Quantity, 0);
 
   if (loading) {
     return (
@@ -103,25 +122,23 @@ export default function CustomerCart() {
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Your Shopping Cart</h1>
             <p className="text-gray-600">
-              {cart.length === 0 
-                ? "Your cart is waiting to be filled" 
-                : `You have ${cart.length} item${cart.length !== 1 ? 's' : ''} in your cart`}
+              {cart.length === 0
+                ? "Your cart is waiting to be filled"
+                : `You have ${cart.length} item${cart.length !== 1 ? "s" : ""} in your cart`}
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-xl shadow-md p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-semibold text-gray-800">Cart Items</h2>
                   {cart.length > 0 && (
-                    <button 
+                    <button
                       onClick={clearCart}
                       className="flex items-center gap-2 text-red-500 hover:text-red-700 transition text-sm font-medium"
                     >
-                      <FaTrashAlt size={14} />
-                      Clear Cart
+                      <FaTrashAlt size={14} /> Clear Cart
                     </button>
                   )}
                 </div>
@@ -133,9 +150,9 @@ export default function CustomerCart() {
                     </div>
                     <h3 className="text-lg font-semibold text-gray-600 mb-2">Your cart is empty</h3>
                     <p className="text-gray-500 mb-6">Add some products to get started</p>
-                    <Link 
-                      to="/customer/products" 
-                      className="inline-block bg-[#586330] text-white px-6 py-3 rounded-lg hover:bg-[#586330]/80 transition font-medium"
+                    <Link
+                      to="/customer/products"
+                      className="inline-block bg-[#586330] text-white px-6 py-3 rounded-lg hover:bg-[#586330]/80"
                     >
                       Continue Shopping
                     </Link>
@@ -143,57 +160,51 @@ export default function CustomerCart() {
                 ) : (
                   <div className="space-y-4">
                     {cart.map((item) => (
-                      <div key={item.Id} className="flex items-center justify-between bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div key={item.Id} className="flex items-center justify-between bg-gray-50 rounded-lg p-4 border">
                         <div className="flex items-center gap-4 flex-1">
                           <div className="w-20 h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                            <img 
-                              src="https://via.placeholder.com/80x80?text=Product" 
-                              alt={item.ProductName} 
-                              className="w-full h-full object-cover" 
+                            <img
+                              src={item.ProductImage || "https://via.placeholder.com/80x80?text=No+Image"}
+                              alt={item.ProductName}
+                              className="w-full h-full object-cover"
                             />
                           </div>
+
                           <div className="flex-1">
                             <h3 className="font-semibold text-gray-800 text-lg mb-1">
                               {item.ProductName}
                             </h3>
-                            <p className="text-sm text-gray-500 mb-2">Product ID: {item.ProductId}</p>
-                            <p className="text-[#586330] font-bold text-lg">₹{item.Price?.toFixed(2)}</p>
+                            <p className="text-[#586330] font-bold text-lg">₹{item.Price.toFixed(2)}</p>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-4">
-                          {/* Quantity Controls */}
                           <div className="flex items-center border border-gray-300 rounded-lg">
-                            <button 
-                              onClick={() => decreaseQty(item.Id, item.Quantity, item.ProductId)} 
-                              className="px-3 py-2 hover:bg-gray-200 transition rounded-l-lg"
+                            <button
+                              onClick={() => decreaseQty(item.Id, item.Quantity)}
+                              className="px-3 py-2 hover:bg-gray-200 rounded-l-lg"
                               disabled={item.Quantity <= 1}
                             >
-                              <FaMinus size={12} className={item.Quantity <= 1 ? "text-gray-400" : "text-gray-700"} />
+                              <FaMinus size={12} />
                             </button>
                             <span className="px-4 py-2 bg-white min-w-12 text-center font-medium">
                               {item.Quantity}
                             </span>
-                            <button 
-                              onClick={() => increaseQty(item.Id, item.Quantity, item.ProductId)} 
-                              className="px-3 py-2 hover:bg-gray-200 transition rounded-r-lg"
+                            <button
+                              onClick={() => increaseQty(item.Id, item.Quantity)}
+                              className="px-3 py-2 hover:bg-gray-200 rounded-r-lg"
                             >
-                              <FaPlus size={12} className="text-gray-700" />
+                              <FaPlus size={12} />
                             </button>
                           </div>
 
-                          {/* Item Total */}
-                          <div className="text-right min-w-24">
-                            <p className="font-semibold text-gray-800 text-lg">
-                              ₹{(item.Price * item.Quantity).toFixed(2)}
-                            </p>
-                          </div>
+                          <p className="font-bold text-gray-800 text-lg min-w-24">
+                            ₹{(item.Price * item.Quantity).toFixed(2)}
+                          </p>
 
-                          {/* Remove Button */}
-                          <button 
-                            onClick={() => removeItem(item.Id)} 
-                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-                            title="Remove item"
+                          <button
+                            onClick={() => removeItem(item.Id)}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
                           >
                             <FaTrashAlt size={16} />
                           </button>
@@ -209,38 +220,25 @@ export default function CustomerCart() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-md p-6 sticky top-6">
                 <h3 className="text-xl font-semibold text-gray-800 mb-6">Order Summary</h3>
-                
+
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal ({cart.length} items)</span>
                     <span className="font-medium">₹{total.toFixed(2)}</span>
                   </div>
-                  
-                  <div className="flex justify-between text-gray-600">
-                    <span>Shipping</span>
-                    <span className="font-medium">
-                      {shippingFee === 0 ? "FREE" : `₹${shippingFee.toFixed(2)}`}
-                    </span>
-                  </div>
-
-                  {total > 0 && total < 500 && (
-                    <div className="text-sm text-green-600 bg-green-50 p-2 rounded-lg">
-                      Add ₹{(500 - total).toFixed(2)} more for FREE shipping!
-                    </div>
-                  )}
 
                   <div className="border-t pt-4 flex justify-between text-lg font-semibold text-gray-800">
                     <span>Total</span>
-                    <span>₹{finalTotal.toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                   </div>
                 </div>
-                
+
                 <Link
                   to="/checkout"
                   className={`block w-full py-3 rounded-lg text-center font-medium transition ${
-                    cart.length === 0 
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
-                      : "bg-[#586330] text-white hover:bg-[#586330]/80 shadow-md"
+                    cart.length === 0
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-[#586330] text-white hover:bg-[#586330]/80"
                   }`}
                 >
                   {cart.length === 0 ? "Cart is Empty" : "Proceed to Checkout"}
@@ -249,7 +247,7 @@ export default function CustomerCart() {
                 {cart.length > 0 && (
                   <Link
                     to="/customer/products"
-                    className="block w-full py-3 text-center text-[#586330] font-medium hover:text-[#586330]/80 transition mt-3"
+                    className="block w-full py-3 text-center text-[#586330] font-medium hover:text-[#586330]/80 mt-3"
                   >
                     Continue Shopping
                   </Link>

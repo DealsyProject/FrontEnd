@@ -1,15 +1,16 @@
-import React, { useState } from "react";
-import { Plus, RefreshCw, Minus, Search, ArrowRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, RefreshCw, Minus } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import CountUp from "react-countup";
+import axios from "axios";
 import Navbar from "../../Components/Admin/Navbar.jsx";
 
 export default function AdminDashboard() {
-  const [stats] = useState([
+  const [stats, setStats] = useState([
     { label: "Revenue", value: 250000 },
-    { label: "Vendors", value: 250 },
-    { label: "Customers", value: 150 },
-    { label: "Customer Bills", value: 120000 },
+    { label: "Vendors", value: 0 },
+    { label: "Customers", value: 0 },
+    { label: "Support", value: 0 },
   ]);
 
   const [activities] = useState([
@@ -34,10 +35,68 @@ export default function AdminDashboard() {
   ]);
 
   const [activeFilter, setActiveFilter] = useState("12months");
+  const [loading, setLoading] = useState(true);
 
-  
-  
+  // Fetch active vendors, customers and support counts
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        console.warn("Authentication token not found. Please log in.");
+        setLoading(false);
+        return;
+      }
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "text/plain",
+        },
+      };
+
+      // --- CRITICAL CHANGE HERE ---
+      // Changed "total-Support" to "active-support" to use the new backend endpoint
+      const [activeVendorsRes, activeCustomersRes, activeSupportRes] = await Promise.all([
+        axios.get("https://localhost:7001/api/Admin/active-vendors", config),
+        axios.get("https://localhost:7001/api/Admin/active-customers", config),
+        axios.get("https://localhost:7001/api/Admin/active-support", config), // <-- FIXED
+      ]);
+
+      const totalVendors = parseInt(activeVendorsRes.data, 10) || 0;
+      const totalCustomers = parseInt(activeCustomersRes.data, 10) || 0;
+      // Renamed variable from totalSupportRes to activeSupportRes for clarity/consistency
+      const totalSupport = parseInt(activeSupportRes.data, 10) || 0; 
+
+      setStats((prev) =>
+        prev.map((stat) => {
+          if (stat.label === "Vendors") return { ...stat, value: totalVendors };
+          if (stat.label === "Customers") return { ...stat, value: totalCustomers };
+          if (stat.label === "Support") return { ...stat, value: totalSupport };
+          return stat;
+        })
+      );
+
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      if (axios.isAxiosError(error) && error.response && error.response.status === 401) {
+        localStorage.removeItem("authToken");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
   const handleFilter = (filterType) => setActiveFilter(filterType);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen w-full bg-gray-50 text-gray-900">
@@ -49,11 +108,6 @@ export default function AdminDashboard() {
           <h2 className="text-3xl font-semibold mb-4 sm:mb-0" style={{ color: "#586330" }}>
             Dashboard
           </h2>
-          <div className="flex flex-wrap gap-3">
-          
-           
-            
-          </div>
         </header>
 
         {/* Stats */}
@@ -69,67 +123,36 @@ export default function AdminDashboard() {
         </div>
 
         {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Sales Overview */}
-          <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
-              <h3 className="text-xl font-semibold" style={{ color: "#586330" }}>
-                Sales Overview
-              </h3>
+          <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 shadow-sm p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
+              <h3 className="text-xl font-semibold" style={{ color: "#586330" }}>Sales Overview</h3>
               <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => handleFilter("12months")}
-                  className={`px-3 py-1 rounded-full text-xs sm:text-sm ${
-                    activeFilter === "12months" ? "text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                  style={activeFilter === "12months" ? { backgroundColor: "#586330" } : {}}
-                >
-                  Last 12 Months
-                </button>
-                <button
-                  onClick={() => handleFilter("30days")}
-                  className={`px-3 py-1 rounded-full text-xs sm:text-sm ${
-                    activeFilter === "30days" ? "text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                  style={activeFilter === "30days" ? { backgroundColor: "#586330" } : {}}
-                >
-                  Last 30 Days
-                </button>
-                <button
-                  onClick={() => handleFilter("7days")}
-                  className={`px-3 py-1 rounded-full text-xs sm:text-sm ${
-                    activeFilter === "7days" ? "text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                  style={activeFilter === "7days" ? { backgroundColor: "#586330" } : {}}
-                >
-                  Last 7 Days
-                </button>
+                {["12months", "30days", "7days"].map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => handleFilter(filter)}
+                    className={`px-3 py-1 rounded-full text-xs sm:text-sm ${activeFilter === filter ? "text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                    style={activeFilter === filter ? { backgroundColor: "#586330" } : {}}
+                  >
+                    {filter === "12months" ? "Last 12 Months" : filter === "30days" ? "Last 30 Days" : "Last 7 Days"}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Sales Trend */}
+            <div className="grid grid-cols-1 gap-6">
               <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
                 <h4 className="text-lg font-medium text-gray-700 mb-2">Sales Trend</h4>
-                <ResponsiveContainer width="100%" height={180}>
+                <ResponsiveContainer width="100%" height={150}>
                   <LineChart data={chartData}>
                     <XAxis dataKey="month" stroke="#64748b" />
                     <YAxis stroke="#64748b" />
-                    <Tooltip contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "0.5rem", color: "#000" }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "0.5rem", color: "#000" }}
+                    />
                     <Line type="monotone" dataKey="sales" stroke="#586330" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Top Selling */}
-              <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                <h4 className="text-lg font-medium text-gray-700 mb-2">Top Selling Products</h4>
-                <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={chartData}>
-                    <XAxis dataKey="month" stroke="#64748b" />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "0.5rem", color: "#000" }} />
-                    <Line type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -137,25 +160,11 @@ export default function AdminDashboard() {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 flex flex-col">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 flex flex-col h-full">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold" style={{ color: "#586330" }}>
-                Recent Activity
-              </h3>
+              <h3 className="text-xl font-semibold" style={{ color: "#586330" }}>Recent Activity</h3>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              <button className="flex items-center p-2 bg-gray-100 rounded text-gray-600 hover:bg-gray-50 text-xs sm:text-sm">
-                <Search className="w-4 h-4 mr-2" style={{ color: "#586330" }} /> Date Range{" "}
-                <ArrowRight className="w-3 h-3 ml-2" style={{ color: "#586330" }} />
-              </button>
-              <button className="flex items-center p-2 bg-gray-100 rounded text-gray-600 hover:bg-gray-50 text-xs sm:text-sm">
-                Activity Type <ArrowRight className="w-3 h-3 ml-2" style={{ color: "#586330" }} />
-              </button>
-            </div>
-
-            {/* Activity List */}
             <div className="overflow-y-auto flex-1 space-y-4">
               {activities.map((activity, idx) => (
                 <div key={idx} className="flex gap-4 items-start">

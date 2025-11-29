@@ -10,7 +10,6 @@ export default function CustomerCheckout() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [customer, setCustomer] = useState(null);
-
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -25,14 +24,43 @@ export default function CustomerCheckout() {
   useEffect(() => {
     fetchCart();
     fetchCustomerDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- FETCH CART (updated to include ProductImage like CustomerCart) ---
   const fetchCart = async () => {
     try {
-      const res = await axiosInstance.get(`/Cart`);
-      setCart(res.data);
+      const cartRes = await axiosInstance.get(`/Cart`);
+      let cartData = cartRes.data || [];
+
+      if (cartData.length === 0) {
+        setCart([]);
+        return;
+      }
+
+      const updatedCart = await Promise.all(
+        cartData.map(async (item) => {
+          try {
+            const prodRes = await axiosInstance.get(`/Product/${item.ProductId}`);
+            const prod = prodRes.data;
+
+            const primaryImage =
+              prod.Images?.find((img) => img.IsPrimary) || prod.Images?.[0];
+
+            return {
+              ...item,
+              ProductImage: primaryImage?.ImageUrl || null,
+            };
+          } catch {
+            return { ...item, ProductImage: null };
+          }
+        })
+      );
+
+      setCart(updatedCart);
     } catch (error) {
       console.error("❌ Error fetching cart:", error);
+      setCart([]);
     } finally {
       setLoading(false);
     }
@@ -40,15 +68,15 @@ export default function CustomerCheckout() {
 
   const fetchCustomerDetails = async () => {
     try {
-      const response = await axiosInstance.get('/Customer/profile');
+      const response = await axiosInstance.get('/CustomerViewDetails/profile');
       setCustomer(response.data);
       setForm(prev => ({
         ...prev,
-        name: response.data.fullName || "",
-        email: response.data.email || "",
-        phone: response.data.phoneNumber || "",
-        address: response.data.address || "",
-        pincode: response.data.pincode || ""
+        name: response.data.FullName || "",
+        email: response.data.Email || "",
+        phone: response.data.PhoneNumber || "",
+        address: response.data.Address || "",
+        pincode: response.data.Pincode || ""
       }));
     } catch (error) {
       console.error("❌ Error fetching customer details:", error);
@@ -70,52 +98,121 @@ export default function CustomerCheckout() {
     });
   };
 
+  const createOrderWithPayment = async () => {
+    try {
+      const orderItems = cart.map(item => ({
+        productId: item.ProductId,
+        quantity: item.Quantity,
+        price: item.Price
+      }));
+
+      const orderData = {
+        shippingAddress: `${form.address}, ${form.city}, ${form.state}, ${form.pincode}`
+          .trim()
+          .replace(/,\s*,/g, ',')
+          .replace(/,$/, ''),
+        items: orderItems
+      };
+
+      console.log('Creating order with data:', orderData);
+
+      // Use your backend endpoint
+      const orderResponse = await axiosInstance.post('/Order/create-with-payment', orderData);
+      return orderResponse.data;
+    } catch (error) {
+      console.error('❌ Error creating order with payment:', error);
+      console.error('Error details:', error.response?.data);
+      throw new Error(error.response?.data?.message || 'Failed to create order');
+    }
+  };
+
   const handlePayment = async () => {
     if (!form.name || !form.phone || !form.address || !form.pincode) {
       alert("Please fill all required fields");
       return;
     }
 
+    if (cart.length === 0) {
+      alert("Your cart is empty");
+      return;
+    }
+
     setProcessing(true);
     try {
-      const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0) + 49;
+      // Create order with payment integration
+      const orderResponse = await createOrderWithPayment();
+      console.log('✅ Order created with payment:', orderResponse);
 
-      // Create Razorpay order
-      const orderResponse = await axiosInstance.post('/Order/razorpay/create', {
-        amount: total,
-        currency: 'INR'
-      });
+      // Handle different property namings
+      const razorpayOrder = orderResponse.razorpayOrder || orderResponse.RazorpayOrder;
+      const orderDetails = orderResponse.orderDetails || orderResponse.OrderDetails;
 
-      const razorpayOrder = orderResponse.data;
+      if (!razorpayOrder) {
+        console.error('❌ Razorpay order data is missing:', orderResponse);
+        alert('Payment configuration error. Please contact support.');
+        setProcessing(false);
+        return;
+      }
+
+      // Get the Razorpay key from the response
+      const key = razorpayOrder.key || razorpayOrder.Key;
+      if (!key) {
+        console.error('❌ Razorpay key is missing from response:', razorpayOrder);
+        alert('Payment configuration error. Please contact support.');
+        setProcessing(false);
+        return;
+      }
+
+      // Get order ID for Razorpay
+      const razorpayOrderId = razorpayOrder.orderId || razorpayOrder.OrderId;
+      const amount = razorpayOrder.amount || razorpayOrder.Amount;
+      const currency = razorpayOrder.currency || razorpayOrder.Currency || 'INR';
+
+      if (!razorpayOrderId) {
+        console.error('❌ Razorpay order ID is missing:', razorpayOrder);
+        alert('Payment configuration error. Please contact support.');
+        setProcessing(false);
+        return;
+      }
 
       // Load Razorpay script
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         alert('Razorpay SDK failed to load. Are you online?');
+        setProcessing(false);
         return;
       }
 
       const options = {
-        key: razorpayOrder.key,
-        amount: razorpayOrder.amount * 100, // Convert to paise
-        currency: razorpayOrder.currency,
+        key: key,
+        amount: amount * 100, // Convert to paise
+        currency: currency,
         name: 'Dealsy Furniture',
         description: 'Order Payment',
-        order_id: razorpayOrder.orderId,
+        order_id: razorpayOrderId,
         handler: async function (response) {
           try {
-            // Verify payment
-            await axiosInstance.post('/Order/razorpay/verify', {
+            console.log('Payment response:', response);
+            
+            // Verify payment using the correct endpoint
+            const verifyResponse = await axiosInstance.post('/Order/verify-payment', {
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature
             });
 
+            console.log('✅ Payment verified:', verifyResponse.data);
+
+            // Clear cart after successful payment
+            await clearCart();
             alert('✅ Payment Successful! Your order has been placed.');
             navigate('/customer/orders');
           } catch (error) {
             console.error('Payment verification failed:', error);
+            console.error('Verification error details:', error.response?.data);
             alert('❌ Payment verification failed. Please contact support.');
+          } finally {
+            setProcessing(false);
           }
         },
         prefill: {
@@ -124,188 +221,212 @@ export default function CustomerCheckout() {
           contact: form.phone
         },
         notes: {
-          address: form.address
+          address: form.address,
+          orderId: orderDetails?.id || orderDetails?.Id
         },
         theme: {
           color: '#586330'
+        },
+        modal: {
+          ondismiss: function() {
+            setProcessing(false);
+            console.log('Payment modal dismissed');
+          }
         }
       };
 
       const razorpay = new window.Razorpay(options);
       razorpay.open();
+      
     } catch (error) {
       console.error('❌ Payment failed:', error);
-      alert('Payment initialization failed. Please try again.');
-    } finally {
+      alert(error.message || 'Payment initialization failed. Please try again.');
       setProcessing(false);
     }
   };
 
+  const clearCart = async () => {
+    try {
+      for (const item of cart) {
+        // used same remove endpoint as your original checkout code
+        await axiosInstance.delete(`/Cart/remove/${item.Id}`);
+      }
+      setCart([]);
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+    }
+  };
+
   const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0);
-  const shippingFee = total > 0 ? 49 : 0;
-  const finalTotal = total + shippingFee;
+  const finalTotal = total;
 
   if (loading) {
-    return (
-      <div className="flex flex-col min-h-screen bg-pink-50">
-        <Navbar />
-        <main className="flex-grow flex justify-center items-center">
-          <div className="text-center">Loading checkout...</div>
-        </main>
-        <Footer />
-      </div>
-    );
+    return <div className="flex justify-center items-center h-screen">Loading checkout...</div>;
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-pink-50">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="flex-grow py-10 px-6">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">Checkout</h1>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Shipping & Payment */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Shipping Information */}
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                    required
+                  />
+                </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Shipping & Payment */}
-            <div className="space-y-8">
-              {/* Shipping Information */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={form.name}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={form.phone}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
-                        required
-                      />
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+                  <textarea
+                    name="address"
+                    value={form.address}
+                    onChange={handleChange}
+                    rows="3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={form.city}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
-                    <textarea
-                      name="address"
-                      value={form.address}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
+                    <input
+                      type="text"
+                      name="pincode"
+                      value={form.pincode}
                       onChange={handleChange}
-                      rows="3"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={form.city}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
-                      <input
-                        type="text"
-                        name="pincode"
-                        value={form.pincode}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
-                        required
-                      />
-                    </div>
-                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                  <input
+                    type="text"
+                    name="state"
+                    value={form.state}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#586330]"
+                  />
                 </div>
               </div>
+            </div>
 
-              {/* Payment Method */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="razorpay"
-                      checked={form.paymentMethod === "razorpay"}
-                      onChange={handleChange}
-                      className="text-[#586330] focus:ring-[#586330]"
+            {/* Payment Method */}
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
+              <div className="space-y-3">
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="razorpay"
+                    checked={form.paymentMethod === "razorpay"}
+                    onChange={handleChange}
+                    className="text-[#586330] focus:ring-[#586330]"
+                  />
+                  <span>Razorpay (Credit/Debit Card, UPI, Net Banking)</span>
+                </label>
+              </div>
+              <div className="mt-4 flex gap-3">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" className="w-10" alt="Visa" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/MasterCard_Logo.svg" className="w-10" alt="MasterCard" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Amex_logo.svg" className="w-10" alt="Amex" />
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Order Summary */}
+          <div className="bg-white rounded-xl shadow-md p-6 h-fit">
+            <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+            <div className="space-y-4 mb-6">
+              {cart.map((item) => (
+                <div key={item.Id} className="flex justify-between items-center">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={item.ProductImage || "https://via.placeholder.com/400x300?text=No+Image"}
+                      alt={item.ProductName}
+                      className="w-12 h-12 object-cover rounded"
                     />
-                    <span>Razorpay (Credit/Debit Card, UPI, Net Banking)</span>
-                  </label>
-                </div>
-                <div className="mt-4 flex gap-3">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" className="w-10" alt="Visa" />
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/MasterCard_Logo.svg" className="w-10" alt="MasterCard" />
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Amex_logo.svg" className="w-10" alt="Amex" />
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column - Order Summary */}
-            <div className="bg-white rounded-xl shadow-md p-6 h-fit">
-              <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-              
-              <div className="space-y-4 mb-6">
-                {cart.map((item) => (
-                  <div key={item.Id} className="flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                      <img 
-                        src={item.Product?.Images?.[0]?.ImageData || "https://via.placeholder.com/400x300?text=No+Image"} 
-                        alt={item.ProductName}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                      <div>
-                        <p className="font-medium text-sm">{item.ProductName}</p>
-                        <p className="text-gray-500 text-xs">Qty: {item.Quantity}</p>
-                      </div>
+                    <div>
+                      <p className="font-medium text-sm">{item.ProductName}</p>
+                      <p className="text-gray-500 text-xs">Qty: {item.Quantity}</p>
                     </div>
-                    <p className="font-semibold">₹{(item.Price * item.Quantity).toFixed(2)}</p>
                   </div>
-                ))}
-              </div>
-
-              <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
-                  <span>₹{total.toFixed(2)}</span>
+                  <p className="font-semibold">₹{(item.Price * item.Quantity).toFixed(2)}</p>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Shipping</span>
-                  <span>₹{shippingFee.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                  <span>Total</span>
-                  <span className="text-[#586330]">₹{finalTotal.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <button
-                onClick={handlePayment}
-                disabled={processing || cart.length === 0}
-                className={`w-full mt-6 py-3 rounded-md font-semibold transition ${
-                  processing || cart.length === 0
-                    ? "bg-gray-400 text-gray-100 cursor-not-allowed"
-                    : "bg-[#586330] text-white hover:bg-[#586330]/80"
-                }`}
-              >
-                {processing ? "Processing..." : `Pay ₹${finalTotal.toFixed(2)}`}
-              </button>
+              ))}
             </div>
+            <div className="border-t pt-4 space-y-2">
+              <div className="flex justify-between text-gray-600">
+                <span>Subtotal</span>
+                <span>₹{total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                <span>Total</span>
+                <span className="text-[#586330]">₹{finalTotal.toFixed(2)}</span>
+              </div>
+            </div>
+            <button
+              onClick={handlePayment}
+              disabled={processing || cart.length === 0}
+              className={`w-full mt-6 py-3 rounded-md font-semibold transition ${
+                processing || cart.length === 0
+                  ? "bg-gray-400 text-gray-100 cursor-not-allowed"
+                  : "bg-[#586330] text-white hover:bg-[#586330]/80"
+              }`}
+            >
+              {processing ? "Processing..." : `Pay ₹${finalTotal.toFixed(2)}`}
+            </button>
           </div>
         </div>
       </main>

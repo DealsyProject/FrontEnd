@@ -7,10 +7,10 @@ import axiosInstance from '../../../Components/utils/axiosInstance';
 
 const Customers = () => {
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState([]);
+  const [vendorOrders, setVendorOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [customerStats, setCustomerStats] = useState(null);
 
   const handleLogout = () => {
@@ -22,55 +22,80 @@ const Customers = () => {
 
   const activeView = 'customers';
 
-  // Fetch all vendor customers
+  // Fetch vendor orders
   useEffect(() => {
-    fetchVendorCustomers();
+    fetchVendorOrders();
   }, []);
 
-  const fetchVendorCustomers = async () => {
+  const fetchVendorOrders = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/Vendor/customers-with-orders');
-      console.log('Vendor Customers API Response:', response.data);
+      const response = await axiosInstance.get('/Order/vendor/orders');
+      console.log('Vendor Orders API Response:', response.data);
 
-      // Handle API response format
-      const customersData = response.data.customers || response.data || [];
+      // Handle API response format - vendor orders, not customers
+      const ordersData = response.data.orders || response.data || [];
       
-      const formattedCustomers = customersData.map(customer => ({
-        customerId: customer.customerId || customer.CustomerId || customer.id,
-        userId: customer.userId || customer.UserId,
-        fullName: customer.fullName || customer.FullName || customer.name || 'Unknown Customer',
-        email: customer.email || customer.Email || 'No email',
-        phoneNumber: customer.phoneNumber || customer.PhoneNumber || customer.phone || 'No phone',
-        address: customer.address || customer.Address || 'No address',
-        pincode: customer.pincode || customer.Pincode || 'No pincode',
-        role: customer.role || customer.Role || 'Customer',
-        isBlocked: customer.isBlocked || customer.IsBlocked || false,
-        createdOn: customer.createdOn || customer.CreatedOn,
-        isRegistrationComplete: customer.isRegistrationComplete || customer.IsRegistrationComplete || true,
-        totalOrders: customer.totalOrders || customer.TotalOrders || 0,
-        totalSpent: customer.totalSpent || customer.TotalSpent || 0,
-        lastOrderDate: customer.lastOrderDate || customer.LastOrderDate,
-        orders: customer.orders || customer.Orders || [],
-        invoices: customer.invoices || customer.Invoices || [],
-        payments: customer.payments || customer.Payments || []
+      const formattedOrders = ordersData.map(order => ({
+        orderId: order.orderId || order.OrderId || order.id,
+        customerId: order.customerId || order.CustomerId,
+        customerName: order.customerName || order.CustomerName || 'Unknown Customer',
+        customerEmail: order.customerEmail || order.CustomerEmail || 'No email',
+        totalAmount: order.totalAmount || order.TotalAmount || 0,
+        status: order.status || order.Status || 'Pending',
+        orderDate: order.orderDate || order.OrderDate || order.createdOn || order.CreatedOn,
+        items: order.items || order.Items || []
       }));
 
-      setCustomers(formattedCustomers);
+      setVendorOrders(formattedOrders);
     } catch (error) {
-      console.error('Error fetching vendor customers:', error);
-      toast.error('Failed to load customers');
-      setCustomers([]);
+      console.error('Error fetching vendor orders:', error);
+      toast.error('Failed to load orders');
+      setVendorOrders([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Group orders by customer to create customer list
+  const getCustomersFromOrders = () => {
+    const customersMap = new Map();
+
+    vendorOrders.forEach(order => {
+      const customerId = order.customerId;
+      
+      if (!customersMap.has(customerId)) {
+        customersMap.set(customerId, {
+          customerId: customerId,
+          fullName: order.customerName,
+          email: order.customerEmail,
+          totalOrders: 0,
+          totalSpent: 0,
+          orders: [],
+          lastOrderDate: order.orderDate
+        });
+      }
+
+      const customer = customersMap.get(customerId);
+      customer.totalOrders += 1;
+      customer.totalSpent += order.totalAmount;
+      customer.orders.push(order);
+      
+      // Update last order date if this order is newer
+      if (new Date(order.orderDate) > new Date(customer.lastOrderDate || 0)) {
+        customer.lastOrderDate = order.orderDate;
+      }
+    });
+
+    return Array.from(customersMap.values());
+  };
+
+  const customers = getCustomersFromOrders();
+
   // Search customers via API
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
-      fetchVendorCustomers();
-      return;
+      return; // No search needed, we're filtering client-side
     }
 
     try {
@@ -78,12 +103,10 @@ const Customers = () => {
       // Filter client-side since we don't have a search endpoint
       const filtered = customers.filter(customer =>
         customer.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.phoneNumber?.includes(searchTerm) ||
-        customer.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.pincode?.includes(searchTerm)
+        customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setCustomers(filtered);
+      // Note: We can't setCustomers since it's derived from vendorOrders
+      // The search will be handled in the filteredCustomers calculation
     } catch (error) {
       console.error('Error searching customers:', error);
       toast.error('Search failed');
@@ -93,7 +116,7 @@ const Customers = () => {
   };
 
   const handleCustomerSelect = (customer) => {
-    setSelectedCustomer(customer);
+    setSelectedOrder(customer);
     const stats = {
       totalOrders: customer.totalOrders || 0,
       completedOrders: (customer.orders || []).filter(o => 
@@ -116,7 +139,9 @@ const Customers = () => {
       return new Date(dateString).toLocaleDateString('en-IN', {
         day: 'numeric',
         month: 'short',
-        year: 'numeric'
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       });
     } catch {
       return 'Invalid Date';
@@ -133,11 +158,24 @@ const Customers = () => {
 
   const filteredCustomers = customers.filter(customer =>
     customer.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phoneNumber?.includes(searchTerm) ||
-    customer.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.pincode?.includes(searchTerm)
+    customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'confirmed':
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'shipped':
+        return 'bg-blue-100 text-blue-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -154,7 +192,7 @@ const Customers = () => {
           <div className="flex gap-4">
             <input
               type="text"
-              placeholder="Search by name, email, phone, address or pincode..."
+              placeholder="Search by customer name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -167,7 +205,7 @@ const Customers = () => {
               Search
             </button>
             <button
-              onClick={fetchVendorCustomers}
+              onClick={fetchVendorOrders}
               className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium"
             >
               Refresh
@@ -198,12 +236,6 @@ const Customers = () => {
                       <p className="text-sm text-gray-400 mb-4">
                         {searchTerm ? 'Try a different search term' : 'Customers who purchase your products will appear here'}
                       </p>
-                      <button 
-                        onClick={fetchVendorCustomers}
-                        className="px-4 py-2 bg-[#586330] text-white rounded-lg hover:bg-[#5A3E3E] transition font-medium"
-                      >
-                        Refresh
-                      </button>
                     </div>
                   ) : (
                     filteredCustomers.map((customer) => (
@@ -211,7 +243,7 @@ const Customers = () => {
                         key={customer.customerId}
                         onClick={() => handleCustomerSelect(customer)}
                         className={`p-5 border-b border-gray-200 cursor-pointer transition-all hover:bg-[#F5F1E8] ${
-                          selectedCustomer?.customerId === customer.customerId 
+                          selectedOrder?.customerId === customer.customerId 
                             ? 'bg-[#F5F1E8] border-l-4 border-l-[#586330]' 
                             : ''
                         }`}
@@ -222,13 +254,7 @@ const Customers = () => {
                               {customer.fullName}
                             </h3>
                             <p className="text-sm text-gray-600 truncate">{customer.email}</p>
-                            <p className="text-xs text-gray-500 mt-1">{customer.phoneNumber}</p>
                           </div>
-                          <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
-                            customer.isBlocked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                          }`}>
-                            {customer.isBlocked ? 'Blocked' : 'Active'}
-                          </span>
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2 text-xs">
                           <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">
@@ -243,11 +269,6 @@ const Customers = () => {
                             Last order: {formatDate(customer.lastOrderDate)}
                           </p>
                         )}
-                        {customer.address && (
-                          <p className="text-xs text-gray-500 mt-1 truncate">
-                            {customer.address}, {customer.pincode}
-                          </p>
-                        )}
                       </div>
                     ))
                   )}
@@ -257,37 +278,22 @@ const Customers = () => {
 
             {/* Customer Details Panel */}
             <div className="lg:col-span-2">
-              {selectedCustomer ? (
+              {selectedOrder ? (
                 <div className="bg-white rounded-xl shadow-lg p-8">
                   <div className="flex justify-between items-start mb-6">
                     <div className="flex-1">
-                      <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedCustomer.fullName}</h2>
+                      <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedOrder.fullName}</h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>
-                          <strong>Email:</strong> {selectedCustomer.email}
+                          <strong>Email:</strong> {selectedOrder.email}
                         </div>
                         <div>
-                          <strong>Phone:</strong> {selectedCustomer.phoneNumber}
+                          <strong>Customer ID:</strong> {selectedOrder.customerId}
                         </div>
                         <div className="md:col-span-2">
-                          <strong>Address:</strong> {selectedCustomer.address}, {selectedCustomer.pincode}
-                        </div>
-                        <div>
-                          <strong>Member Since:</strong> {formatDate(selectedCustomer.createdOn)}
-                        </div>
-                        <div>
-                          <strong>Registration:</strong> {selectedCustomer.isRegistrationComplete ? 'Complete' : 'Incomplete'}
+                          <strong>Total Orders:</strong> {selectedOrder.totalOrders}
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedCustomer.isBlocked 
-                          ? 'bg-red-100 text-red-700' 
-                          : 'bg-green-100 text-green-700'
-                      }`}>
-                        {selectedCustomer.isBlocked ? 'Blocked' : 'Active'}
-                      </span>
                     </div>
                   </div>
 
@@ -317,7 +323,7 @@ const Customers = () => {
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-xl font-semibold text-gray-800">
-                        Order History ({(selectedCustomer.orders || []).length})
+                        Order History ({(selectedOrder.orders || []).length})
                       </h3>
                       {customerStats && (
                         <div className="text-sm text-gray-600">
@@ -326,14 +332,14 @@ const Customers = () => {
                       )}
                     </div>
                     
-                    {(selectedCustomer.orders || []).length > 0 ? (
+                    {(selectedOrder.orders || []).length > 0 ? (
                       <div className="space-y-4 max-h-96 overflow-y-auto">
-                        {selectedCustomer.orders.map((order, index) => {
+                        {selectedOrder.orders.map((order, index) => {
                           const orderStatus = order.status || order.Status || 'Unknown';
                           const orderId = order.orderId || order.OrderId || order.id || `order-${index}`;
                           const totalAmount = order.totalAmount || order.TotalAmount || 0;
-                          const createdOn = order.createdOn || order.CreatedOn;
-                          const orderItems = order.orderItems || order.OrderItems || [];
+                          const orderDate = order.orderDate || order.OrderDate || order.createdOn || order.CreatedOn;
+                          const orderItems = order.items || order.Items || [];
 
                           return (
                             <div key={orderId} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition">
@@ -341,19 +347,12 @@ const Customers = () => {
                                 <div>
                                   <p className="font-semibold text-gray-800">Order #{orderId}</p>
                                   <p className="text-sm text-gray-600">
-                                    {createdOn ? `Placed on ${formatDate(createdOn)}` : 'Date not available'}
+                                    {orderDate ? `Placed on ${formatDate(orderDate)}` : 'Date not available'}
                                   </p>
                                 </div>
                                 <div className="text-right">
                                   <p className="text-xl font-bold text-[#586330]">{formatCurrency(totalAmount)}</p>
-                                  <span className={`mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                                    orderStatus === 'Confirmed' || orderStatus === 'Completed' ? 'bg-green-100 text-green-700' :
-                                    orderStatus === 'Delivered' ? 'bg-blue-100 text-blue-700' :
-                                    orderStatus === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                                    orderStatus === 'Processing' ? 'bg-orange-100 text-orange-700' :
-                                    orderStatus === 'Cancelled' ? 'bg-red-100 text-red-700' :
-                                    'bg-gray-100 text-gray-700'
-                                  }`}>
+                                  <span className={`mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(orderStatus)}`}>
                                     {orderStatus}
                                   </span>
                                 </div>
@@ -372,9 +371,18 @@ const Customers = () => {
 
                                       return (
                                         <div key={itemIndex} className="flex justify-between items-center text-sm">
-                                          <div>
-                                            <span className="font-medium">{productName}</span>
-                                            <span className="text-gray-500 ml-2">(Qty: {quantity})</span>
+                                          <div className="flex items-center space-x-3">
+                                            {item.productImage && (
+                                              <img 
+                                                src={item.productImage} 
+                                                alt={productName}
+                                                className="w-10 h-10 object-cover rounded"
+                                              />
+                                            )}
+                                            <div>
+                                              <span className="font-medium">{productName}</span>
+                                              <span className="text-gray-500 ml-2">(Qty: {quantity})</span>
+                                            </div>
                                           </div>
                                           <div className="text-right">
                                             <span className="font-medium">{formatCurrency(price)} each</span>
