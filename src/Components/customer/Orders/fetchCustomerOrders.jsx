@@ -12,16 +12,46 @@ export default function CustomerOrders() {
   }, []);
 
   const fetchCustomerOrders = async () => {
-    try {
-      const response = await axiosInstance.get('/Order/customer/orders');
-      setOrders(response.data.orders || []);
-    } catch (error) {
-      console.error("❌ Error fetching orders:", error);
-      alert("Failed to load orders.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const response = await axiosInstance.get('/Order/customer/orders');
+    let ordersData = response.data.orders || [];
+
+    // Loop orders → loop items → fetch product image
+    const updatedOrders = await Promise.all(
+      ordersData.map(async (order) => {
+        const updatedItems = await Promise.all(
+          order.Items.map(async (item) => {
+            try {
+              // Fetch product details to get image
+              const prodRes = await axiosInstance.get(`/Product/${item.ProductId}`);
+              const prod = prodRes.data;
+
+              const primaryImage =
+                prod.Images?.find((img) => img.IsPrimary) || prod.Images?.[0];
+
+              return {
+                ...item,
+                Image: primaryImage?.ImageUrl || item.Image || null
+              };
+            } catch {
+              return { ...item, Image: item.Image || null };
+            }
+          })
+        );
+
+        return { ...order, Items: updatedItems };
+      })
+    );
+
+    setOrders(updatedOrders);
+  } catch (error) {
+    console.error("❌ Error fetching orders:", error);
+    alert("Failed to load orders.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const viewOrderDetails = (order) => {
     setSelectedOrder(order);
