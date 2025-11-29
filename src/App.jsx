@@ -25,9 +25,6 @@ import CustomerCheckout from './Pages/customer/CustomerCheckout';
 
 
 
-import CustomerOrders from './Pages/customer/CustomerOrders.jsx';
-
-
 //Common for all users
 import Login from './Pages/Auth/Login';
 
@@ -109,7 +106,6 @@ function App() {
         <Route path="/customercheckout" element={<CustomerCheckout />} />
 
         <Route path="/checkout" element={<CustomerCheckout />} />
-        <Route path='/customer/orders' element={<CustomerOrders/>}/>
 
 
 
