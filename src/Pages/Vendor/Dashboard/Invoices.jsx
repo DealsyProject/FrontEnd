@@ -51,8 +51,8 @@ const Invoices = () => {
 
   useEffect(() => {
   const fetchData = async () => {
-    await fetchVendorOrders();
-    await fetchInvoices();
+    await fetchVendorOrders(); // First fetch orders
+    await fetchInvoices(); // Then fetch invoices (with orders data available)
     fetchReturns();
   };
   fetchData();
@@ -127,21 +127,23 @@ const Invoices = () => {
       // Extract items from multiple possible locations
       const items = invoice.Items || invoice.items || orderData.Items || orderData.items || [];
       
-      // Get the corresponding purchase order to determine status
+      // Get order ID
       const orderId = orderData.OrderId || orderData.orderId || invoice.OrderId;
-      const relatedOrder = purchaseOrders.find(po => po.orderId === orderId);
       
-      // Get the most accurate status - check if order is delivered
-      let orderStatus = relatedOrder?.status || 'Pending';
-      let deliveryStatus = relatedOrder?.deliveryStatus || 'pending';
+      // Get the corresponding purchase order to determine status
+      const relatedOrder = purchaseOrders.find(po => po.orderId == orderId);
       
-      // If we don't have a related order but have invoice data, infer status
-      if (!relatedOrder) {
-        // Check if there's delivered date in the invoice data
-        if (invoice.DeliveredDate || invoice.deliveredDate) {
-          orderStatus = 'Delivered';
-          deliveryStatus = 'delivered';
-        } else if (invoice.TrackingNumber || invoice.trackingNumber) {
+      // **FIX: Get status directly from invoice data first, then fallback to related order**
+      let orderStatus = invoice.OrderStatus || invoice.orderStatus || relatedOrder?.status || 'Pending';
+      let deliveryStatus = invoice.DeliveryStatus || invoice.deliveryStatus || relatedOrder?.deliveryStatus || 'pending';
+      
+      // **FIX: Check for delivered status in invoice data directly**
+      if (invoice.DeliveredDate || invoice.deliveredDate) {
+        orderStatus = 'Delivered';
+        deliveryStatus = 'delivered';
+      } else if (invoice.TrackingNumber || invoice.trackingNumber) {
+        // Only set as shipped if not already delivered
+        if (orderStatus !== 'Delivered' && deliveryStatus !== 'delivered') {
           orderStatus = 'Shipped';
           deliveryStatus = 'in-transit';
         }
@@ -158,6 +160,9 @@ const Invoices = () => {
         carrierName: invoice.CarrierName || invoice.carrierName,
         trackingNumber: invoice.TrackingNumber || invoice.trackingNumber,
         
+        // **FIX: Add delivered date if available**
+        deliveredDate: invoice.DeliveredDate || invoice.deliveredDate,
+        
         // Order fields
         orderId: orderId,
         customer: {
@@ -165,7 +170,7 @@ const Invoices = () => {
           email: orderData.CustomerEmail || orderData.customerEmail || invoice.CustomerEmail || ''
         },
         
-        // Order Status - prioritize delivered status
+        // Order Status - use determined status
         orderStatus: orderStatus,
         deliveryStatus: deliveryStatus,
         
@@ -276,18 +281,7 @@ const Invoices = () => {
     }
   };
 
-  const cancelOrder = async (po) => {
-    if (window.confirm(`Cancel order ${po.orderId}?`)) {
-      try {
-        await axiosInstance.post(`/Order/${po.orderId}/cancel`);
-        toast.success('Order cancelled successfully');
-        fetchVendorOrders(); // Refresh data
-      } catch (error) {
-        console.error('Error cancelling order:', error);
-        toast.error(error.response?.data?.message || 'Failed to cancel order');
-      }
-    }
-  };
+  
 
  const markAsDelivered = async (po) => {
   try {
@@ -296,7 +290,10 @@ const Invoices = () => {
     
     // Refresh both orders and invoices to ensure status sync
     await fetchVendorOrders();
-    await fetchInvoices();
+    // Add a small delay to ensure backend updates are processed
+    setTimeout(() => {
+      fetchInvoices();
+    }, 500);
   } catch (error) {
     console.error('Error marking as delivered:', error);
     toast.error(error.response?.data?.message || 'Failed to update order status');
@@ -419,7 +416,7 @@ const Invoices = () => {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>${invoiceNumber}</title>
+        <title> ${invoiceNumber}</title>
         <style>
           body { 
             font-family: Arial, sans-serif; 
@@ -440,7 +437,7 @@ const Invoices = () => {
             color: #6B4E4E; 
           }
           .company-info {
-            text-align: right;
+            text-align: left;
             font-size: 14px;
             color: #666;
           }
@@ -462,7 +459,7 @@ const Invoices = () => {
           .info-label {
             font-weight: bold;
             color: #6B4E4E;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
           }
           .tracking { 
             background: #f0f8ff; 
@@ -547,46 +544,29 @@ const Invoices = () => {
         <!-- Header -->
         <div class="header">
           <div>
-            <div class="logo">Dealsy </div>
+            <div class="logo"> Dealsy </div>
             <div class="company-info">
-              123  Plaza, Andheri East<br>
-              Mumbai, Maharashtra 400059<br>
-              Phone: +91 22 6789 4321<br>
-              Email: dealsy@gmail.com
+              123  Plaza, Beach Road <br>
+              Kozhikode, Kerala 400059<br>
+              Phone: +91 8281304925<br>
+              Email: SupportDealsy@gmail.com
             </div>
           </div>
           <div>
-            <h1>INVOICE</h1>
-            <div><strong>${invoiceNumber}</strong></div>
-            <div>Date: ${formatDate(invoiceDate)}</div>
+            <div">
+              <div class="info-label">BILL TO</div>
+              <div><strong>${invoice.customer?.name || invoice.Order?.CustomerName || 'N/A'}</strong></div>
+             
+            </div>
           </div>
         </div>
 
         <!-- Order and Customer Information -->
         <div class="info-grid">
           <div>
-            <div class="info-section">
-              <div class="info-label">BILL TO</div>
-              <div><strong>${invoice.customer?.name || invoice.Order?.CustomerName || 'N/A'}</strong></div>
-              <div>${invoice.customer?.email || invoice.Order?.CustomerEmail || 'N/A'}</div>
-            </div>
+            
           </div>
-          <div>
-            <div class="info-section">
-              <div class="info-label">ORDER INFORMATION</div>
-              <div><strong>Order ID:</strong> #${invoice.orderId || invoice.Order?.OrderId || 'N/A'}</div>
-              <div><strong>Status:</strong>
-                <span class="status-badge ${
-                  statusDisplay.toLowerCase() === 'delivered' ? 'status-delivered' :
-                  statusDisplay.toLowerCase() === 'shipped' ? 'status-shipped' :
-                  statusDisplay.toLowerCase() === 'confirmed' ? 'status-confirmed' :
-                  statusDisplay.toLowerCase() === 'cancelled' ? 'status-cancelled' :
-                  'status-pending'
-                }">${statusDisplay}</span>
-              </div>
-              <div><strong>Invoice Date:</strong> ${formatDate(invoiceDate)}</div>
-            </div>
-          </div>
+          
         </div>
 
         <!-- Shipping Information -->
@@ -594,16 +574,25 @@ const Invoices = () => {
           <div class="info-label">SHIPPING INFORMATION</div>
           <div><strong>Carrier:</strong> ${invoice.CarrierName || invoice.carrierName || invoice.shipment?.carrier || 'N/A'}</div>
           <div><strong>Tracking Number:</strong> ${invoice.TrackingNumber || invoice.trackingNumber || invoice.shipment?.trackingNumber || 'N/A'}</div>
-          ${po?.shippedDate ? `<div><strong>Shipped Date:</strong> ${formatDate(po.shippedDate)}</div>` : ''}
-          ${po?.deliveredDate ? `<div><strong>Delivered Date:</strong> ${formatDate(po.deliveredDate)}</div>` : ''}
+         <div><strong>Order Status:</strong>
+              <span class="status-badge ${
+                  statusDisplay.toLowerCase() === 'delivered' ? 'status-delivered' :
+                  statusDisplay.toLowerCase() === 'shipped' ? 'status-shipped' :
+                  statusDisplay.toLowerCase() === 'confirmed' ? 'status-confirmed' :
+                  statusDisplay.toLowerCase() === 'cancelled' ? 'status-cancelled' :
+                  'status-pending'
+                }">${statusDisplay}</span>
+              </div>
+             
         </div>
+        
 
         <!-- Items Table -->
         <table>
           <thead>
             <tr>
               <th>Product</th>
-              <th>SKU</th>
+              
               <th>Quantity</th>
               <th>Unit Price</th>
               <th>Total</th>
@@ -620,7 +609,7 @@ const Invoices = () => {
               return `
                 <tr>
                   <td><strong>${productName}</strong></td>
-                  <td>${productId}</td>
+                  
                   <td>${quantity}</td>
                   <td>₹${price.toLocaleString('en-IN')}</td>
                   <td><strong>₹${total.toLocaleString('en-IN')}</strong></td>
@@ -637,30 +626,20 @@ const Invoices = () => {
           </tbody>
         </table>
 
-        <!-- Total Section -->
-        <div class="total-section">
-          <div class="subtotal">
-            <span>Subtotal:</span>
-            <span>${formatCurrency(total)}</span>
-          </div>
-          <div class="total">
-            <span>TOTAL:</span>
-            <span>${formatCurrency(total)}</span>
-          </div>
-        </div>
+       
 
         <!-- Notes -->
         <div class="notes">
           <strong>Notes:</strong><br>
           • Thank you for your business!<br>
           • Please retain this invoice for your records.<br>
-          • For any queries, contact our customer support.
+          • For any queries, contact our support Team.
         </div>
 
         <!-- Footer -->
         <div class="footer">
           <p>Dealsy  - Quality Products at Great Prices</p>
-          <p>www.dealsy.com | support@dealsy.com | +91 22 6789 4321</p>
+          <p>SupportDealsy@gmail.com | +91 8281304925</p>
         </div>
       </body>
     </html>
@@ -750,7 +729,7 @@ const Invoices = () => {
                   <tbody>
                     {pendingOrders.map(po => (
                       <tr key={po.orderId} className="border-b hover:bg-[#F5F1E8]">
-                        <td className="px-6 py-4 font-medium">#{po.orderId}</td>
+                        <td className="px-6 py-4 font-medium">Order {po.orderId}</td>
                         <td className="px-6 py-4">
                           <div>
                             <div className="font-medium">{po.customerName || 'Unknown Customer'}</div>
@@ -773,12 +752,7 @@ const Invoices = () => {
                           >
                             Ship Order
                           </button>
-                          <button 
-                            onClick={() => cancelOrder(po)} 
-                            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                          >
-                            Cancel
-                          </button>
+                        
                         </td>
                       </tr>
                     ))}
@@ -810,7 +784,7 @@ const Invoices = () => {
                     <tbody>
                       {shippedOrders.map(po => (
                         <tr key={po.orderId} className="border-b hover:bg-[#F5F1E8]">
-                          <td className="px-6 py-4">Order #{po.orderId}</td>
+                          <td className="px-6 py-4">Order {po.orderId}</td>
                           <td className="px-6 py-4">{po.customerName || 'Unknown Customer'}</td>
                           <td className="px-6 py-4">
                             <span className="font-mono bg-gray-100 px-2 py-1 rounded">
@@ -852,7 +826,7 @@ const Invoices = () => {
                     <tbody>
                       {deliveredOrders.map(po => (
                         <tr key={po.orderId} className="border-b hover:bg-[#F5F1E8]">
-                          <td className="px-6 py-4">Order #{po.orderId}</td>
+                          <td className="px-6 py-4">Order {po.orderId}</td>
                           <td className="px-6 py-4">{po.customerName || 'Unknown Customer'}</td>
                           <td className="px-6 py-4">
                             <span className="font-mono bg-gray-100 px-2 py-1 rounded">
@@ -888,6 +862,7 @@ const Invoices = () => {
           <th className="px-6 py-4 text-left">Amount</th>
           <th className="px-6 py-4 text-left">Date</th>
           <th className="px-6 py-4 text-left">Order Status</th>
+          <th className="px-6 py-4 text-left">Confirmation Status</th>
           <th className="px-6 py-4 text-left">Tracking Id</th>
           <th className="px-6 py-4 text-left">Actions</th>
         </tr>
@@ -902,23 +877,51 @@ const Invoices = () => {
                              po?.deliveryStatus === 'delivered' || 
                              inv.orderStatus?.toLowerCase() === 'delivered';
           
-          const statusBadge = isDelivered ? {
-            text: 'Delivered',
-            class: 'bg-green-100 text-green-800'
-          } : (inv.deliveryStatus === 'in-transit' || inv.orderStatus?.toLowerCase() === 'shipped') ? {
-            text: 'Shipped',
-            class: 'bg-blue-100 text-blue-800'
-          } : {
+          // Order Status Badge
+          const orderStatusBadge = {
             text: inv.orderStatus || 'Pending',
-            class: inv.orderStatus?.toLowerCase() === 'confirmed' ? 
-                   'bg-green-100 text-green-800' : 
+            class: inv.orderStatus?.toLowerCase() === 'delivered' ? 'bg-green-100 text-green-800' :
+                   inv.orderStatus?.toLowerCase() === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                   inv.orderStatus?.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-800' :
                    'bg-yellow-100 text-yellow-800'
           };
+          
+          // Invoice Status (Paid/Unpaid/Refunded)
+          const getInvoiceStatus = (invoice) => {
+            // Check if there's a return/refund associated
+            const hasReturn = returns.some(ret => ret.orderId === invoice.orderId);
+            if (hasReturn) {
+              return {
+                text: 'Returned',
+                class: 'bg-purple-100 text-purple-800'
+              };
+            }
+            
+            // Check if order is delivered (assume paid upon delivery)
+            if (isDelivered) {
+              return {
+                text: 'Confirmed',
+                class: 'bg-green-100 text-green-800'
+              };
+            }
+            
+            // Check if order is shipped (assume paid)
+            if (inv.deliveryStatus === 'in-transit' || inv.orderStatus?.toLowerCase() === 'shipped') {
+              return {
+                text: 'Paided',
+                class: 'bg-green-100 text-green-800'
+              };
+            }
+            
+           
+          };
+          
+          const invoiceStatus = getInvoiceStatus(inv);
           
           return (
             <tr key={inv.invoiceId} className="border-b hover:bg-[#F5F1E8]">
               <td className="px-6 py-4 font-medium">{inv.invoiceNumber || inv.invoiceId}</td>
-              <td className="px-6 py-4">Order #{inv.orderId}</td>
+              <td className="px-6 py-4">Order {inv.orderId}</td>
               <td className="px-6 py-4">
                 <div>
                   <div className="font-medium">{inv.customer?.name || 'Unknown Customer'}</div>
@@ -928,39 +931,45 @@ const Invoices = () => {
               <td className="px-6 py-4 font-bold text-[#586330]">{formatCurrency(total)}</td>
               <td className="px-6 py-4 text-sm text-gray-600">{formatDate(inv.invoiceDate || inv.date)}</td>
               <td className="px-6 py-4">
-                <span className={`px-2 py-1 rounded text-xs ${statusBadge.class}`}>
-                  {statusBadge.text}
+                <span className={`px-2 py-1 rounded text-xs ${orderStatusBadge.class}`}>
+                  {orderStatusBadge.text}
+                </span>
+              </td>
+              <td className="px-6 py-4">
+                <span className={`px-2 py-1 rounded text-xs ${invoiceStatus.class}`}>
+                  {invoiceStatus.text}
                 </span>
               </td>
               <td className="px-6 py-4 text-sm font-mono">{inv.trackingNumber || inv.shipment?.trackingNumber || 'N/A'}</td>
               <td className="px-6 py-4">
                 <button 
                   onClick={() => handlePrintInvoice(inv)} 
-                  className="text-gray-600 mr-3 hover:underline"
+                  className="text-white bg-gray-600 px-2 mr-3 hover:underline"
                 >
                   Print
                 </button>
                 <button 
                   onClick={() => handleSendInvoice(inv)} 
-                  className="text-green-600 mr-3 hover:underline"
+                  className="  text-green-600 mt-2 bg-green-100 px-2 mr-3 hover:underline"
                 >
                   Email
                 </button>
-                {isDelivered && (
-                  <button 
-                    onClick={() => openReturnModal(inv)} 
-                    className="text-red-600 hover:underline"
-                  >
-                    Return
-                  </button>
-                )}
+               
+{invoiceStatus.text === 'Returned' ? (
+  <button 
+    onClick={() => openReturnModal(inv)} 
+    className="text-red-600 hover:underline"
+  >
+    Return
+  </button>
+) : null}
               </td>
             </tr>
           );
         })}
         {invoices.length === 0 && (
           <tr>
-            <td colSpan="8" className="px-6 py-8 text-center text-gray-500">
+            <td colSpan="9" className="px-6 py-8 text-center text-gray-500">
               No invoices found. Ship an order to generate invoices.
             </td>
           </tr>
@@ -1045,7 +1054,7 @@ const Invoices = () => {
                     </div>
                   </div>
                   <div className="mb-8">
-                    <label className="block font-medium mb-2">Tracking Number (AWB) *</label>
+                    <label className="block font-medium mb-2">Tracking Id *</label>
                     <input 
                       type="text" 
                       placeholder="e.g. 123456789012" 
@@ -1065,22 +1074,11 @@ const Invoices = () => {
                           <p className="text-sm text-gray-600">Price: {formatCurrency(item.Price || item.price)}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">Ship:</span>
-                          <input
-                            type="number"
-                            min="0"
-                            max={item.Quantity || item.quantity || 0}
-                            value={item.shippedQty || 0}
-                            onChange={e => {
-                              const qty = Math.max(0, Math.min(parseInt(e.target.value) || 0, item.Quantity || item.quantity || 0));
-                              setShipmentDetails(prev => ({
-                                ...prev,
-                                items: prev.items.map((it, idx) => idx === i ? { ...it, shippedQty: qty } : it)
-                              }));
-                            }}
-                            className="w-24 px-3 py-2 border rounded text-center"
-                          />
-                        </div>
+  <span className="text-sm text-gray-600">Qty:</span>
+  <div className="text-center bg-gray-50">
+    {item.Quantity || item.quantity || 0}
+  </div>
+</div>
                       </div>
                     ))}
                   </div>
@@ -1094,7 +1092,7 @@ const Invoices = () => {
                     </button>
                     <button 
                       onClick={confirmShipmentAndGenerateInvoice} 
-                      className="px-8 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#5A3E3E]"
+                      className="px-8 py-3 bg-[#586330] text-white rounded-lg"
                     >
                       Confirm & Generate Invoice
                     </button>
@@ -1108,8 +1106,8 @@ const Invoices = () => {
           {showReturnModal && selectedInvoiceForReturn && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-screen overflow-y-auto">
-                <div className="bg-red-600 text-white p-6 rounded-t-2xl">
-                  <h2 className="text-2xl font-bold">Process Return - Invoice #{selectedInvoiceForReturn.invoiceId}</h2>
+                <div className="bg-[#586330] text-white p-6 rounded-t-2xl">
+                  <h2 className="text-2xl font-bold">Return Order</h2>
                 </div>
                 <div className="p-8">
                   <div className="grid grid-cols-2 gap-6 mb-6">
@@ -1218,9 +1216,9 @@ const Invoices = () => {
                     </button>
                     <button 
                       onClick={processReturn} 
-                      className="px-8 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                      className="px-8 py-3 bg-[#586330] text-white rounded-lg "
                     >
-                      Process Return & Refund
+                      Done 
                     </button>
                   </div>
                 </div>
