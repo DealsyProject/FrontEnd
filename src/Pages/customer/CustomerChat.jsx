@@ -10,11 +10,14 @@ function CustomerChat() {
   const [connectionStatus, setConnectionStatus] = useState("Disconnected");
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const chatEndRef = useRef(null);
+  const [agentTyping, setAgentTyping] = useState(false);
 
-  // --------------------------------------------------------------
-  // 1. Connect + auth
-  // --------------------------------------------------------------
+  const chatEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+
+  // =========================================================
+  // 1. CONNECT + AUTH + SIGNALR SETUP
+  // =========================================================
   useEffect(() => {
     const connect = async () => {
       try {
@@ -53,6 +56,28 @@ function CustomerChat() {
           .configureLogging(signalR.LogLevel.Information)
           .build();
 
+        // Receive message from Support Agent
+        conn.on("ReceiveMessage", (from, msg) => {
+          setMessages(prev => [
+            ...prev,
+            {
+              fromUserId: from,
+              msg,
+              isCustomer: false,
+              timestamp: new Date(),
+              id: Date.now() + Math.random()
+            }
+          ]);
+          setAgentTyping(false);
+        });
+
+        // Agent is typing indicator
+        conn.on("AgentTyping", () => {
+          setAgentTyping(true);
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setAgentTyping(false), 4000);
+        });
+
         conn.onreconnecting(() => setConnectionStatus("Reconnecting..."));
         conn.onreconnected(() => setConnectionStatus("Connected"));
         conn.onclose(() => {
@@ -60,102 +85,99 @@ function CustomerChat() {
           setIsConnecting(false);
         });
 
-        conn.on("ReceiveMessage", (from, msg) => {
-          setMessages(prev => [
-            ...prev,
-            {
-              fromUserId: from,
-              msg,
-              isCustomer: from === uid,
-              timestamp: new Date(),
-              id: Date.now() + Math.random()
-            }
-          ]);
-        });
-
         await conn.start();
         setConnection(conn);
         setConnectionStatus("Connected");
         setIsConnecting(false);
 
-        await conn.invoke("CheckPendingMessages");
+        // Offline messages are auto-delivered by backend on connect
       } catch (e) {
-        console.error(e);
+        console.error("SignalR connection failed:", e);
         setConnectionStatus("Failed");
         setIsConnecting(false);
-        alert("Chat connection failed");
+        alert("Chat connection failed. Please refresh.");
       }
     };
 
     connect();
 
-    return () => connection?.stop();
+    return () => {
+      connection?.stop();
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
   }, []);
 
-  // --------------------------------------------------------------
-  // 2. Send message
-  // --------------------------------------------------------------
-  const sendMessage = async () => {
-    if (!connection || !message.trim()) return;
-    const txt = message.trim();
-    setMessage("");
+  // =========================================================
+  // 2. SEND MESSAGE + TYPING INDICATOR
+  // =========================================================
+  const handleTyping = (e) => {
+    setMessage(e.target.value);
 
-    try {
-      await connection.invoke("SendPrivateMessage", "support", txt);
-      setMessages(prev => [
-        ...prev,
-        {
-          fromUserId: userId,
-          msg: txt,
-          isCustomer: true,
-          timestamp: new Date(),
-          id: Date.now() + Math.random(),
-          status: "sent"
-        }
-      ]);
-    } catch (e) {
-      console.error(e);
-      setMessage(txt);
-      setMessages(prev => [
-        ...prev,
-        {
-          fromUserId: "system",
-          msg: "Failed to send. Try again.",
-          isCustomer: false,
-          timestamp: new Date(),
-          id: Date.now() + Math.random(),
-          isError: true
-        }
-      ]);
+    if (connection && e.target.value.trim()) {
+      connection.invoke("CustomerTyping").catch(() => {});
     }
   };
 
-  const handleKeyPress = e => {
+  const sendMessage = async () => {
+    if (!connection || !message.trim()) return;
+
+    const txt = message.trim();
+    setMessage("");
+
+    const tempId = Date.now();
+    setMessages(prev => [
+      ...prev,
+      {
+        fromUserId: userId,
+        msg: txt,
+        isCustomer: true,
+        timestamp: new Date(),
+        id: tempId,
+        status: "sending"
+      }
+    ]);
+
+    try {
+      await connection.invoke("SendToSupport", txt);
+      setMessages(prev =>
+        prev.map(m => (m.id === tempId ? { ...m, status: "sent" } : m))
+      );
+    } catch (e) {
+      console.error("Send failed:", e);
+      setMessage(txt);
+      setMessages(prev =>
+        prev.map(m => (m.id === tempId ? { ...m, status: "failed" } : m))
+      );
+    }
+  };
+
+  const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
   };
 
-  // --------------------------------------------------------------
-  // 3. Auto-scroll
-  // --------------------------------------------------------------
+  // =========================================================
+  // 3. AUTO SCROLL
+  // =========================================================
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [messages]);
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, agentTyping]);
 
-  const formatTime = ts =>
+  const formatTime = (ts) =>
     new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  // --------------------------------------------------------------
-  // 4. UI guards
-  // --------------------------------------------------------------
+  // =========================================================
+  // 4. UI RENDERS
+  // =========================================================
   if (!isAuthorized) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F5F7EB]">
-        <div className="text-center bg-white rounded-2xl p-8 shadow-lg max-w-md mx-4">
-          <div className="text-red-600 text-xl font-semibold mb-2">Access Denied</div>
-          <div className="text-gray-600">This chat is for customers only.</div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+        <div className="text-center bg-white rounded-3xl p-12 shadow-2xl max-w-md">
+          <div className="text-6xl mb-6">Locked</div>
+          <h2 className="text-2xl font-bold text-red-600 mb-3">Access Denied</h2>
+          <p className="text-gray-600">This chat is for customers only.</p>
         </div>
       </div>
     );
@@ -163,189 +185,158 @@ function CustomerChat() {
 
   if (isConnecting) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F5F7EB]">
-        <div className="text-center bg-white rounded-2xl p-8 shadow-lg max-w-md mx-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#97A36D] mx-auto mb-4" />
-          <div className="text-gray-600">Connecting to chat service...</div>
-          <div className="text-sm text-gray-500 mt-2">{connectionStatus}</div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+        <div className="text-center bg-white rounded-3xl p-12 shadow-2xl max-w-md">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#97A36D] mx-auto mb-6"></div>
+          <h3 className="text-xl font-semibold text-gray-800">Connecting to Support...</h3>
+          <p className="text-gray-500 mt-2">{connectionStatus}</p>
         </div>
       </div>
     );
   }
 
-  // --------------------------------------------------------------
-  // 5. Main UI
-  // --------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-[#F5F7EB] flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-[#F5F7EB] to-[#E8F0D8] flex flex-col">
       {/* Header */}
-      <div className="bg-[#97A36D] shadow-lg">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+      <div className="bg-[#97A36D] shadow-2xl">
+        <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-[#97A36D] rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center space-x-5">
+              <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">Customer Support</h1>
-                <p className="text-white text-opacity-80">We're here to help you</p>
+                <h1 className="text-3xl font-bold text-white">Customer Support</h1>
+                <p className="text-white/90">We're online and ready to help you</p>
               </div>
             </div>
-            <div className="text-right">
-              <div
-                className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-                  connectionStatus === "Connected"
-                    ? "bg-green-100 text-green-800 border border-green-200"
-                    : connectionStatus.includes("Reconnecting") || connectionStatus === "Connecting"
-                    ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
-                    : "bg-red-100 text-red-800 border border-red-200"
-                }`}
-              >
-                <span
-                  className={`w-3 h-3 rounded-full mr-2 ${
-                    connectionStatus === "Connected"
-                      ? "bg-green-500"
-                      : connectionStatus.includes("Reconnecting") || connectionStatus === "Connecting"
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
-                  }`}
-                />
-                {connectionStatus}
+            <div className="flex items-center space-x-3">
+              <div className={`px-5 py-3 rounded-full text-sm font-semibold flex items-center space-x-2 ${connectionStatus === "Connected" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                <span className={`w-3 h-3 rounded-full ${connectionStatus === "Connected" ? "bg-green-500" : "bg-red-500"} animate-pulse`}></span>
+                <span>{connectionStatus}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex max-w-6xl mx-auto w-full px-4 py-6">
-        <div className="flex-1 flex flex-col bg-white rounded-2xl shadow-xl overflow-hidden">
+      {/* Main Chat */}
+      <div className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+        <div className="bg-white rounded-3xl shadow-2xl h-full flex flex-col overflow-hidden">
           {/* Chat Header */}
-          <div className="bg-[#97A36D] text-white px-6 py-4">
+          <div className="bg-[#97A36D] text-white px-8 py-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center font-bold text-lg">
+                  S
+                </div>
                 <div>
-                  <h3 className="font-semibold">Support Agent</h3>
-                  <p className="text-white text-opacity-80 text-sm">Online • 24/7 Support</p>
+                  <h3 className="text-xl font-bold">Support Team</h3>
+                  <p className="text-white/80 text-sm">Typically replies in 2-5 minutes</p>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-white text-opacity-80 text-sm">Avg. response: 2-5 min</div>
+              <div className="text-sm bg-white/20 px-4 py-2 rounded-full">
+                24/7 Available
               </div>
             </div>
           </div>
 
-          {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
             {messages.length === 0 ? (
-              <div className="text-center py-12 ">
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">Welcome to Support Chat</h3>
-                <p className="text-gray-500 max-w-md mx-auto">
-                  Start a conversation with our support team. We're here to help you with any questions or issues.
+              <div className="text-center py-20">
+                <div className="text-8xl mb-6 opacity-30">Chat</div>
+                <h3 className="text-2xl font-bold text-gray-700 mb-3">Welcome to Dealsy Support</h3>
+                <p className="text-gray-500 max-w-lg mx-auto">
+                  Send us a message and our team will assist you right away. We're here 24/7!
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {messages.map(m => (
+              <div className="space-y-6">
+                {messages.map((m) => (
                   <div
                     key={m.id}
-                    className={`flex ${m.isCustomer ? "justify-end" : "justify-start"} ${m.isError ? "animate-pulse" : ""}`}
+                    className={`flex ${m.isCustomer ? "justify-end" : "justify-start"}`}
                   >
-                    <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${m.fromUserId === "system" ? "w-full text-center" : ""}`}>
-                      <div
-                        className={`rounded-2xl px-4 py-3 shadow-sm ${
-                          m.isError
-                            ? "bg-red-50 text-red-700 border border-red-200"
-                            : m.isCustomer
-                            ? "bg-[#97A36D] text-white rounded-br-none"
-                            : m.fromUserId === "system"
-                            ? "bg-yellow-50 text-yellow-700 text-center border border-yellow-200"
-                            : "bg-white text-gray-800 rounded-bl-none border border-gray-200"
-                        }`}
-                      >
-                        <div className="break-words">{m.msg}</div>
-                        {!m.isError && m.fromUserId !== "system" && (
-                          <div className={`text-xs mt-2 ${m.isCustomer ? "text-white text-opacity-80" : "text-gray-500"}`}>
-                            {formatTime(m.timestamp)}
-                          </div>
-                        )}
-                      </div>
-                      {m.status === "sending" && (
-                        <div className="text-xs text-gray-500 text-right mt-1">Sending...</div>
+                    <div className="flex max-w-lg">
+                      {!m.isCustomer && (
+                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3 flex-shrink-0 shadow-lg">
+                          S
+                        </div>
                       )}
+                      <div
+                        className={`px-6 py-4 rounded-3xl shadow-md ${
+                          m.isCustomer
+                            ? "bg-[#97A36D] text-white rounded-br-none"
+                            : "bg-white text-gray-800 rounded-bl-none border border-gray-200"
+                        } ${m.status === "failed" ? "border-2 border-red-400 bg-red-50" : ""}`}
+                      >
+                        <p className="text-base leading-relaxed break-words">{m.msg}</p>
+                        <div className={`text-xs mt-2 flex items-center space-x-2 ${m.isCustomer ? "text-white/80" : "text-gray-500"}`}>
+                          <span>{formatTime(m.timestamp)}</span>
+                          {m.status === "sending" && <span className="animate-pulse">Sending...</span>}
+                          {m.status === "sent" && <span>Delivered</span>}
+                          {m.status === "failed" && <span className="text-red-600">Failed</span>}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
+
+                {/* Agent Typing Indicator */}
+                {agentTyping && (
+                  <div className="flex justify-start">
+                    <div className="flex items-center space-x-3 bg-white px-5 py-4 rounded-3xl border border-gray-200 shadow-md ml-14">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                      </div>
+                      <span className="text-sm text-gray-500">Agent is typing...</span>
+                    </div>
+                  </div>
+                )}
+
                 <div ref={chatEndRef} />
               </div>
             )}
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-gray-200 bg-white p-6">
+          <div className="border-t-2 border-gray-200 bg-white p-6">
             <div className="flex space-x-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <input
-                    value={message}
-                    onChange={e => setMessage(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-[#97A36D] focus:border-transparent transition-all duration-200"
-                    placeholder="Type your message here... (Press Enter to send)"
-                    disabled={connectionStatus !== "Connected"}
-                    maxLength={500}
-                  />
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={message}
+                  onChange={handleTyping}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Type your message here... (Press Enter to send)"
+                  className="w-full px-6 py-5 rounded-2xl border-2 border-gray-300 focus:border-[#97A36D] focus:outline-none text-lg transition-all duration-200"
+                  disabled={connectionStatus !== "Connected"}
+                  maxLength={1000}
+                />
+                <div className="absolute right-5 top-1/2 transform -translate-y-1/2 text-gray-400">
                   {connectionStatus === "Connected" && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    </div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                   )}
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-xs text-gray-500">
-                    {connectionStatus === "Connected" ? "✓ Connected to support" : "Connecting..."}
-                  </span>
-                  <span className="text-xs text-gray-500">{message.length}/500</span>
                 </div>
               </div>
               <button
                 onClick={sendMessage}
                 disabled={!message.trim() || connectionStatus !== "Connected"}
-                className="bg-[#97A36D] text-white px-8 py-4 rounded-xl hover:bg-[#A0B06B] disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-semibold flex items-center space-x-2 min-w-20 shadow-sm"
+                className="px-10 py-5 bg-[#97A36D] text-white rounded-2xl font-bold text-lg hover:bg-[#7e8a5a] disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center space-x-3"
               >
                 <span>Send</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
               </button>
             </div>
-            <div className="text-center text-gray-500 text-xs mt-4">
-              💡 Tip: Describe your issue clearly for faster support
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer & Help Section */}
-      <div className="bg-white border-t border-gray-200 py-6">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-6">
-            <div className="text-gray-600 text-sm mb-4">
-              Support available 24/7 • Average response time: 2-5 minutes
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <a
-                href="/support-faq-options"
-                className="flex items-center space-x-2 bg-[#97A36D] bg-opacity-10 text-[#97A36D] hover:bg-opacity-20 rounded-lg px-6 py-3 transition-all duration-200 font-medium"
-              >
-                <svg className="w-5 h-5 text-amber-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-amber-50">Browse FAQ & Help Center</span>
-              </a>
+            <div className="text-center mt-4 text-sm text-gray-500">
+              Your messages are secure and encrypted
             </div>
           </div>
         </div>

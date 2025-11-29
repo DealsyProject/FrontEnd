@@ -19,7 +19,7 @@ const Products = () => {
 
   const activeView = 'products';
   const [activeCategory, setActiveCategory] = useState('all');
-  const [visibleProducts, setVisibleProducts] = useState(6);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [products, setProducts] = useState([]);
@@ -36,6 +36,9 @@ const Products = () => {
     { id: 'Home Appliance', name: 'Home Appliance' },
     { id: 'Cloth', name: 'Cloth' }
   ];
+
+  // Fixed items per page - you can change this number as needed
+  const itemsPerPage = 6;
 
   const [newProduct, setNewProduct] = useState({
     productName: '',
@@ -174,15 +177,19 @@ const Products = () => {
     return categoryMatch && searchMatch;
   });
 
-  const productsToShow = filteredProducts.slice(0, visibleProducts);
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const productsToShow = filteredProducts.slice(startIndex, endIndex);
 
   const handleCategoryFilter = (categoryId) => {
     setActiveCategory(categoryId);
-    setVisibleProducts(6);
+    setCurrentPage(1); // Reset to first page when category changes
   };
 
-  const handleLoadMore = () => {
-    setVisibleProducts(prev => prev + 3);
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
   };
 
   const handleSearchChange = (e) => {
@@ -194,6 +201,7 @@ const Products = () => {
 
   const handleSearchSubmit = (e) => {
     if (e.key === 'Enter' || e.type === 'click') {
+      setCurrentPage(1); // Reset to first page when searching
       searchProducts();
     }
   };
@@ -447,6 +455,25 @@ const Products = () => {
     );
   };
 
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+    
+    return pageNumbers;
+  };
+
   const ProductCard = ({ product }) => {
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     
@@ -665,17 +692,11 @@ const Products = () => {
         )}
 
         {!loading && (
-          <div className="mb-6 flex justify-between items-center">
-            <p className="text-gray-600">
-              Showing {productsToShow.length} of {filteredProducts.length} products
-              {activeCategory !== 'all' && ` in ${categories.find(c => c.id === activeCategory)?.name}`}
-            </p>
+          <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
+            
             <div className="flex gap-4 text-sm">
               <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                Total: {products.length}
-              </span>
-              <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full">
-                In Stock: {products.filter(p => p.quantity > 0).length}
+                Total Products: {products.length}
               </span>
             </div>
           </div>
@@ -715,16 +736,54 @@ const Products = () => {
             )}
           </div>
         )}
-
-        {!loading && visibleProducts < filteredProducts.length && (
-          <div className="text-center mt-8">
-            <button 
-              onClick={handleLoadMore}
-              className="px-8 py-3 bg-[#586330] text-white rounded-lg hover:bg-[#586330]/80 transition duration-200 font-medium shadow-md"
+        
+        {/* Pagination Controls */}
+        {!loading && totalPages > 1 && (
+          <div className="flex justify-center items-center mt-8 space-x-2">
+            
+            {/* Previous Button */}
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg transition duration-200 font-medium ${
+                currentPage === 1
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-[#586330] text-white hover:bg-[#586330]/80'
+              }`}
             >
-              Load More Products ({filteredProducts.length - visibleProducts} remaining)
+              Previous
             </button>
+
+            {/* Page Numbers */}
+            {getPageNumbers().map(pageNumber => (
+              <button
+                key={pageNumber}
+                onClick={() => handlePageChange(pageNumber)}
+                className={`px-4 py-2 rounded-lg transition duration-200 font-medium ${
+                  currentPage === pageNumber
+                    ? 'bg-[#586330] text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                {pageNumber}
+              </button>
+            ))}
+
+            {/* Next Button */}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded-lg transition duration-200 font-medium ${
+                currentPage === totalPages
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-[#586330] text-white hover:bg-[#586330]/80'
+              }`}
+            >
+              Next
+            </button>
+             
           </div>
+          
         )}
 
         {!loading && products.length > 0 && (

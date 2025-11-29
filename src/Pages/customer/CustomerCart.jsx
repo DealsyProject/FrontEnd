@@ -97,7 +97,9 @@ export default function CustomerCart() {
     }
   };
 
-  const total = cart.reduce((sum, item) => sum + item.Price * item.Quantity, 0);
+  // REMOVED SHIPPING FEE - Only product total
+  const total = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0);
+  const finalTotal = total; // No shipping fee
 
   if (loading) {
     return (
@@ -226,7 +228,9 @@ export default function CustomerCart() {
                     <span>Subtotal ({cart.length} items)</span>
                     <span className="font-medium">₹{total.toFixed(2)}</span>
                   </div>
-
+                  
+                  {/* REMOVED SHIPPING FEE SECTION */}
+                  
                   <div className="border-t pt-4 flex justify-between text-lg font-semibold text-gray-800">
                     <span>Total</span>
                     <span>₹{total.toFixed(2)}</span>

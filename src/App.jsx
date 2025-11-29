@@ -8,7 +8,6 @@ import ProductPage from './Pages/Admin/ProductPage.jsx';
 import OrdersPage from './Pages/Admin/OrdersPage.jsx';
 import TransactionsPage from './Pages/Admin/TransactionsPage.jsx';
 import UserManagement from './Pages/Admin/UserManagment.jsx';
-import ChatSupport from './Pages/Admin/AdminChatToSupport.jsx';
 import PendingVendors from './Pages/Admin/PendingVendors.jsx';
 import ProductReturnPage from "./Pages/Admin/ProductReturnPage.jsx";
 import SupportTeamPage from "./Pages/Admin/SupportTeamPage.jsx";
@@ -52,6 +51,9 @@ import ReturnRefundTracker from './Pages/SupportTeam/ReturnRefundTracker';
 import FaqOption from './Pages/SupportTeam/FaqOption.jsx';
 import EmailSupport from './Pages/SupportTeam/EmailSupport.jsx';
 import SupportChatCustomer from './Pages/SupportTeam/SupportChatCustomer.jsx';
+import SupportChatToAdmin from './Pages/SupportTeam/SupportChatToAdmin.jsx';
+import AdminChatToSupport from './Pages/Admin/AdminChatToSupport.jsx';
+import CustomerChat from './Pages/customer/CustomerChat';
 
 
 
@@ -70,7 +72,6 @@ function App() {
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/Transaction" element={<TransactionsPage />} />
         <Route path="/user" element={<UserManagement />} />
-        <Route path="/ChatSupport" element={<ChatSupport />} />
         <Route path="/Vendors" element={<PendingVendors />} />
         <Route path="/product-returns" element={<ProductReturnPage />} />
         <Route path="/support-team" element={<SupportTeamPage />} />
@@ -106,12 +107,16 @@ function App() {
 
 
         {/* Support Team */}
-        <Route path="/support-Customerchatcenter" element={<SupportChatCustomer/>} />
-        <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails />} />
-        <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker />} />
-        <Route path="/support-faq-options" element={<FaqOption />} />
-        <Route path="/support-emailsupport" element={<EmailSupport />} />
+        <Route path="/customerchat" element={<CustomerChat />}/>
+        <Route path="/support-Customerchatcenter" element={<SupportChatCustomer/>}/>
+        <Route path="/support-custemervenderdetails" element={<CustemerVenderDetails />}/>
+        <Route path="/support-returnrefundtracker" element={<ReturnRefundTracker />}/>
+        <Route path="/support-faq-options" element={<FaqOption />}/>
+        <Route path="/support-emailsupport" element={<EmailSupport />}/>
+        <Route path="/support-supportchattoadmin" element={<SupportChatToAdmin />}/>
+        <Route path="/support-adminchattosupport" element={<AdminChatToSupport />}/>
         
+
          </Routes>
     </Router>
   );

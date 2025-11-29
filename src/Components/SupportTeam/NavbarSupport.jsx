@@ -42,6 +42,14 @@ function NavbarSupport() {
         >
           Return Tracker
         </Link>
+
+        <Link
+          to="/support-supportchattoadmin"
+          className="hover:text-green-800 transition"
+        >
+          Admin-ChatCenter
+        </Link>
+
       </div>
     </nav>
   );

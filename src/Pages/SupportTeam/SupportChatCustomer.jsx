@@ -12,6 +12,8 @@ function SupportChatCustomer() {
   const [connectionStatus, setConnectionStatus] = useState("Disconnected");
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [typingCustomer, setTypingCustomer] = useState(null);
+
 
   const chatEndRef = useRef(null);
   const connRef = useRef(null);
@@ -19,6 +21,9 @@ function SupportChatCustomer() {
 
   // Same useEffect and connection logic as before
   useEffect(() => {
+
+
+
     isMounted.current = true;
 
     const startConnection = async () => {
@@ -97,8 +102,8 @@ function SupportChatCustomer() {
             ...prev,
             {
               userId: fromUserId,
-              fullName: `Customer ${fromUserId.substring(0, 6)}`,
-              email: email,
+              FullName: `Customer ${fromUserId.substring(0, 6)}`,
+              email: "",
             },
           ];
         });
@@ -139,6 +144,22 @@ function SupportChatCustomer() {
       }
     };
   }, []);
+
+
+useEffect(() => {
+  if (!connection) return;
+
+  connection.on("CustomerTyping", (customerId) => {
+    setTypingCustomer(customerId);
+
+    setTimeout(() => {
+      setTypingCustomer(null);
+    }, 3000); 
+  });
+
+  return () => connection.off("CustomerTyping");
+}, [connection]);
+
 
   const messages = selectedUser ? chatHistory[selectedUser] || [] : [];
 
@@ -232,8 +253,7 @@ function SupportChatCustomer() {
           <p className="text-blue-100 text-sm opacity-90">
             {connectionStatus === "Connected" ? "Live connected" : connectionStatus}
           </p>
-        </div>
-
+           </div>
         {/* Search */}
         <div className="p-4 border-b border-gray-200">
           <div className="relative">
@@ -308,7 +328,11 @@ function SupportChatCustomer() {
                     <h2 className="font-semibold text-gray-800">
                       {getDisplayName(customers.find(c => c.userId === selectedUser))}
                     </h2>
-
+                    <div>
+            {typingCustomer === selectedUser && (
+             <h2 className="text-xs text-gray-900">Typing...</h2>
+               )}
+</div>
                   </div>
                 </div>
                 <div className="flex space-x-2">
@@ -366,7 +390,10 @@ function SupportChatCustomer() {
                     placeholder="Type your message..."
                     className="w-full bg-transparent border-none outline-none text-gray-800 placeholder-gray-500"
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={(e) => {
+                       setMessage(e.target.value);
+                       connRef.current?.invoke("CustomerTyping", selectedUser).catch(() => {});
+                          }}
                     onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                   />
                 </div>
